@@ -1,4 +1,4 @@
-import { customProvider, gateway } from "ai";
+import { customProvider, gateway, type LanguageModel } from "ai";
 import { ollama } from "ollama-ai-provider";
 import { isTestEnvironment } from "../constants";
 import { titleModel, isLocalModel } from "./models";
@@ -20,24 +20,29 @@ function getOllamaModel(modelId: string) {
   return ollama(ollamaModelName);
 }
 
-export function getLanguageModel(modelId: string) {
+/** Ollama provider still types models as v1; runtime works with the current AI SDK. */
+function ollamaAsLanguageModel(modelId: string): LanguageModel {
+  return getOllamaModel(modelId) as unknown as LanguageModel;
+}
+
+export function getLanguageModel(modelId: string): LanguageModel {
   if (isTestEnvironment && myProvider) {
-    return myProvider.languageModel(modelId);
+    return myProvider.languageModel(modelId) as LanguageModel;
   }
 
   if (isLocalModel(modelId)) {
-    return getOllamaModel(modelId);
+    return ollamaAsLanguageModel(modelId);
   }
 
-  return gateway.languageModel(modelId);
+  return gateway.languageModel(modelId) as LanguageModel;
 }
 
-export function getTitleModel() {
+export function getTitleModel(): LanguageModel {
   if (isTestEnvironment && myProvider) {
-    return myProvider.languageModel("title-model");
+    return myProvider.languageModel("title-model") as LanguageModel;
   }
   if (isLocalModel(titleModel.id)) {
-    return getOllamaModel(titleModel.id);
+    return ollamaAsLanguageModel(titleModel.id);
   }
-  return gateway.languageModel(titleModel.id);
+  return gateway.languageModel(titleModel.id) as LanguageModel;
 }
