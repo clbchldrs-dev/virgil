@@ -946,7 +946,13 @@ export async function searchMemories({
     if (!sanitized) return [];
 
     const tsquery = sanitized.split(/\s+/).filter(Boolean).join(" & ");
-    const kindClause = kind ? `AND "kind" = '${kind}'` : "";
+
+    const params: unknown[] = [userId, tsquery, limit];
+    let kindClause = "";
+    if (kind) {
+      params.push(kind);
+      kindClause = `AND "kind" = $${params.length}`;
+    }
 
     const result = await client.unsafe<Memory[]>(
       `SELECT "id", "userId", "chatId", "kind", "content", "metadata", "createdAt", "updatedAt"
@@ -955,7 +961,7 @@ export async function searchMemories({
          AND "tsv" @@ to_tsquery('english', $2)
        ORDER BY ts_rank("tsv", to_tsquery('english', $2)) DESC
        LIMIT $3`,
-      [userId, tsquery, limit]
+      params
     );
     return result;
   } catch (_error) {
