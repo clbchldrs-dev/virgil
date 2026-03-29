@@ -1,13 +1,13 @@
 import { config } from "dotenv";
-import { drizzle } from "drizzle-orm/postgres-js";
 import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
-  user,
   businessProfile,
-  priorityNote,
   escalationRecord,
   intakeSubmission,
+  priorityNote,
+  user,
 } from "./schema";
 
 config({ path: ".env.local" });

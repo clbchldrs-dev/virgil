@@ -1,10 +1,13 @@
 {
-  "name": "chatbot",
+  "name": "virgil",
   "version": "3.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
+    "dev:check": "tsx scripts/check-local-env.ts",
+    "dev:check:strict": "tsx scripts/check-local-env.ts --strict",
     "build": "tsx lib/db/migrate && next build",
+    "build:docker": "next build",
     "start": "next start",
     "check": "ultracite check",
     "fix": "ultracite fix",
@@ -16,7 +19,12 @@
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
     "db:seed": "npx tsx lib/db/seed.ts",
-    "test": "export PLAYWRIGHT=True && pnpm exec playwright test"
+    "test": "export PLAYWRIGHT=True && pnpm exec playwright test",
+    "ollama:smoke": "pnpm exec tsx scripts/ollama-smoke.ts",
+    "warmup:ollama": "pnpm exec tsx scripts/warmup-ollama-cli.ts",
+    "launch:desktop": "bash packaging/launch-virgil.sh",
+    "virgil:preflight": "tsx scripts/virgil-preflight.ts",
+    "virgil:preflight:strict": "tsx scripts/virgil-preflight.ts --strict"
   },
   "dependencies": {
     "@ai-sdk/provider": "^3.0.3",
@@ -38,6 +46,7 @@
     "@vercel/functions": "^2.0.0",
     "@vercel/otel": "^1.12.0",
     "ai": "6.0.116",
+    "ai-sdk-ollama": "^3.8.2",
     "bcrypt-ts": "^5.0.2",
     "botid": "^1.5.11",
     "class-variance-authority": "^0.7.1",
@@ -58,7 +67,6 @@
     "next": "16.2.0",
     "next-auth": "5.0.0-beta.25",
     "next-themes": "^0.3.0",
-    "ollama-ai-provider": "^1.2.0",
     "orderedmap": "^2.1.1",
     "papaparse": "^5.5.2",
     "postgres": "^3.4.4",

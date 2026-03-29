@@ -1,0 +1,18 @@
+# Optional local overrides (copy to `docker-compose.override.yml`, gitignored by convention).
+# Compose merges this file automatically when present.
+#
+# You cannot use this file to remove the bundled `ollama` service from the default stack.
+# If Ollama must run on the host (e.g. GPU on Docker Desktop), use instead:
+#   docker compose -f docker-compose.host-ollama.yml up --build
+# See docker-compose.host-ollama.yml and docs/beta-lan-gaming-pc.md.
+#
+# --- Linux + NVIDIA: GPU for bundled `ollama` (example; requires nvidia-container-toolkit on host) ---
+# services:
+#   ollama:
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - driver: nvidia
+#               count: all
+#               capabilities: [gpu]

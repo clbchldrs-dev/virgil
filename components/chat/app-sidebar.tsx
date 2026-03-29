@@ -2,8 +2,10 @@
 
 import {
   MessageSquareIcon,
+  MoonIcon,
   PanelLeftIcon,
   PenSquareIcon,
+  Settings2Icon,
   TrashIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -74,7 +76,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 <SidebarMenuButton
                   asChild
                   className="size-8 !px-0 items-center justify-center group-data-[collapsible=icon]:group-hover/logo:opacity-0"
-                  tooltip="Chatbot"
+                  tooltip="Virgil"
                 >
                   <Link href="/" onClick={() => setOpenMobile(false)}>
                     <MessageSquareIcon className="size-4 text-sidebar-foreground/50" />
@@ -117,6 +119,36 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     <span className="font-medium">New chat</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                {user && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                      onClick={() => {
+                        setOpenMobile(false);
+                        router.push("/night-insights");
+                      }}
+                      tooltip="Night insights"
+                    >
+                      <MoonIcon className="size-4" />
+                      <span>Night insights</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {user && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                      onClick={() => {
+                        setOpenMobile(false);
+                        router.push("/preferences");
+                      }}
+                      tooltip="Preferences"
+                    >
+                      <Settings2Icon className="size-4" />
+                      <span>Preferences</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
                 {user && (
                   <SidebarMenuItem>
                     <SidebarMenuButton

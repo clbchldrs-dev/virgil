@@ -2,7 +2,8 @@ import { compare } from "bcrypt-ts";
 import NextAuth, { type DefaultSession } from "next-auth";
 import type { DefaultJWT } from "next-auth/jwt";
 import Credentials from "next-auth/providers/credentials";
-import { DUMMY_PASSWORD } from "@/lib/constants";
+import { getAuthSecretResolved } from "@/lib/auth-secret";
+import { DUMMY_PASSWORD, shouldUseSecureAuthCookie } from "@/lib/constants";
 import { createGuestUser, getUser } from "@/lib/db/queries";
 import { authConfig } from "./auth.config";
 
@@ -37,7 +38,8 @@ export const {
   signOut,
 } = NextAuth({
   ...authConfig,
-  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  secret: getAuthSecretResolved(),
+  useSecureCookies: shouldUseSecureAuthCookie(),
   providers: [
     Credentials({
       credentials: {

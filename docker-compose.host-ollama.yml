@@ -1,0 +1,64 @@
+# Alternate stack: Postgres + Redis + Virgil only. Ollama runs on the host (e.g. Docker Desktop + GPU).
+# Usage: docker compose -f docker-compose.host-ollama.yml up --build
+# Set OLLAMA_BASE_URL in .env.docker — typically http://host.docker.internal:11434 (macOS/Windows)
+# or http://172.17.0.1:11434 / host.docker.internal via extra_hosts on Linux.
+# Keep postgres/redis/virgil-app sections in sync with docker-compose.yml when changing the main file.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: chatbot
+      POSTGRES_PASSWORD: chatbot
+      POSTGRES_DB: chatbot
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chatbot -d chatbot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  virgil-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      POSTGRES_URL: postgresql://chatbot:chatbot@postgres:5432/chatbot
+      REDIS_URL: redis://redis:6379
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+    env_file:
+      - path: .env.docker
+        required: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  pgdata:

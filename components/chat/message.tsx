@@ -1,5 +1,6 @@
 "use client";
 import type { UseChatHelpers } from "@ai-sdk/react";
+import { isToolUIPart } from "ai";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { cn, sanitizeText } from "@/lib/utils";
@@ -298,6 +299,142 @@ const PurePreviewMessage = ({
             )}
           </ToolContent>
         </Tool>
+      );
+    }
+
+    if (
+      isToolUIPart(part) &&
+      type !== "tool-getWeather" &&
+      type !== "tool-createDocument" &&
+      type !== "tool-updateDocument" &&
+      type !== "tool-requestSuggestions"
+    ) {
+      const { toolCallId, state } = part;
+      const approvalId = part.approval?.id;
+      const isDenied =
+        state === "output-denied" ||
+        (state === "approval-responded" && part.approval?.approved === false);
+      const widthClass = "w-[min(100%,450px)]";
+
+      const header =
+        part.type === "dynamic-tool" ? (
+          <ToolHeader
+            key={`${toolCallId}-hdr`}
+            state={state}
+            toolName={part.toolName}
+            type="dynamic-tool"
+          />
+        ) : (
+          <ToolHeader
+            key={`${toolCallId}-hdr`}
+            state={state}
+            type={part.type}
+          />
+        );
+
+      if (state === "output-available" && part.output !== undefined) {
+        return (
+          <div className={widthClass} key={toolCallId}>
+            <Tool className="w-full" defaultOpen={true}>
+              {header}
+              <ToolContent>
+                <ToolOutput errorText={undefined} output={part.output} />
+              </ToolContent>
+            </Tool>
+          </div>
+        );
+      }
+
+      if (state === "output-error" && part.errorText) {
+        return (
+          <div className={widthClass} key={toolCallId}>
+            <Tool className="w-full" defaultOpen={true}>
+              {header}
+              <ToolContent>
+                <ToolOutput errorText={part.errorText} output={undefined} />
+              </ToolContent>
+            </Tool>
+          </div>
+        );
+      }
+
+      if (isDenied) {
+        return (
+          <div className={widthClass} key={toolCallId}>
+            <Tool className="w-full" defaultOpen={true}>
+              <ToolHeader
+                state="output-denied"
+                {...(part.type === "dynamic-tool"
+                  ? { type: "dynamic-tool" as const, toolName: part.toolName }
+                  : { type: part.type })}
+              />
+              <ToolContent>
+                <div className="px-4 py-3 text-muted-foreground text-sm">
+                  This tool action was denied.
+                </div>
+              </ToolContent>
+            </Tool>
+          </div>
+        );
+      }
+
+      if (state === "approval-responded") {
+        return (
+          <div className={widthClass} key={toolCallId}>
+            <Tool className="w-full" defaultOpen={true}>
+              {header}
+              <ToolContent>
+                {"input" in part && part.input !== undefined && (
+                  <ToolInput input={part.input} />
+                )}
+              </ToolContent>
+            </Tool>
+          </div>
+        );
+      }
+
+      return (
+        <div className={widthClass} key={toolCallId}>
+          <Tool className="w-full" defaultOpen={true}>
+            {header}
+            <ToolContent>
+              {(state === "input-available" ||
+                state === "input-streaming" ||
+                state === "approval-requested") &&
+                "input" in part &&
+                part.input !== undefined && <ToolInput input={part.input} />}
+              {state === "approval-requested" && approvalId && (
+                <div className="flex items-center justify-end gap-2 border-t px-4 py-3">
+                  <button
+                    className="rounded-md px-3 py-1.5 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground"
+                    onClick={() => {
+                      addToolApprovalResponse({
+                        id: approvalId,
+                        approved: false,
+                        reason: "User denied this tool action",
+                      });
+                    }}
+                    type="button"
+                  >
+                    Deny
+                  </button>
+                  <button
+                    className="rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-sm transition-colors hover:bg-primary/90"
+                    onClick={() => {
+                      addToolApprovalResponse({
+                        id: approvalId,
+                        approved: true,
+                      });
+                    }}
+                    type="button"
+                  >
+                    Allow
+                  </button>
+                </div>
+              )}
+            </ToolContent>
+          </Tool>
+        </div>
       );
     }
 

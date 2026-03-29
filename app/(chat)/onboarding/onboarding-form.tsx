@@ -1,13 +1,11 @@
 "use client";
 
-import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useActionState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -15,8 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import type { BusinessProfile } from "@/lib/db/schema";
-import { saveOnboarding, type OnboardingFormState } from "./actions";
+import { type OnboardingFormState, saveOnboarding } from "./actions";
 
 export function OnboardingForm({
   profile,
@@ -47,11 +46,11 @@ export function OnboardingForm({
         <div className="space-y-2">
           <Label htmlFor="businessName">Business name *</Label>
           <Input
+            defaultValue={profile?.businessName ?? ""}
             id="businessName"
             name="businessName"
-            required
-            defaultValue={profile?.businessName ?? ""}
             placeholder="Acme Plumbing"
+            required
           />
         </div>
 
@@ -59,18 +58,18 @@ export function OnboardingForm({
           <div className="space-y-2">
             <Label htmlFor="industry">Industry / vertical</Label>
             <Input
+              defaultValue={profile?.industry ?? ""}
               id="industry"
               name="industry"
-              defaultValue={profile?.industry ?? ""}
               placeholder="e.g. HVAC, Salon, Law"
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="hoursOfOperation">Hours of operation</Label>
             <Input
+              defaultValue={profile?.hoursOfOperation ?? ""}
               id="hoursOfOperation"
               name="hoursOfOperation"
-              defaultValue={profile?.hoursOfOperation ?? ""}
               placeholder="Mon-Fri 9am-5pm"
             />
           </div>
@@ -84,13 +83,13 @@ export function OnboardingForm({
             </span>
           </Label>
           <Input
-            id="services"
-            name="services"
             defaultValue={
               Array.isArray(profile?.services)
                 ? (profile.services as string[]).join(", ")
                 : ""
             }
+            id="services"
+            name="services"
             placeholder="Drain cleaning, Water heater install, Emergency repair"
           />
         </div>
@@ -99,11 +98,35 @@ export function OnboardingForm({
       <section className="space-y-4 rounded-xl border border-border/50 bg-card p-5">
         <h2 className="text-base font-medium">Assistant behavior</h2>
 
+        <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/30 p-4">
+          <input
+            className="mt-1 size-4 rounded border border-input accent-primary"
+            defaultChecked={profile?.businessModeEnabled !== false}
+            id="businessModeEnabled"
+            name="businessModeEnabled"
+            type="checkbox"
+            value="on"
+          />
+          <div className="space-y-1">
+            <Label
+              className="cursor-pointer font-medium leading-none"
+              htmlFor="businessModeEnabled"
+            >
+              Use business / front-desk mode
+            </Label>
+            <p className="text-muted-foreground text-sm">
+              When on, Virgil can use your profile, intake tools, and front-desk
+              prompts for customer-facing chats. Turn off to keep a personal
+              assistant only while retaining your saved business details.
+            </p>
+          </div>
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="tonePreference">Tone</Label>
           <Select
-            name="tonePreference"
             defaultValue={profile?.tonePreference ?? "professional"}
+            name="tonePreference"
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select tone" />
@@ -124,13 +147,13 @@ export function OnboardingForm({
             </span>
           </Label>
           <Input
-            id="neverPromise"
-            name="neverPromise"
             defaultValue={
               Array.isArray(profile?.neverPromise)
                 ? (profile.neverPromise as string[]).join(", ")
                 : ""
             }
+            id="neverPromise"
+            name="neverPromise"
             placeholder="Refunds, Exact pricing, Same-day service"
           />
         </div>
@@ -159,20 +182,20 @@ export function OnboardingForm({
           <div className="space-y-2">
             <Label htmlFor="escalationContactName">Contact name</Label>
             <Input
+              defaultValue={profile?.escalationContactName ?? ""}
               id="escalationContactName"
               name="escalationContactName"
-              defaultValue={profile?.escalationContactName ?? ""}
               placeholder="Jane Doe"
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="escalationContactEmail">Contact email</Label>
             <Input
+              defaultValue={profile?.escalationContactEmail ?? ""}
               id="escalationContactEmail"
               name="escalationContactEmail"
-              type="email"
-              defaultValue={profile?.escalationContactEmail ?? ""}
               placeholder="jane@acme.com"
+              type="email"
             />
           </div>
         </div>
@@ -180,16 +203,16 @@ export function OnboardingForm({
         <div className="space-y-2">
           <Label htmlFor="escalationRules">Escalation rules</Label>
           <Textarea
+            defaultValue={profile?.escalationRules ?? ""}
             id="escalationRules"
             name="escalationRules"
-            defaultValue={profile?.escalationRules ?? ""}
             placeholder="e.g. Escalate if customer mentions legal action. Always escalate billing disputes."
             rows={3}
           />
         </div>
       </section>
 
-      <Button type="submit" size="lg" className="w-full" disabled={isPending}>
+      <Button className="w-full" disabled={isPending} size="lg" type="submit">
         {isPending
           ? "Saving..."
           : profile

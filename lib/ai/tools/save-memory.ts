@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { saveMemoryRecord } from "@/lib/db/queries";
+import { chatOwnershipDenial } from "@/lib/ai/tool-policy";
+import { getChatById, saveMemoryRecord } from "@/lib/db/queries";
 
 export function saveMemory({
   userId,
@@ -28,7 +29,14 @@ export function saveMemory({
         .optional()
         .describe("Optional structured data (tags, related IDs, dates)"),
     }),
+    needsApproval: true,
     execute: async (input) => {
+      const chat = await getChatById({ id: chatId });
+      const denial = chatOwnershipDenial(chat, userId);
+      if (denial) {
+        return { success: false as const, message: denial };
+      }
+
       const record = await saveMemoryRecord({
         userId,
         chatId,

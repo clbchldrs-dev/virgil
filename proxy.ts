@@ -1,6 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { guestRegex, isDevelopmentEnvironment } from "./lib/constants";
+import {
+  AUTH_SECRET_SETUP_HINT,
+  getAuthSecretResolved,
+} from "./lib/auth-secret";
+import { guestRegex, shouldUseSecureAuthCookie } from "./lib/constants";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -13,10 +17,32 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  let secret: string;
+  try {
+    secret = getAuthSecretResolved();
+  } catch {
+    if (pathname.startsWith("/api")) {
+      return NextResponse.json(
+        {
+          error: "Missing AUTH_SECRET",
+          hint: AUTH_SECRET_SETUP_HINT,
+        },
+        { status: 500 }
+      );
+    }
+    return new NextResponse(
+      `Missing AUTH_SECRET\n\n${AUTH_SECRET_SETUP_HINT}`,
+      {
+        status: 500,
+        headers: { "content-type": "text/plain; charset=utf-8" },
+      }
+    );
+  }
+
   const token = await getToken({
     req: request,
-    secret: process.env.AUTH_SECRET,
-    secureCookie: !isDevelopmentEnvironment,
+    secret,
+    secureCookie: shouldUseSecureAuthCookie(),
   });
 
   const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";

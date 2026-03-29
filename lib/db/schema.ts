@@ -2,6 +2,7 @@ import type { InferSelectModel } from "drizzle-orm";
 import {
   boolean,
   foreignKey,
+  integer,
   json,
   pgTable,
   primaryKey,
@@ -135,7 +136,7 @@ export const stream = pgTable(
 
 export type Stream = InferSelectModel<typeof stream>;
 
-// --- Front Desk Chatbot: business context tables ---
+// --- Virgil: business context tables ---
 
 export const businessProfile = pgTable("BusinessProfile", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
@@ -155,6 +156,8 @@ export const businessProfile = pgTable("BusinessProfile", {
   escalationContactName: text("escalationContactName"),
   escalationContactEmail: text("escalationContactEmail"),
   escalationRules: text("escalationRules"),
+  /** When false, Virgil stays in personal-assistant mode even if a profile exists. */
+  businessModeEnabled: boolean("businessModeEnabled").notNull().default(true),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
@@ -226,9 +229,29 @@ export const memory = pgTable("Memory", {
     .notNull()
     .default("note"),
   content: text("content").notNull(),
-  metadata: json("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  metadata: json("metadata")
+    .$type<Record<string, unknown>>()
+    .notNull()
+    .default({}),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
 
 export type Memory = InferSelectModel<typeof memory>;
+
+/** Observability row for scheduled night-review runs (one per worker invocation). */
+export const nightReviewRun = pgTable("NightReviewRun", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  windowKey: varchar("windowKey", { length: 32 }).notNull(),
+  runId: uuid("runId").notNull(),
+  modelId: text("modelId").notNull(),
+  outcome: varchar("outcome", { length: 32 }).notNull(),
+  durationMs: integer("durationMs").notNull(),
+  error: text("error"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type NightReviewRun = InferSelectModel<typeof nightReviewRun>;

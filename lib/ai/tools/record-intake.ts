@@ -16,9 +16,7 @@ export function recordIntake({
       customerName: z.string().optional().describe("Customer's full name"),
       customerEmail: z.string().email().optional().describe("Customer email"),
       customerPhone: z.string().optional().describe("Customer phone number"),
-      need: z
-        .string()
-        .describe("Brief description of what the customer needs"),
+      need: z.string().describe("Brief description of what the customer needs"),
       urgency: z
         .enum(["low", "medium", "high"])
         .default("medium")
@@ -27,11 +25,9 @@ export function recordIntake({
         .enum(["email", "phone", "text", "chat"])
         .optional()
         .describe("How the customer prefers to be contacted"),
-      notes: z
-        .string()
-        .optional()
-        .describe("Any additional context or notes"),
+      notes: z.string().optional().describe("Any additional context or notes"),
     }),
+    needsApproval: true,
     execute: async (input) => {
       const submission = await saveIntakeSubmission({
         businessProfileId,

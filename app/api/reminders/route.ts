@@ -3,9 +3,14 @@ import { Resend } from "resend";
 import { getUserById, saveMemoryRecord } from "@/lib/db/queries";
 
 function getReceiver() {
+  const currentSigningKey = process.env.QSTASH_CURRENT_SIGNING_KEY;
+  const nextSigningKey = process.env.QSTASH_NEXT_SIGNING_KEY;
+  if (!(currentSigningKey && nextSigningKey)) {
+    throw new Error("QStash signing keys not configured");
+  }
   return new Receiver({
-    currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
-    nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY!,
+    currentSigningKey,
+    nextSigningKey,
   });
 }
 
@@ -21,7 +26,9 @@ export async function POST(request: Request) {
     return new Response("Missing signature", { status: 401 });
   }
 
-  const isValid = await getReceiver().verify({ body, signature }).catch(() => false);
+  const isValid = await getReceiver()
+    .verify({ body, signature })
+    .catch(() => false);
   if (!isValid) {
     return new Response("Invalid signature", { status: 401 });
   }

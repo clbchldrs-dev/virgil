@@ -7,9 +7,12 @@ import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://chat.vercel.ai"),
-  title: "Next.js Chatbot Template",
-  description: "Next.js chatbot template using the AI SDK.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  ),
+  title: "Virgil",
+  description:
+    "Virgil is a local-first personal AI assistant optimized for lightweight models, with optional business mode when you need it.",
 };
 
 export const viewport = {

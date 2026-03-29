@@ -1,9 +1,15 @@
-import { tool } from "ai";
 import { Client } from "@upstash/qstash";
+import { tool } from "ai";
 import { z } from "zod";
+import { chatOwnershipDenial } from "@/lib/ai/tool-policy";
+import { getChatById } from "@/lib/db/queries";
 
 function getQStash() {
-  return new Client({ token: process.env.QSTASH_TOKEN! });
+  const token = process.env.QSTASH_TOKEN;
+  if (!token) {
+    throw new Error("QSTASH_TOKEN is not set");
+  }
+  return new Client({ token });
 }
 
 function getBaseUrl(): string {
@@ -35,7 +41,14 @@ export function setReminder({
           "ISO 8601 timestamp for when to deliver the reminder (e.g. '2026-04-01T09:00:00Z')"
         ),
     }),
+    needsApproval: true,
     execute: async (input) => {
+      const chat = await getChatById({ id: chatId });
+      const denial = chatOwnershipDenial(chat, userId);
+      if (denial) {
+        return { success: false as const, message: denial };
+      }
+
       const deliverTime = new Date(input.deliverAt);
       const now = new Date();
       if (deliverTime <= now) {

@@ -8,6 +8,7 @@ import {
   BrainIcon,
   EyeIcon,
   LockIcon,
+  MoreHorizontalIcon,
   WrenchIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -52,6 +53,14 @@ import {
   PromptInputTools,
 } from "../ai-elements/prompt-input";
 import { Button } from "../ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import { PaperclipIcon, StopIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
 import {
@@ -86,6 +95,8 @@ function PureMultimodalInput({
   editingMessage,
   onCancelEdit,
   isLoading,
+  showThinking,
+  setShowThinking,
 }: {
   chatId: string;
   input: string;
@@ -106,6 +117,8 @@ function PureMultimodalInput({
   editingMessage?: ChatMessage | null;
   onCancelEdit?: () => void;
   isLoading?: boolean;
+  showThinking: boolean;
+  setShowThinking: Dispatch<SetStateAction<boolean>>;
 }) {
   const router = useRouter();
   const { setTheme, resolvedTheme } = useTheme();
@@ -419,7 +432,7 @@ function PureMultimodalInput({
       </div>
 
       <PromptInput
-        className="[&>div]:rounded-2xl [&>div]:border [&>div]:border-border/30 [&>div]:bg-card/70 [&>div]:shadow-[var(--shadow-composer)] [&>div]:transition-shadow [&>div]:duration-300 [&>div]:focus-within:shadow-[var(--shadow-composer-focus)]"
+        className="pixel-chat-composer [&>div]:rounded-2xl [&>div]:border [&>div]:border-border/30 [&>div]:bg-card/70 [&>div]:shadow-[var(--shadow-composer)] [&>div]:transition-shadow [&>div]:duration-300 [&>div]:focus-within:shadow-[var(--shadow-composer-focus)]"
         onSubmit={() => {
           if (input.startsWith("/")) {
             const query = input.slice(1).trim();
@@ -473,7 +486,7 @@ function PureMultimodalInput({
           </div>
         )}
         <PromptInputTextarea
-          className="min-h-24 text-[13px] leading-relaxed px-4 pt-3.5 pb-1.5 placeholder:text-muted-foreground/35"
+          className="pixel-chat-textarea min-h-24 px-4 pt-3.5 pb-1.5 text-[18px] leading-[1.15] placeholder:text-muted-foreground/35"
           data-testid="multimodal-input"
           onChange={handleInput}
           onKeyDown={(e) => {
@@ -526,6 +539,36 @@ function PureMultimodalInput({
               onModelChange={onModelChange}
               selectedModelId={selectedModelId}
             />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-label="Chat options"
+                  className="h-7 w-7 rounded-lg border border-border/40 p-1 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                  type="button"
+                  variant="ghost"
+                >
+                  <MoreHorizontalIcon className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-56">
+                <DropdownMenuLabel className="font-normal text-muted-foreground text-xs">
+                  Generation
+                </DropdownMenuLabel>
+                <DropdownMenuCheckboxItem
+                  checked={showThinking}
+                  onCheckedChange={(checked) => {
+                    setShowThinking(checked === true);
+                  }}
+                >
+                  Show model thinking
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1.5 text-[11px] text-muted-foreground leading-snug">
+                  Streams reasoning when the provider supports it (gateway
+                  reasoning models, or Ollama with thinking enabled).
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </PromptInputTools>
 
           {status === "submitted" ? (
@@ -533,7 +576,7 @@ function PureMultimodalInput({
           ) : (
             <PromptInputSubmit
               className={cn(
-                "h-7 w-7 rounded-xl transition-all duration-200",
+                "pixel-chat-submit h-7 w-7 rounded-xl transition-all duration-200",
                 input.trim()
                   ? "bg-foreground text-background hover:opacity-85 active:scale-95"
                   : "bg-muted text-muted-foreground/25 cursor-not-allowed"
@@ -568,6 +611,9 @@ export const MultimodalInput = memo(
       return false;
     }
     if (prevProps.selectedModelId !== nextProps.selectedModelId) {
+      return false;
+    }
+    if (prevProps.showThinking !== nextProps.showThinking) {
       return false;
     }
     if (prevProps.editingMessage !== nextProps.editingMessage) {

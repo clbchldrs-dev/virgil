@@ -1,13 +1,22 @@
+import { VT323 } from "next/font/google";
 import { cookies } from "next/headers";
 import Script from "next/script";
 import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { AppSidebar } from "@/components/chat/app-sidebar";
 import { DataStreamProvider } from "@/components/chat/data-stream-provider";
+import { ModelMetricsProvider } from "@/components/chat/model-metrics-provider";
 import { ChatShell } from "@/components/chat/shell";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ActiveChatProvider } from "@/hooks/use-active-chat";
 import { auth } from "../(auth)/auth";
+
+const pixelFont = VT323({
+  subsets: ["latin"],
+  display: "swap",
+  weight: "400",
+  variable: "--font-pixel",
+});
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,9 +26,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         strategy="lazyOnload"
       />
       <DataStreamProvider>
-        <Suspense fallback={<div className="flex h-dvh bg-sidebar" />}>
-          <SidebarShell>{children}</SidebarShell>
-        </Suspense>
+        <ModelMetricsProvider>
+          <Suspense fallback={<div className="flex h-dvh bg-sidebar" />}>
+            <SidebarShell>{children}</SidebarShell>
+          </Suspense>
+        </ModelMetricsProvider>
       </DataStreamProvider>
     </>
   );
@@ -32,7 +43,7 @@ async function SidebarShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider defaultOpen={!isCollapsed}>
       <AppSidebar user={session?.user} />
-      <SidebarInset>
+      <SidebarInset className={pixelFont.variable}>
         <Toaster
           position="top-center"
           theme="system"

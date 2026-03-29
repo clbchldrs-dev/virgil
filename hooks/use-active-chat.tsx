@@ -17,14 +17,15 @@ import {
 } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
+import { useLocalStorage } from "usehooks-ts";
 import { useDataStream } from "@/components/chat/data-stream-provider";
 import { getChatHistoryPaginationKey } from "@/components/chat/sidebar-history";
 import { toast } from "@/components/chat/toast";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
+import { describeChatError } from "@/lib/chat-error-display";
 import type { Vote } from "@/lib/db/schema";
-import { ChatbotError } from "@/lib/errors";
 import type { ChatMessage } from "@/lib/types";
 import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
 
@@ -47,6 +48,10 @@ type ActiveChatContextValue = {
   setCurrentModelId: (id: string) => void;
   showCreditCardAlert: boolean;
   setShowCreditCardAlert: Dispatch<SetStateAction<boolean>>;
+  showThinking: boolean;
+  setShowThinking: Dispatch<SetStateAction<boolean>>;
+  chatError: Error | undefined;
+  clearChatError: () => void;
 };
 
 const ActiveChatContext = createContext<ActiveChatContextValue | null>(null);
@@ -81,6 +86,14 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
 
   const [input, setInput] = useState("");
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);
+  const [showThinking, setShowThinking] = useLocalStorage(
+    "chat-show-thinking",
+    false
+  );
+  const showThinkingRef = useRef(showThinking);
+  useEffect(() => {
+    showThinkingRef.current = showThinking;
+  }, [showThinking]);
 
   const { data: chatData, isLoading } = useSWR(
     isNewChat
@@ -106,6 +119,8 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     regenerate,
     resumeStream,
     addToolApprovalResponse,
+    error: chatError,
+    clearError: clearChatError,
   } = useChat<ChatMessage>({
     id: chatId,
     messages: initialMessages,
@@ -146,6 +161,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
               : { message: lastMessage }),
             selectedChatModel: currentModelIdRef.current,
             selectedVisibilityType: visibility,
+            showThinking: showThinkingRef.current,
             ...request.body,
           },
         };
@@ -160,16 +176,18 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     onError: (error) => {
       if (error.message?.includes("AI Gateway requires a valid credit card")) {
         setShowCreditCardAlert(true);
-      } else if (error instanceof ChatbotError) {
-        toast({ type: "error", description: error.message });
       } else {
-        toast({
-          type: "error",
-          description: error.message || "Oops, an error occurred!",
-        });
+        const description = describeChatError(error);
+        toast({ type: "error", description });
       }
     },
   });
+
+  useEffect(() => {
+    if (status === "submitted") {
+      clearChatError();
+    }
+  }, [status, clearChatError]);
 
   const loadedChatIds = useRef(new Set<string>());
 
@@ -264,6 +282,10 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       setCurrentModelId,
       showCreditCardAlert,
       setShowCreditCardAlert,
+      showThinking,
+      setShowThinking,
+      chatError,
+      clearChatError,
     }),
     [
       chatId,
@@ -282,6 +304,10 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       votes,
       currentModelId,
       showCreditCardAlert,
+      showThinking,
+      setShowThinking,
+      chatError,
+      clearChatError,
     ]
   );
 

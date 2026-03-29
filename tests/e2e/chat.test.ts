@@ -24,6 +24,14 @@ test.describe("Chat Page", () => {
     await expect(suggestions).toBeVisible();
   });
 
+  test("empty chat shows exactly three suggested actions", async ({ page }) => {
+    await page.goto("/");
+    const suggestionButtons = page.locator(
+      "[data-testid='suggested-actions'] button"
+    );
+    await expect(suggestionButtons).toHaveCount(3);
+  });
+
   test("can stop generation with stop button", async ({ page }) => {
     await page.goto("/");
 

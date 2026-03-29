@@ -6,7 +6,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { formatISO } from 'date-fns';
 import { twMerge } from 'tailwind-merge';
 import type { DBMessage, Document } from '@/lib/db/schema';
-import { ChatbotError, type ErrorCode } from './errors';
+import { ChatbotError, chatbotErrorFromApiJson } from './errors';
 import type { ChatMessage, ChatTools, CustomUIDataTypes } from './types';
 
 export function cn(...inputs: ClassValue[]) {
@@ -17,8 +17,12 @@ export const fetcher = async (url: string) => {
   const response = await fetch(url);
 
   if (!response.ok) {
-    const { code, cause } = await response.json();
-    throw new ChatbotError(code as ErrorCode, cause);
+    const body = (await response.json()) as {
+      code?: string;
+      cause?: string;
+      message?: string;
+    };
+    throw chatbotErrorFromApiJson(body);
   }
 
   return response.json();
@@ -32,8 +36,12 @@ export async function fetchWithErrorHandlers(
     const response = await fetch(input, init);
 
     if (!response.ok) {
-      const { code, cause } = await response.json();
-      throw new ChatbotError(code as ErrorCode, cause);
+      const body = (await response.json()) as {
+        code?: string;
+        cause?: string;
+        message?: string;
+      };
+      throw chatbotErrorFromApiJson(body);
     }
 
     return response;

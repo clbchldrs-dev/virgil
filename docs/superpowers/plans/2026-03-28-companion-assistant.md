@@ -837,25 +837,25 @@ git commit -m "feat: wire dual-mode routing — companion for owner, front desk 
 
 **Files:**
 - Modify: `.env.local`
-- Modify: `SETUP.md`
-- Modify: `DEPLOY.md`
+- Modify: `AGENTS.md` (Setup checklist / Deployment)
+- Modify: thin `SETUP.md` / `DEPLOY.md` link hubs if discoverability text changes
 
 - [ ] **Step 1: Update .env.local with all new variables**
 
 Add sections for QStash and Resend (below the existing AI Gateway section).
 
-- [ ] **Step 2: Update SETUP.md with new credential steps**
+- [ ] **Step 2: Update AGENTS.md Setup checklist with new credential steps**
 
 Add sections 1.6 (QStash), 1.7 (Resend), and 1.8 (CRON_SECRET).
 
-- [ ] **Step 3: Update DEPLOY.md env var table**
+- [ ] **Step 3: Update AGENTS.md Deployment env var table**
 
 Add the four new env vars to the table.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add .env.local SETUP.md DEPLOY.md
+git add .env.local AGENTS.md SETUP.md DEPLOY.md
 git commit -m "docs: add QStash, Resend, and CRON_SECRET setup instructions"
 ```
 
@@ -879,3 +879,9 @@ Phase 3 (sequential, after Phase 2):
   Task 10 (chat route wiring)
   Task 11 (docs update)
 ```
+
+---
+
+## Future / product backlog (outside this plan)
+
+- **OpenClaw & community ideas (E6 in `AGENTS.md`):** Explore how to collect feature and workflow ideas from people using [OpenClaw](https://github.com/openclaw/openclaw) (and similar channels), then synthesize the most helpful or agentic patterns into Virgil’s roadmap — privacy, consent, and product fit TBD.

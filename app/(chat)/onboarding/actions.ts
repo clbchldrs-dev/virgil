@@ -3,8 +3,8 @@
 import { auth } from "@/app/(auth)/auth";
 import {
   getBusinessProfileByUserId,
-  upsertBusinessProfile,
   savePriorityNote,
+  upsertBusinessProfile,
 } from "@/lib/db/queries";
 
 export type OnboardingFormState = {
@@ -48,6 +48,8 @@ export async function saveOnboarding(
       | "professional"
       | "casual") ?? "professional";
 
+  const businessModeEnabled = formData.get("businessModeEnabled") === "on";
+
   try {
     const profile = await upsertBusinessProfile({
       userId: session.user.id,
@@ -59,6 +61,7 @@ export async function saveOnboarding(
         services,
         tonePreference,
         neverPromise,
+        businessModeEnabled,
         escalationContactName:
           (formData.get("escalationContactName") as string)?.trim() || null,
         escalationContactEmail:
@@ -84,6 +87,8 @@ export async function saveOnboarding(
 
 export async function getExistingProfile() {
   const session = await auth();
-  if (!session?.user?.id) return null;
+  if (!session?.user?.id) {
+    return null;
+  }
   return getBusinessProfileByUserId({ userId: session.user.id });
 }

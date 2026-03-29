@@ -18,17 +18,16 @@ export function EscalationList({
 }) {
   const [escalations, setEscalations] = useState(initialEscalations);
 
-  async function updateStatus(
-    id: string,
-    status: "acknowledged" | "resolved"
-  ) {
+  async function updateStatus(id: string, status: "acknowledged" | "resolved") {
     try {
       const res = await fetch("/api/escalations", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status }),
       });
-      if (!res.ok) throw new Error("Failed to update");
+      if (!res.ok) {
+        throw new Error("Failed to update");
+      }
       setEscalations((prev) =>
         prev.map((e) =>
           e.id === id
@@ -59,8 +58,8 @@ export function EscalationList({
     <div className="space-y-3">
       {escalations.map((e) => (
         <div
-          key={e.id}
           className="rounded-xl border border-border/50 bg-card p-4 space-y-3"
+          key={e.id}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-1 min-w-0">
@@ -83,17 +82,17 @@ export function EscalationList({
             <div className="flex gap-2">
               {e.status === "pending" && (
                 <Button
-                  variant="outline"
-                  size="sm"
                   onClick={() => updateStatus(e.id, "acknowledged")}
+                  size="sm"
+                  variant="outline"
                 >
                   Acknowledge
                 </Button>
               )}
               <Button
-                variant="outline"
-                size="sm"
                 onClick={() => updateStatus(e.id, "resolved")}
+                size="sm"
+                variant="outline"
               >
                 Mark resolved
               </Button>

@@ -60,10 +60,15 @@ function PureMessages({
   }, [chatId, reset]);
 
   return (
-    <div className="relative flex-1 bg-background">
+    <div
+      className={cn(
+        "relative flex-1",
+        messages.length === 0 && !isLoading ? "bg-transparent" : "bg-background"
+      )}
+    >
       {messages.length === 0 && !isLoading && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-          <Greeting />
+          <Greeting chatId={chatId} />
         </div>
       )}
       <div

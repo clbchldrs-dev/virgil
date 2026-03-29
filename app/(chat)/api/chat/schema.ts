@@ -32,6 +32,8 @@ export const postRequestBodySchema = z.object({
   messages: z.array(toolApprovalMessageSchema).optional(),
   selectedChatModel: z.string(),
   selectedVisibilityType: z.enum(["public", "private"]),
+  /** When true, stream model reasoning/thinking when the provider supports it (gateway + Ollama `think`). */
+  showThinking: z.boolean().optional(),
 });
 
 export type PostRequestBody = z.infer<typeof postRequestBodySchema>;

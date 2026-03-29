@@ -1,5 +1,8 @@
 import { Resend } from "resend";
-import { getRecentMemories, getOwnerUsers } from "@/lib/db/queries";
+import {
+  getRecentMemories,
+  getUsersEligibleForCompanionBackgroundJobs,
+} from "@/lib/db/queries";
 
 function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
@@ -11,11 +14,13 @@ export async function GET(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const owners = await getOwnerUsers();
+  const owners = await getUsersEligibleForCompanionBackgroundJobs();
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   for (const owner of owners) {
-    if (owner.email.startsWith("guest-")) continue;
+    if (owner.email.startsWith("guest-")) {
+      continue;
+    }
 
     try {
       const memories = await getRecentMemories({
@@ -24,7 +29,9 @@ export async function GET(request: Request) {
         limit: 20,
       });
 
-      if (memories.length === 0) continue;
+      if (memories.length === 0) {
+        continue;
+      }
 
       const grouped = {
         goals: memories.filter((m) => m.kind === "goal"),
@@ -37,7 +44,7 @@ export async function GET(request: Request) {
 
       if (grouped.goals.length > 0) {
         sections.push(
-          "Goals:\n" + grouped.goals.map((m) => `  - ${m.content}`).join("\n")
+          `Goals:\n${grouped.goals.map((m) => `  - ${m.content}`).join("\n")}`
         );
       }
       if (grouped.opportunities.length > 0) {
@@ -48,7 +55,7 @@ export async function GET(request: Request) {
       }
       if (grouped.notes.length > 0) {
         sections.push(
-          "Notes:\n" + grouped.notes.map((m) => `  - ${m.content}`).join("\n")
+          `Notes:\n${grouped.notes.map((m) => `  - ${m.content}`).join("\n")}`
         );
       }
       if (grouped.facts.length > 0) {

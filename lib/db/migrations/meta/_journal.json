@@ -22,6 +22,20 @@
       "when": 1712000000000,
       "tag": "0002_memory_table",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1712100000000,
+      "tag": "0003_night_review_run",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1712200000000,
+      "tag": "0004_business_mode_enabled",
+      "breakpoints": true
     }
   ]
 }

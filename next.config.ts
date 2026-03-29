@@ -3,7 +3,11 @@ import type { NextConfig } from "next";
 
 const basePath = process.env.IS_DEMO === "1" ? "/demo" : "";
 
+/** Set `DOCKER_BUILD=1` when building the Docker image (smaller runtime via `output: "standalone"`). */
+const dockerBuild = process.env.DOCKER_BUILD === "1";
+
 const nextConfig: NextConfig = {
+  ...(dockerBuild ? { output: "standalone" as const } : {}),
   ...(basePath
     ? {
         basePath,

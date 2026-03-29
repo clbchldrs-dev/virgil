@@ -1,140 +1,651 @@
-# AGENTS.md — Front Desk Companion Chatbot
+# AGENTS.md -- Virgil: Local-First Personal AI Assistant
 
-This file is for AI agents working on this codebase. Read it before touching anything.
+This file is for AI agents working on this codebase. Read it before making changes. For project intent, documentation map, architecture overview, and **new-chat handoff**, start with [docs/PROJECT.md](docs/PROJECT.md).
 
 ## What This Is
 
-A Next.js chatbot built on the Vercel AI template with two modes:
+Virgil is a personal AI assistant built to run well on lightweight local models.
 
-- **Owner mode** — personal companion that listens, remembers, sets reminders, and spots connections
-- **Visitor mode** — business front desk that collects intake, answers questions, and escalates to a human
+Default mode:
 
-The owner is the authenticated user who created a business profile. Everyone else is a visitor.
+- personal assistant
+- local-first
+- proactive but honest
+- cost-constrained by design
 
-## Project Structure
+Optional mode:
 
+- business/front-desk assistant
+- only when the user explicitly sets up a business profile
+- business tools should add zero default prompt/tool overhead unless that mode is enabled
+
+## North Star
+
+Make Virgil as helpful as possible on 3B/7B-class local models without turning it into:
+
+- a hosted-model-first product
+- a bloated prompt stack
+- a flattering or sycophantic assistant
+- an expensive recurring service
+
+## Core Product Priorities
+
+1. Local-model usefulness
+2. Cost minimization
+3. Responsiveness and reliability
+4. Honest, proactive assistance
+5. Optional online deployment without changing the local-first default
+
+## Personality Rules
+
+Virgil should be:
+
+- warm
+- direct
+- proactive
+- practical
+- honest about uncertainty and memory limits
+
+Virgil should not be:
+
+- sycophantic
+- flattering for its own sake
+- performatively agreeable
+- overconfident about facts it cannot verify
+
+If the user is wrong, unclear, or about to do something unhelpful, Virgil should push back briefly and respectfully.
+
+## Default Behavior
+
+- No business profile: personal assistant mode
+- Business profile present: business/front-desk mode becomes available and can shape prompts/tools
+- Local Ollama models are the default path
+- Hosted gateway models are optional and should stay secondary
+
+## Architecture Notes
+
+### Main route
+
+- `app/(chat)/api/chat/route.ts`
+- This is the primary integration point for:
+  - mode selection
+  - prompt selection
+  - tool selection
+  - local vs hosted model routing
+  - error handling
+
+### Prompt layers
+
+- `lib/ai/companion-prompt.ts` — full personal-assistant prompt
+- `lib/ai/slim-prompt.ts` — slim local prompt variants
+- `lib/ai/front-desk-prompt.ts` — optional business/front-desk prompt
+
+### Model/provider layers
+
+- `lib/ai/models.ts` — curated model roster, capabilities, presets, defaults
+- `lib/ai/providers.ts` — AI Gateway and Ollama wiring
+- `lib/ai/trim-context.ts` — local context budget discipline
+- `lib/ai/local-title.ts` — local title generation without extra LLM calls
+
+### Data and tools
+
+- `@/lib/db/queries` — barrel export for all DB access (implementations in `lib/db/query-modules/`)
+- `lib/db/schema.ts` — Drizzle schema
+- `lib/ai/tools/` — one tool per file
+- `lib/github/product-opportunity-issue.ts` — GitHub REST helper for gateway-only `submitProductOpportunity` ([docs/github-product-opportunity.md](docs/github-product-opportunity.md))
+
+## Local-First Rules
+
+When choosing between two approaches, prefer the one that:
+
+1. improves quality on local 3B/7B models
+2. reduces or stabilizes prompt/context size
+3. avoids extra inference calls
+4. keeps recurring cost flat
+5. preserves Virgil's voice and honesty
+
+If a change helps large hosted models but makes the local path worse, assume it is the wrong default until proven otherwise.
+
+## Docker And Online Use
+
+Virgil should run in two primary ways:
+
+1. `pnpm dev` for the normal local development loop
+2. `docker compose up --build` for the one-command local stack
+
+Docker details that matter:
+
+- Default Compose includes a bundled **`ollama`** service; **`OLLAMA_BASE_URL`** is `http://ollama:11434` inside **`virgil-app`**. For host Ollama, use [`docker-compose.host-ollama.yml`](docker-compose.host-ollama.yml) and set `OLLAMA_BASE_URL` (e.g. `http://host.docker.internal:11434` on Docker Desktop)
+- `AUTH_URL` must match the **browser origin** (e.g. `http://localhost:3000` on one machine, or `http://192.168.x.x:3000` on a LAN); pair with the same `NEXT_PUBLIC_APP_URL` and rebuild after changing the latter (see [Setup checklist § LAN](#access-from-another-device-on-your-lan-eg-gaming-pc-as-server))
+- `shouldUseSecureAuthCookie()` exists to prevent cookie-prefix mismatches on plain HTTP
+
+Online deployment should stay lightweight:
+
+- Vercel Hobby
+- Neon free tier
+- Upstash free tier
+- Resend free tier
+- AI Gateway optional
+
+## Coding Guidance
+
+- TypeScript strict mode
+- Keep changes focused; do not refactor unrelated areas
+- Prefer programmatic helpers over extra model calls when "good enough" is sufficient
+- Keep local prompts short and high-signal
+- Preserve existing abstractions unless they materially hurt the local-first goal
+
+## File Conventions
+
+- One tool per file in `lib/ai/tools/`
+- Database access stays in `lib/db/queries.ts`
+- Migrations remain raw SQL in `lib/db/migrations/`
+- New env vars must be documented in:
+  - `.env.example`
+  - **This file** — [Setup checklist](#setup-checklist) and [Deployment (production)](#deployment-production)
+  - Thin link hubs [SETUP.md](SETUP.md) and [DEPLOY.md](DEPLOY.md) (discoverability only; no duplicate tables)
+
+## Setup checklist
+
+Project root: this repository is typically cloned as **`virgil`** (the folder that contains `package.json`). Fill [`.env.local`](.env.local) first, then run migrations and the dev server.
+
+**Shell paths:** Any `cd …/virgil` or `/path/to/virgil` in this doc is **not** a real filesystem path—substitute **your** clone directory (for example `~/Documents/virgil` if you cloned into `Documents`). If `cd` says “no such file,” you used the placeholder literally or the repo lives elsewhere.
+
+## Graceful local start (before `.env.local` is complete)
+
+- **`pnpm dev`** can start with **no `AUTH_SECRET`**: the app uses a **dev-only insecure JWT secret** and prints a one-time warning (`lib/auth-secret.ts`). Set `AUTH_SECRET` as soon as you care about session security or before sharing your machine.
+- **Database and Redis** are still required for real login, chat persistence, and rate limits. Without `POSTGRES_URL` / `REDIS_URL`, pages that hit the DB will error — that is expected until Step 1–3 are done.
+- **Preflight (optional):** `pnpm dev:check` lists what is missing; `pnpm dev:check:strict` exits with an error if `POSTGRES_URL` or `REDIS_URL` is absent (useful in scripts).
+- **`next build` / production** always require a real **`AUTH_SECRET`** (or `NEXTAUTH_SECRET`); there is no fallback when `NODE_ENV=production`.
+
+---
+
+## Step 1 — Fill credentials in `.env.local`
+
+Do these in order. Paste each value on **one line** with no spaces around `=`.
+
+### 1.1 `AUTH_SECRET`
+
+1. Open Terminal.
+2. Run: `openssl rand -base64 32`
+3. Copy the entire output (one line).
+4. Paste after `AUTH_SECRET=` in `.env.local` (no quotes unless the secret contains special characters that break the file—usually no quotes needed).
+
+### 1.2 `POSTGRES_URL` (Neon)
+
+1. Go to [Neon Console](https://console.neon.tech) and sign up / log in.
+2. **Create project** (pick a region close to you).
+3. Open the project → find **Connection string** (or **Connect**).
+4. Copy the URI that starts with `postgres://` or `postgresql://`.
+5. If Neon shows a **pooled** connection for serverless, prefer that for Vercel/Next.js.
+6. Paste into `.env.local` after `POSTGRES_URL=`.
+
+### 1.3 `REDIS_URL` (Upstash)
+
+1. Go to [Upstash Console](https://console.upstash.com) and sign up / log in.
+2. **Create database** → Redis → pick a region.
+3. Open the database → **Connect** (or **REST API** tab area).
+4. Copy the **Redis URL** that starts with `rediss://` (TLS).  
+   **Important:** Use the standard Redis protocol URL, **not** the REST endpoint URL.
+5. Paste into `.env.local` after `REDIS_URL=`.
+
+### 1.4 `BLOB_READ_WRITE_TOKEN` (Vercel Blob)
+
+**Option A — you already have a Vercel project**
+
+1. [Vercel Dashboard](https://vercel.com/dashboard) → your team → **Storage** → **Blob**.
+2. Create a store if needed; open it and find **Environment Variables** / quickstart for `.env.local`.
+3. Copy `BLOB_READ_WRITE_TOKEN=...` value only into `.env.local`.
+
+**Option B — local-only first**
+
+1. Install CLI: `npm i -g vercel` then `vercel login` and `vercel link` from this repo.
+2. Add Blob from the dashboard for that project, then copy the token as above.
+
+### 1.5 `AI_GATEWAY_API_KEY` (local dev)
+
+1. Open [AI Gateway docs](https://vercel.com/docs/ai-gateway) and use the dashboard link to enable AI Gateway for your Vercel account if prompted.
+2. In Vercel → **AI** / **AI Gateway** → create or view an **API key** for local use.
+3. Paste into `.env.local` after `AI_GATEWAY_API_KEY=`.
+
+### 1.6 `QSTASH_TOKEN` + signing keys (Upstash QStash)
+
+1. In the [Upstash Console](https://console.upstash.com), go to **QStash** (same account as Redis).
+2. Open the **Details** tab.
+3. Copy **QSTASH_TOKEN**, **QSTASH_CURRENT_SIGNING_KEY**, and **QSTASH_NEXT_SIGNING_KEY**.
+4. Paste each into `.env.local`.
+
+### 1.7 `RESEND_API_KEY` (Resend)
+
+1. Go to [Resend](https://resend.com) and sign up / log in.
+2. Go to **API Keys** → **Create API Key** (full access or sending only).
+3. Copy the key and paste into `.env.local` after `RESEND_API_KEY=`.
+
+### 1.8 `CRON_SECRET`
+
+1. Run: `openssl rand -base64 32`
+2. Paste into `.env.local` after `CRON_SECRET=`.
+3. When deploying, set this same value in Vercel env vars so the cron endpoint is protected.
+
+### 1.9 Night review (optional)
+
+Scheduled **night review** uses a larger model to analyze the last 24 hours of chat (rollup + excerpts), guided by Markdown under [`workspace/night/`](workspace/night/) (`HEARTBEAT.md`, `SOUL.md`, `SKILLS.md`) — same *idea* as [OpenClaw heartbeat / workspace files](https://docs.openclaw.ai/gateway/heartbeat) and [NemoClaw workspace layout](https://docs.nvidia.com/nemoclaw/latest/workspace/workspace-files.html), implemented inside Virgil only.
+
+1. Set **`NIGHT_REVIEW_ENABLED=1`** in `.env.local` (or production env) when you want it to run.
+2. Set **`NIGHT_REVIEW_MODEL`** if you want something other than the default (`ollama/qwen2.5:7b-review` — see [`lib/ai/models.ts`](lib/ai/models.ts)). Local Ollama must be reachable when the worker runs if you use an `ollama/…` id.
+3. Optional: **`NIGHT_REVIEW_STAGGER_SECONDS`** (default `60`) spaces QStash deliveries per owner. **`NIGHT_REVIEW_TIMEZONE`** (default `UTC`) defines the calendar **`windowKey`** for idempotency (one completed run per user per local date).
+4. **Cron:** Vercel Cron calls **`GET /api/night-review/enqueue`** with `Authorization: Bearer $CRON_SECRET` (see [`vercel.json`](vercel.json), `0 3 * * *` UTC). Self-hosted: use the same request from `cron` or Task Scheduler against your public base URL.
+5. The enqueue endpoint publishes one **QStash** message per **eligible user** (non-guest, and either a **business profile** or **at least one chat** — same rule as the daily digest). Each message hits **`POST /api/night-review/run`** (signed). Findings are stored as **`Memory`** rows with `metadata.source = "night-review"`; completion rows use `metadata.phase = "complete"` for deduplication. Each run also appends a row to **`NightReviewRun`** (duration, outcome, model id).
+6. **Optional email** when there are findings: set **`NIGHT_REVIEW_EMAIL_ON_FINDINGS=1`** (requires `RESEND_API_KEY`). **In-app:** `GET /api/memories/night-review?days=14` (authenticated) returns recent night-review memories for a “Night insights” UI.
+7. **Tool egress:** HTTP from tools uses **`AGENT_FETCH_ALLOWLIST_HOSTS`** (comma-separated hostnames); default allows Open-Meteo hosts used by weather. Extend the list when adding new fetch-based tools.
+8. **Quota:** each eligible user costs **one QStash message per night** in addition to reminders. The free tier is **500 messages/day** on Upstash.
+
+### Step 1 sanity check
+
+- [ ] All nine variables have non-empty values (no trailing spaces).
+- [ ] `POSTGRES_URL` is a single connection string.
+- [ ] `REDIS_URL` starts with `rediss://` (typical for Upstash).
+- [ ] `QSTASH_TOKEN` starts with `ey` (it's a JWT).
+- [ ] `RESEND_API_KEY` starts with `re_`.
+
+---
+
+## Step 2 — Install dependencies (if you have not already)
+
+From a terminal, `cd` into **the repository root** (the directory that contains `package.json`). Example if your clone is `~/Documents/virgil`:
+
+```bash
+cd ~/Documents/virgil
+corepack enable && corepack prepare pnpm@10.32.1 --activate
+pnpm install
 ```
-app/
-  (auth)/              # Auth pages (login, register) — don't touch
-  (chat)/
-    api/chat/route.ts  # Main chat endpoint — dual-mode routing lives here
-    api/escalations/   # Escalation management API
-    api/reminders/     # QStash webhook for reminder delivery
-  api/
-    digest/            # Daily digest cron endpoint
-    reminders/         # (same as above — check actual path)
-lib/
-  ai/
-    companion-prompt.ts  # Owner-mode system prompt builder
-    front-desk-prompt.ts # Visitor-mode system prompt builder
-    prompts.ts           # Shared prompt utilities (artifacts, request hints)
-    models.ts            # Model roster and capabilities
-    providers.ts         # AI Gateway provider setup
-    tools/               # All tools — one file per tool
-      save-memory.ts     # Owner: save to Memory table
-      recall-memory.ts   # Owner: FTS search over memories
-      set-reminder.ts    # Owner: schedule via QStash
-      record-intake.ts   # Visitor: save intake submission
-      escalate-to-human.ts # Visitor: create escalation record
-      summarize-opportunity.ts # Visitor: log opportunity
-  db/
-    schema.ts          # Drizzle schema — all tables defined here
-    queries.ts         # All database queries — one file, grouped by domain
-    migrations/        # SQL migration files (sequential numbering)
+
+(Replace `~/Documents/virgil` with wherever you cloned the project.)
+
+---
+
+## Step 3 — Run database migrations
+
+With `POSTGRES_URL` set in `.env.local`:
+
+```bash
+pnpm db:migrate
 ```
 
-## Current Plan
+This applies `lib/db/migrations/` (including front-desk tables).
 
-See `docs/superpowers/plans/2026-03-28-companion-assistant.md` for the full implementation plan with task breakdown and dependency graph.
+### Optional — GitHub product opportunities (gateway models)
 
-See `docs/superpowers/specs/2026-03-28-companion-assistant-design.md` for the design spec.
+If you want Virgil (when using **hosted gateway models**, not local Ollama) to open **GitHub Issues** for product feedback, set `GITHUB_REPOSITORY` and `GITHUB_PRODUCT_OPPORTUNITY_TOKEN` as in [docs/github-product-opportunity.md](docs/github-product-opportunity.md). Add the same keys to `.env.docker` if you use Docker.
 
-## Conventions
+---
 
-### Code Style
+## Docker Compose (Postgres + Redis + Ollama + app in one command)
 
-- TypeScript strict mode. The project uses `ultracite` (Biome-based) for formatting/linting.
-- Run `pnpm check` before committing to catch lint issues.
-- Run `pnpm fix` to auto-fix formatting.
+Use this when you want a **single runnable stack** on your machine (no local Postgres/Redis/Ollama install). The default **[`docker-compose.yml`](docker-compose.yml)** runs **`postgres`**, **`redis`**, **`ollama`**, and **`virgil-app`**. The app container talks to Ollama at **`http://ollama:11434`** unless you override **`OLLAMA_BASE_URL`** in `.env.docker`. You still need a normal **`.env.docker`** for API keys the app expects at runtime (same values as `.env.local` for AI Gateway, Blob, etc.).
 
-### File Patterns
+**Desktop-style launcher (checks Docker, bootstraps `.env.docker`, starts Compose, opens the browser):** see **[packaging/README.md](packaging/README.md)** — `packaging/launch-virgil.sh` / `launch-virgil.ps1`, or `pnpm launch:desktop`. Background schedules and QStash limits for pure local Docker are documented there.
 
-- **One tool per file** in `lib/ai/tools/`. Each exports a single function (or factory function if it needs context like userId).
-- **All queries in one file** (`lib/db/queries.ts`), grouped by domain with comment headers.
-- **Migrations are raw SQL**, numbered sequentially: `0000_initial.sql`, `0001_front_desk_tables.sql`, `0002_memory_table.sql`, etc.
-- The Drizzle schema (`lib/db/schema.ts`) must stay in sync with migrations, but the `tsv` generated column is Postgres-only and NOT in the Drizzle schema.
+**Host Ollama instead of the bundled container** (e.g. GPU on Docker Desktop): use **`docker compose -f docker-compose.host-ollama.yml up --build`** and set **`OLLAMA_BASE_URL`** in `.env.docker` — see the header in [`docker-compose.host-ollama.yml`](docker-compose.host-ollama.yml).
 
-### Commits
+1. Install **Docker** with Compose v2 ([Docker Desktop](https://www.docker.com/products/docker-desktop/) on Windows/macOS, or [Docker Engine](https://docs.docker.com/engine/install/) on Linux) and keep the daemon running.
+2. From the project root:
+   ```bash
+   cp .env.docker.example .env.docker
+   ```
+3. Edit **`.env.docker`**: set **`AUTH_SECRET`** (`openssl rand -base64 32`), **`AI_GATEWAY_API_KEY`**, **`BLOB_READ_WRITE_TOKEN`**, and any other vars from Step 1 that your features need.
+4. **Pull Ollama models** into the bundled container (example tags; adjust to the models you use):
+   ```bash
+   docker compose up -d ollama postgres redis
+   docker compose exec ollama ollama pull qwen2.5:3b
+   docker compose exec ollama ollama pull qwen2.5:7b-instruct
+   ```
+5. Build and start the full stack:
+   ```bash
+   docker compose up --build
+   ```
+6. Open **http://localhost:3000** (use **`localhost`**, not `127.0.0.1`, so it matches `AUTH_URL` and session cookies apply). Migrations run automatically on container start; Postgres data lives in the **`pgdata`** Docker volume; Ollama weights live in **`ollama_data`**.
+7. **Optional — warm-load the default local model** (keeps weights resident): `pnpm warmup:ollama` with **`OLLAMA_BASE_URL=http://127.0.0.1:11434`** (Compose publishes Ollama on the host). Optional **`WARMUP_MODEL`** selects the id (defaults to `DEFAULT_CHAT_MODEL`). See [`scripts/warmup-ollama.sh`](scripts/warmup-ollama.sh).
 
-- Conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`
-- One logical change per commit
-- Build must pass before committing (`pnpm build`)
+### Access from another device on your LAN (e.g. gaming PC as server)
 
-### Environment Variables
+**Short runbook (checklist, firewall, verification):** [docs/beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md).
 
-All env vars are documented in `.env.local` (template with comments) and `DEPLOY.md` (table with descriptions). When adding a new env var:
-1. Add it to `.env.local` with a comment explaining where to get the value
-2. Add it to the table in `DEPLOY.md`
-3. Add setup instructions to `SETUP.md`
+The app listens on **all interfaces** inside the container (`HOSTNAME=0.0.0.0`); port **3000** is enough for the LAN if your firewall allows inbound TCP 3000 on the host.
 
-### Testing
+1. Pick the server machine’s **LAN IP** (e.g. `192.168.1.50`). Prefer a **DHCP reservation** or static address so the URL does not change.
+2. Set **`AUTH_URL`** and **`NEXT_PUBLIC_APP_URL`** to the **exact origin** clients will use — same host, port, and scheme (plain HTTP is fine on a trusted LAN):
+   - Add a **project-root `.env`** file (gitignored; Compose loads it automatically for variable substitution):
+     ```bash
+     AUTH_URL=http://192.168.1.50:3000
+     NEXT_PUBLIC_APP_URL=http://192.168.1.50:3000
+     ```
+     Or put the same keys in **`.env.docker`** and start with  
+     `docker compose --env-file .env.docker up --build`  
+     so Compose picks them up for substitution.
+3. **Rebuild** the app image after changing `NEXT_PUBLIC_APP_URL` (`docker compose up --build`), because Next inlines that value at build time.
+4. On the **server**, the **bundled** Ollama service is reachable from **`virgil-app`** at **`http://ollama:11434`** by default. If you use **`docker-compose.host-ollama.yml`** or host-installed Ollama, set **`OLLAMA_BASE_URL`** in `.env.docker` accordingly (e.g. `http://host.docker.internal:11434` on Docker Desktop). If Ollama runs on a **different** machine, set `OLLAMA_BASE_URL` to `http://<ollama-host>:11434` and open **11434** on that host if needed.
+5. Open **`http://<server-lan-ip>:3000`** from phones or other PCs — not `localhost` on those clients.
 
-- Playwright for E2E tests: `pnpm test`
-- Models are mockable via `lib/ai/models.mock.ts` — the provider setup switches to mocks when `PLAYWRIGHT=True`
-- For new tools: manual smoke test via `pnpm dev` is acceptable for v1; add Playwright coverage for critical paths
+**Bundled Ollama (default `docker-compose.yml`):** no host install; use `docker compose exec ollama ollama pull …` for weights.
 
-## Parallel Work Streams
+**Host Ollama:** set `OLLAMA_BASE_URL` (e.g. `http://host.docker.internal:11434`) and use [`docker-compose.host-ollama.yml`](docker-compose.host-ollama.yml) if you are not using the bundled `ollama` service.
 
-The implementation plan has three phases. Here's how to parallelize safely.
+**Not a single `.exe`:** Docker is the portable “run everywhere” packaging for this stack. True native `.app` / `.exe` bundles would still embed or assume Docker (or a large Node + DB installer) under the hood.
 
-### Phase 1: Foundation (two agents, zero overlap)
+---
 
-| Stream | Tasks | Files touched | Agent boundary |
-|--------|-------|---------------|----------------|
-| **A: Schema** | 1, 2, 3 | `lib/db/migrations/*`, `lib/db/schema.ts`, `lib/db/queries.ts` | Only touches `lib/db/` |
-| **B: Prompt** | 4 | `lib/ai/companion-prompt.ts` (new file) | Only creates one new file in `lib/ai/` |
+## Scheduled jobs on the host (no Vercel Cron)
 
-These have zero file overlap and can run simultaneously.
+[Vercel Cron](https://vercel.com/docs/cron-jobs) (see [`vercel.json`](vercel.json)) triggers two **GET** routes with **`Authorization: Bearer $CRON_SECRET`**:
 
-### Phase 2: Tools & Services (up to five agents, after Phase 1)
+| Job | Path | Schedule (UTC) |
+|-----|------|----------------|
+| Night review enqueue | `/api/night-review/enqueue` | 03:00 (`0 3 * * *`) |
+| Daily digest | `/api/digest` | 08:00 (`0 8 * * *`) |
 
-| Stream | Tasks | Files touched | Agent boundary |
-|--------|-------|---------------|----------------|
-| **C: saveMemory** | 5 | `lib/ai/tools/save-memory.ts` (new) | One new file |
-| **D: recallMemory** | 6 | `lib/ai/tools/recall-memory.ts` (new) | One new file |
-| **E: setReminder** | 7 | `lib/ai/tools/set-reminder.ts` (new), `package.json` | New file + dependency |
-| **F: Webhook** | 8 | `app/api/reminders/route.ts` (new), `package.json` | New file + dependency |
-| **G: Digest** | 9 | `app/api/digest/route.ts` (new), `vercel.json`, `.env.local` | New file + config |
+**Requirements**
 
-**Conflict risk:** E and F both add packages. If running in parallel, coordinate `package.json` / lockfile changes — one agent should install both dependencies (`@upstash/qstash` and `resend`) before the other starts, or handle the merge conflict.
+- The running app must have **`CRON_SECRET`** set to the same value you send in the header.
+- **`NEXT_PUBLIC_APP_URL`** must be the base URL the server uses for **absolute links** when **not** on Vercel (see `getBaseUrl()` in `app/api/night-review/enqueue/route.ts`). Use the same origin users type in the browser (e.g. `http://192.168.1.50:3000` on a LAN). Rebuild after changing `NEXT_PUBLIC_APP_URL`.
+- Use **UTC** for cron times to match `vercel.json`, or set `CRON_TZ=UTC` in crontab. Keep **time sync** on (`systemd-timesyncd` on Ubuntu).
 
-### Phase 3: Integration (one agent, sequential)
+**`crontab` example** (adjust `APP_URL`; keep the secret out of world-readable files in production):
 
-| Stream | Tasks | Files touched |
-|--------|-------|---------------|
-| **H: Wiring** | 10, 11 | `app/(chat)/api/chat/route.ts`, `.env.local`, `SETUP.md`, `DEPLOY.md` |
+```bash
+APP_URL='http://192.168.1.50:3000'
+CRON_SECRET='(same value as in .env.docker / process env)'
 
-This must run after all Phase 2 tasks complete. It touches the chat route (the main integration point) and documentation.
+0 3 * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/night-review/enqueue"
+0 8 * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/digest"
+```
+
+**`systemd` example** — `virgil-night-enqueue.service` + `virgil-night-enqueue.timer` (mirror for digest at 08:00 UTC). Put `CRON_SECRET=…` and `APP_URL=…` in `/etc/virgil/cron.env` (`chmod 600`).
+
+`/etc/systemd/system/virgil-night-enqueue.service`:
+
+```ini
+[Unit]
+Description=Virgil night-review enqueue (curl)
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/virgil/cron.env
+ExecStart=/usr/bin/curl -fsS -H "Authorization: Bearer ${CRON_SECRET}" "${APP_URL}/api/night-review/enqueue"
+```
+
+`/etc/systemd/system/virgil-night-enqueue.timer`:
+
+```ini
+[Unit]
+Description=Run Virgil night-review enqueue daily (UTC)
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Then: `systemctl daemon-reload && systemctl enable --now virgil-night-enqueue.timer`. Use `timedatectl` if the host is not UTC and you want calendar times interpreted in local time — prefer matching **`vercel.json`** with a UTC `OnCalendar` or set the timer unit `Timezone=UTC` (systemd 242+).
+
+**LAN IP / firewall / sleep:** [docs/beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md).
+
+---
+
+## Step 4 — Start the app locally
+
+```bash
+pnpm dev
+```
+
+Open the URL shown (usually `http://localhost:3000`). Register or use guest login, then visit `/onboarding` to configure the business profile.
+
+### Ollama (local Qwen in the model picker)
+
+Ollama must be running (`ollama serve` or the app menu service) and each model **pulled** before chat. Tags must match the base runtime tags exactly:
+
+```bash
+ollama pull qwen2.5:3b
+ollama pull qwen2.5:7b-instruct
+```
+
+The picker now includes four curated local entries:
+
+- `ollama/qwen2.5:3b`
+- `ollama/qwen2.5:3b-turbo`
+- `ollama/qwen2.5:7b-instruct`
+- `ollama/qwen2.5:7b-lean`
+
+The `-turbo` and `-lean` entries are presets only. They resolve to the same pulled Ollama tags above with tighter context/output settings.
+
+Check with `ollama list`. If you see **`model '…' not found`**, the weights for that runtime tag are missing. Run `ollama pull` for the base tag shown in the error.
+
+Remote Ollama (e.g. gaming PC on LAN): set `OLLAMA_BASE_URL` in `.env.local` to `http://<host>:11434` and ensure that machine has pulled the same tags.
+
+Smoke test the live Ollama path:
+
+```bash
+pnpm ollama:smoke
+```
+
+To test one preset only:
+
+```bash
+pnpm ollama:smoke ollama/qwen2.5:3b-turbo
+```
+
+Each pass prints **first-token latency** (`first_token_ms`), **total wall time** (`total_ms`), the **streaming window** (`stream_window_ms`, first token → finish), and **tokens/sec** using provider `output_tokens` when Ollama reports them, otherwise a **~estimated** count (`ceil(chars / 3.5)` matching the local trim heuristic). Compare `output_tokens_per_s_wall` (includes queue + TTFT) vs `output_tokens_per_s_stream` (generation-only).
+
+---
+
+## Step 5 — Optional demo data
+
+```bash
+pnpm db:seed
+```
+
+Creates a demo user and sample businesses (see `lib/db/seed.ts`). Use only on a dev database.
+
+---
+
+## Step 6 — Deploy to Vercel (when ready)
+
+1. Push the repo to GitHub (or use Vercel CLI `vercel link`).
+2. **Import** the repo in Vercel → set the same env vars in **Project → Settings → Environment Variables** (except you often **omit** `AI_GATEWAY_API_KEY` in production if OIDC is used—see [Deployment (production)](#deployment-production)).
+3. Deploy, then run `pnpm db:migrate` against production **or** run migrations from CI / local with `POSTGRES_URL` pointing at production (careful).
+
+More detail: [Deployment (production)](#deployment-production).
+
+## Deployment (production)
+
+Vercel and production env: provisioning, deploy commands, **environment variable summary**, quotas, and cost posture.
+
+### Prerequisites
+
+- A [Vercel](https://vercel.com) account (Hobby tier, free)
+- A [Neon](https://neon.tech) account (free tier, no credit card)
+- An [Upstash](https://upstash.com) account (free tier — Redis + QStash)
+- A [Resend](https://resend.com) account (free tier — 100 emails/day)
+- Node.js 20+ and pnpm 10+
+
+### 1. Provision storage
+
+### Neon Postgres (free tier — 512 MB, 190 compute-hours/mo)
+
+1. Create a project at https://console.neon.tech
+2. Copy the **connection string** (starts with `postgres://...`)
+3. Set it as `POSTGRES_URL` in `.env.local` and in Vercel env vars
+
+### Upstash Redis (free tier — 10K commands/day)
+
+1. Create a database at https://console.upstash.com
+2. Copy the **REST URL** (or standard Redis URL)
+3. Set it as `REDIS_URL`
+
+### Vercel Blob
+
+Provisioned automatically when you connect a Vercel project. The
+`BLOB_READ_WRITE_TOKEN` is generated in the Vercel dashboard under
+Storage > Blob.
+
+### 2. Generate AUTH_SECRET
+
+```bash
+openssl rand -base64 32
+```
+
+Set the output as `AUTH_SECRET` in both `.env.local` and Vercel env vars.
+
+### 3. AI Gateway
+
+- **On Vercel**: AI Gateway uses OIDC tokens automatically. You do NOT
+  need to set `AI_GATEWAY_API_KEY` in production — just enable AI Gateway
+  in your Vercel project settings and add a credit card for the free
+  credits.
+- **Local dev**: Set `AI_GATEWAY_API_KEY` in `.env.local`. Get it from
+  https://vercel.com/docs/ai-gateway.
+
+### 4. Deploy to Vercel
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Link your project
+vercel link
+
+# Pull production env vars into .env.local
+vercel env pull
+
+# Deploy
+vercel --prod
+```
+
+Or use the Vercel dashboard: Import > Git Repository.
+
+### 5. Run database migrations
+
+After deploying (or locally with `POSTGRES_URL` set):
+
+```bash
+pnpm db:migrate
+```
+
+This runs all Drizzle migrations in `lib/db/migrations/`.
+
+### 6. Environment variable summary
+
+| Variable              | Required locally | Required on Vercel | Notes                                    |
+| --------------------- | ---------------- | ------------------ | ---------------------------------------- |
+| `AUTH_SECRET`         | Yes              | Yes                | Session encryption                       |
+| `POSTGRES_URL`        | Yes              | Yes                | Neon connection string                   |
+| `REDIS_URL`           | Yes              | Yes                | Upstash Redis for rate limiting          |
+| `BLOB_READ_WRITE_TOKEN` | Yes           | Yes                | Vercel Blob for file uploads             |
+| `AI_GATEWAY_API_KEY`  | Yes              | **No** (OIDC)      | Only needed outside Vercel               |
+| `QSTASH_TOKEN`        | Yes              | Yes                | Upstash QStash for reminders             |
+| `QSTASH_CURRENT_SIGNING_KEY` | Yes       | Yes                | QStash webhook verification              |
+| `QSTASH_NEXT_SIGNING_KEY` | Yes          | Yes                | QStash webhook verification (rotation)   |
+| `RESEND_API_KEY`      | Yes              | Yes                | Resend for reminder and digest emails    |
+| `CRON_SECRET`         | Yes              | Yes                | Protects `/api/digest` and `/api/night-review/enqueue` cron endpoints |
+| `AUTH_URL`            | If not localhost | If not localhost   | Must match the **exact origin** users open (scheme + host + port). Required for NextAuth cookies on LAN or custom domain. See [Setup checklist § LAN](#access-from-another-device-on-your-lan-eg-gaming-pc-as-server) |
+| `NEXT_PUBLIC_APP_URL` | If not localhost | If not localhost   | Same origin as `AUTH_URL` for client; **build-time** for Next. Off Vercel, **required** for correct absolute URLs (e.g. night-review enqueue → QStash → `POST /api/night-review/run`). |
+| `VERCEL_URL`          | No               | Set by Vercel      | Used when present to derive base URL for enqueue; absent on self-hosted — then `NEXT_PUBLIC_APP_URL` applies. |
+| `OLLAMA_BASE_URL`     | If using Ollama  | If using Ollama    | Default `http://127.0.0.1:11434` local; Docker/LAN: see [Setup checklist](#setup-checklist) / [beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md). |
+| `VIRGIL_OPEN_URL`     | No               | No                 | Optional; launcher / smoke open URL (packaging). |
+| `WARMUP_MODEL`        | No               | No                 | Optional; `pnpm warmup:ollama` target id (defaults to `DEFAULT_CHAT_MODEL`). |
+| `NIGHT_REVIEW_ENABLED` | No            | No                 | Set to `1` to run scheduled night review |
+| `NIGHT_REVIEW_MODEL`  | No               | No                 | Default `ollama/qwen2.5:7b-review` (or any chat model id) |
+| `NIGHT_REVIEW_STAGGER_SECONDS` | No      | No                 | Delay between per-user QStash jobs (default `60`) |
+| `NIGHT_REVIEW_TIMEZONE` | No             | No                 | IANA tz for idempotency window key (default `UTC`) |
+| `NIGHT_REVIEW_EMAIL_ON_FINDINGS` | No   | No                 | Set to `1` to email when review finds material (needs Resend) |
+| `AGENT_FETCH_ALLOWLIST_HOSTS` | No      | No                 | Comma-separated hostnames for tool `fetch` (defaults include Open-Meteo) |
+| `GITHUB_REPOSITORY` | No | No | `owner/repo` — enables `submitProductOpportunity` (gateway models); see [docs/github-product-opportunity.md](docs/github-product-opportunity.md) |
+| `GITHUB_PRODUCT_OPPORTUNITY_TOKEN` or `GITHUB_TOKEN` | No | No | PAT with `issues: write` on that repo |
+| `GITHUB_PRODUCT_OPPORTUNITY_LABELS` | No | No | Optional comma-separated issue labels |
+
+### Hobby-to-Pro threshold
+
+Monitor these free-tier limits:
+
+- **Vercel Hobby**: 100 GB bandwidth/mo, 1,000 serverless fn-hours/mo
+- **Neon free**: 512 MB storage, 190 compute-hours/mo, 1 project
+- **Upstash Redis free**: 10K commands/day, 256 MB storage
+- **Upstash QStash free**: 500 messages/day
+- **Resend free**: 100 emails/day, 3,000/month
+- **Vercel Cron (Hobby)**: 2 cron jobs (digest + night-review enqueue — at the Hobby limit)
+- **Vercel Blob**: 1 GB on Hobby
+
+At ~3 active business-mode clients with moderate traffic, expect to need
+**Vercel Pro ($20/mo)** and possibly **Neon Launch ($15/mo)**. Factor
+~$7/client/mo infrastructure into pricing before LLM costs.
+
+### Self-hosted schedules (no Vercel Cron)
+
+Same flows as [Scheduled jobs on the host (no Vercel Cron)](#scheduled-jobs-on-the-host-no-vercel-cron) above. Cross-link anchor for docs that pointed at `DEPLOY.md`.
+
+### Minimal “live v1” posture (cost-first)
+
+- **Single Vercel Hobby project** + **Neon** + **Upstash** + **Resend** (all free tiers) is enough for **Virgil** in personal use or a tiny closed beta if traffic stays low and **AI Gateway** usage is capped (use **local Ollama** for bulk chat; gateway for occasional hosted models).
+- **Do not** add databases, queues, or SaaS until a free-tier limit is actually hit — see the table in §6 above.
+- Roadmap and phased goals: [docs/PROJECT.md](docs/PROJECT.md), [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md).
+
+## Testing Guidance
+
+Always verify behavior that could silently hurt the local path.
+
+High-value checks:
+
+- `node --test --import tsx tests/unit/local-context.test.ts`
+- `pnpm check`
+- `pnpm build`
+- `pnpm ollama:smoke`
+
+When changing local-model behavior, favor focused regression tests around:
+
+- prompt selection
+- model defaults
+- Ollama routing
+- trimmed-context behavior
+- local error messages
+
+## Key Decisions
+
+Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](docs/DECISIONS.md)**.
+
+- Personal first; business mode optional. Local models default; gateway optional.
+- Postgres FTS for recall (no casual vector DB). QStash for reminders. Docker Compose defaults include **bundled Ollama** + health-gated **`virgil-app`** (see `docker-compose.yml`); host-Ollama layout in `docker-compose.host-ollama.yml`.
+- Night review optional ([workspace/night/README.md](workspace/night/README.md)). HTTP auth cookies via `shouldUseSecureAuthCookie()` where applicable.
+- Voice: clarity over flattery; slim prompts stay minimal. Local **slim/compact** copy branches on `LocalModelClass` (`3b` vs `7b`, tag-inferred when unset) — see [docs/DECISIONS.md](docs/DECISIONS.md).
+- **Local context trim** (`lib/ai/trim-context.ts`): per-message overhead in budget estimates; long **user or assistant** turns capped before split/keep — see [docs/DECISIONS.md](docs/DECISIONS.md).
+- **Product opportunity** (`submitProductOpportunity`): gateway-only; GitHub errors sanitized for tool results — [docs/github-product-opportunity.md](docs/github-product-opportunity.md), [docs/DECISIONS.md](docs/DECISIONS.md).
+- **Night insights** (`/night-insights`): grouped by night-review run; accept/dismiss updates memory metadata only — [workspace/night/README.md](workspace/night/README.md), [lib/night-review/digest-display.ts](lib/night-review/digest-display.ts).
+- **Self-hosted / LAN:** cron parity with [`vercel.json`](vercel.json) and `AUTH_URL` / `NEXT_PUBLIC_APP_URL` — [Scheduled jobs on the host](#scheduled-jobs-on-the-host-no-vercel-cron), [Self-hosted schedules](#self-hosted-schedules-no-vercel-cron) (alias anchor).
+
+## Enhancement Review Process
+
+Backlog (E1–E7), review cadence, and acceptance criteria: [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md).
 
 ## Review Checklist
 
-When reviewing a PR or completed task, check these:
-
+- [ ] `pnpm check` passes
 - [ ] `pnpm build` passes
-- [ ] `pnpm check` passes (no lint errors)
-- [ ] No hardcoded secrets or env values
-- [ ] New env vars documented in `.env.local`, `SETUP.md`, and `DEPLOY.md`
-- [ ] New tools follow the one-file-per-tool pattern in `lib/ai/tools/`
-- [ ] New queries added to `lib/db/queries.ts` with proper error handling (ChatbotError)
-- [ ] Schema changes have a corresponding migration file
-- [ ] Commit messages follow conventional format
-- [ ] The change doesn't break the other mode (owner changes don't break visitor, and vice versa)
+- [ ] Focused tests cover the changed local-model behavior
+- [ ] No hardcoded secrets were introduced
+- [ ] New env vars are documented everywhere required
+- [ ] Business-mode changes do not leak into the default personal path
+- [ ] Prompt changes do not increase sycophancy or context bloat
+- [ ] Docker/local instructions still match real runtime behavior
 
-## Key Decisions (don't revisit without good reason)
+## Handoff Checklist
 
-1. **Single Memory table** with a `kind` column, not separate tables per type. YAGNI.
-2. **Postgres FTS** for recall, not a vector database. Free, fast enough at personal scale, zero new infra.
-3. **QStash for reminders**, not Vercel Cron. Cron is daily-only on Hobby; QStash allows arbitrary scheduling.
-4. **Resend for email**, not a custom SMTP setup. One API key, generous free tier, simple SDK.
-5. **Owner detection** via `businessProfile.userId === session.user.id`, not a separate role system.
-6. **Models routed through Vercel AI Gateway** to cheapest providers. The $5 monthly budget is token-only.
+Before ending a session, answer these:
+
+1. Did this improve the default personal-assistant experience?
+2. Did it help local 3B/7B models specifically?
+3. Did it increase recurring cost?
+4. Did it add unnecessary prompt or tool complexity?
+5. Did it preserve Virgil's honest, non-sycophantic voice?
+
+If any answer is unfavorable, call it out explicitly instead of hand-waving it away.

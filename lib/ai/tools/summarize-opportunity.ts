@@ -17,11 +17,9 @@ export const summarizeOpportunity = tool({
       .string()
       .optional()
       .describe("Rough estimate of the opportunity value if determinable"),
-    nextStep: z
-      .string()
-      .describe("Recommended next action for the business"),
+    nextStep: z.string().describe("Recommended next action for the business"),
   }),
-  execute: async (input) => {
+  execute: (input) => {
     return {
       type: "opportunity",
       ...input,

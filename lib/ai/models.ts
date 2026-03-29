@@ -1,4 +1,4 @@
-export const DEFAULT_CHAT_MODEL = "moonshotai/kimi-k2-0905";
+export const DEFAULT_CHAT_MODEL = "ollama/qwen2.5:3b-turbo";
 
 export const titleModel = {
   id: "mistral/mistral-small",
@@ -12,6 +12,45 @@ export function isLocalModel(modelId: string): boolean {
   return modelId.startsWith("ollama/");
 }
 
+/**
+ * Rough capability bucket for local Ollama weights (prompt copy only).
+ * Parsed from tag names like `qwen2.5:3b` / `llama3.1:8b` when not set explicitly on {@link ChatModel}.
+ */
+export type LocalModelClass = "3b" | "7b";
+
+/** Maps `…3b`, `…1.5b`, `…4b` → `3b`; larger parameter counts → `7b`. Unknown tags default to `3b` (conservative). */
+export function inferLocalModelClassFromOllamaTag(
+  tag: string
+): LocalModelClass {
+  const m = tag.match(/(\d+(?:\.\d+)?)\s*b\b/i);
+  if (!m) {
+    return "3b";
+  }
+  const n = Number.parseFloat(m[1]);
+  if (Number.isNaN(n)) {
+    return "3b";
+  }
+  return n <= 4 ? "3b" : "7b";
+}
+
+/**
+ * Effective class for slim/compact prompts: explicit {@link ChatModel.localModelClass}, else inferred from the Ollama tag.
+ * Non-local ids return `7b` (unused for gateway prompt selection).
+ */
+export function getResolvedLocalModelClass(
+  modelId: string,
+  config?: ChatModel | null
+): LocalModelClass {
+  if (config?.localModelClass) {
+    return config.localModelClass;
+  }
+  if (!isLocalModel(modelId)) {
+    return "7b";
+  }
+  const tag = modelId.replace(/^ollama\//, "");
+  return inferLocalModelClassFromOllamaTag(tag);
+}
+
 export type ModelCapabilities = {
   tools: boolean;
   vision: boolean;
@@ -23,8 +62,20 @@ export type ChatModel = {
   name: string;
   provider: string;
   description: string;
+  runtimeModelId?: string;
   gatewayOrder?: string[];
   reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high";
+  maxContextTokens?: number;
+  ollamaOptions?: {
+    num_ctx?: number;
+    num_predict?: number;
+    temperature?: number;
+    repeat_penalty?: number;
+  };
+  /** `compact` is a minimal local prompt for the weakest hardware; default local path uses `slim`. */
+  promptVariant?: "full" | "slim" | "compact";
+  /** When set, selects 3B- vs 7B-class slim/compact copy; otherwise inferred from the tag (e.g. `qwen2.5:3b` vs `…7b`). */
+  localModelClass?: LocalModelClass;
 };
 
 export const chatModels: ChatModel[] = [
@@ -33,6 +84,82 @@ export const chatModels: ChatModel[] = [
     name: "Qwen 2.5 3B (Local)",
     provider: "ollama",
     description: "Free local model — runs on your machine",
+    maxContextTokens: 1600,
+    ollamaOptions: {
+      num_ctx: 2048,
+      num_predict: 512,
+      temperature: 0.6,
+      repeat_penalty: 1.1,
+    },
+    promptVariant: "slim",
+    localModelClass: "3b",
+  },
+  {
+    id: "ollama/qwen2.5:3b-turbo",
+    runtimeModelId: "ollama/qwen2.5:3b",
+    name: "Qwen 2.5 3B Turbo (Local)",
+    provider: "ollama",
+    description:
+      "Aggressive speed preset for weaker laptops — same qwen2.5:3b weights, shorter context/output",
+    maxContextTokens: 1024,
+    ollamaOptions: {
+      num_ctx: 1280,
+      num_predict: 256,
+      temperature: 0.45,
+      repeat_penalty: 1.15,
+    },
+    promptVariant: "compact",
+    localModelClass: "3b",
+  },
+  {
+    id: "ollama/qwen2.5:7b-instruct",
+    name: "Qwen 2.5 7B (Local)",
+    provider: "ollama",
+    description:
+      "Heavier instruct-tuned Qwen — run: ollama pull qwen2.5:7b-instruct (LAN: set OLLAMA_BASE_URL)",
+    maxContextTokens: 3200,
+    ollamaOptions: {
+      num_ctx: 4096,
+      num_predict: 768,
+      temperature: 0.7,
+      repeat_penalty: 1.1,
+    },
+    promptVariant: "slim",
+    localModelClass: "7b",
+  },
+  {
+    id: "ollama/qwen2.5:7b-lean",
+    runtimeModelId: "ollama/qwen2.5:7b-instruct",
+    name: "Qwen 2.5 7B Lean (Local)",
+    provider: "ollama",
+    description:
+      "Aggressive keep-it-moving preset for 7B — same qwen2.5:7b-instruct weights with tighter limits",
+    maxContextTokens: 2048,
+    ollamaOptions: {
+      num_ctx: 2560,
+      num_predict: 384,
+      temperature: 0.55,
+      repeat_penalty: 1.15,
+    },
+    promptVariant: "slim",
+    localModelClass: "7b",
+  },
+  {
+    id: "ollama/qwen2.5:7b-review",
+    runtimeModelId: "ollama/qwen2.5:7b-instruct",
+    name: "Qwen 2.5 7B Night review (Local)",
+    provider: "ollama",
+    description:
+      "Preset for scheduled night-review job (structured JSON) — same weights as 7B instruct; set NIGHT_REVIEW_MODEL to this id or override in env",
+    maxContextTokens: 8192,
+    ollamaOptions: {
+      num_ctx: 8192,
+      num_predict: 2048,
+      temperature: 0.4,
+      repeat_penalty: 1.1,
+    },
+    promptVariant: "slim",
+    localModelClass: "7b",
   },
   {
     id: "deepseek/deepseek-v3.2",
@@ -95,58 +222,150 @@ export const chatModels: ChatModel[] = [
 ];
 
 const localModelCapabilities: Record<string, ModelCapabilities> = {
-  "ollama/qwen2.5:3b": { tools: true, vision: false, reasoning: false },
+  /** Chat uses a text-only stream for Ollama — small models rarely handle full tool schemas reliably. */
+  "ollama/qwen2.5:3b": { tools: false, vision: false, reasoning: false },
+  "ollama/qwen2.5:7b-instruct": {
+    tools: false,
+    vision: false,
+    reasoning: false,
+  },
 };
+
+const defaultLocalCapabilities: ModelCapabilities = {
+  tools: false,
+  vision: false,
+  reasoning: false,
+};
+
+export function getChatModel(modelId: string): ChatModel | undefined {
+  return chatModels.find((model) => model.id === modelId);
+}
+
+/** Curated roster entry, or a conservative synthetic profile for discovered `ollama/…` ids. */
+export function getChatModelWithLocalFallback(
+  modelId: string
+): ChatModel | undefined {
+  const known = getChatModel(modelId);
+  if (known) {
+    return known;
+  }
+  if (!isLocalModel(modelId)) {
+    return undefined;
+  }
+  const tag = modelId.replace(/^ollama\//, "");
+  if (!tag) {
+    return undefined;
+  }
+  return {
+    id: modelId,
+    name: `${tag} (local)`,
+    provider: "ollama",
+    description: "Local Ollama model",
+    maxContextTokens: 2048,
+    ollamaOptions: {
+      num_ctx: 2048,
+      num_predict: 512,
+      temperature: 0.6,
+      repeat_penalty: 1.1,
+    },
+    promptVariant: "slim",
+    localModelClass: inferLocalModelClassFromOllamaTag(tag),
+  };
+}
+
+export function resolveRuntimeModelId(modelId: string): string {
+  return getChatModel(modelId)?.runtimeModelId ?? modelId;
+}
+
+const gatewayCapabilitiesCache = new Map<
+  string,
+  { caps: ModelCapabilities; expiresAt: number }
+>();
+/** Aligns with previous per-endpoint fetch revalidate (24h). */
+const GATEWAY_CAPABILITIES_TTL_MS = 86_400_000;
+
+async function fetchGatewayCapabilities(
+  modelId: string
+): Promise<ModelCapabilities> {
+  const now = Date.now();
+  const hit = gatewayCapabilitiesCache.get(modelId);
+  if (hit && hit.expiresAt > now) {
+    return hit.caps;
+  }
+
+  const fallback: ModelCapabilities = {
+    tools: false,
+    vision: false,
+    reasoning: false,
+  };
+
+  try {
+    const res = await fetch(
+      `https://ai-gateway.vercel.sh/v1/models/${modelId}/endpoints`,
+      { next: { revalidate: 86_400 } }
+    );
+    if (!res.ok) {
+      gatewayCapabilitiesCache.set(modelId, {
+        caps: fallback,
+        expiresAt: now + GATEWAY_CAPABILITIES_TTL_MS,
+      });
+      return fallback;
+    }
+
+    const json = await res.json();
+    const endpoints = json.data?.endpoints ?? [];
+    const params = new Set(
+      endpoints.flatMap(
+        (e: { supported_parameters?: string[] }) => e.supported_parameters ?? []
+      )
+    );
+    const inputModalities = new Set(
+      json.data?.architecture?.input_modalities ?? []
+    );
+
+    const caps: ModelCapabilities = {
+      tools: params.has("tools"),
+      vision: inputModalities.has("image"),
+      reasoning: params.has("reasoning"),
+    };
+    gatewayCapabilitiesCache.set(modelId, {
+      caps,
+      expiresAt: now + GATEWAY_CAPABILITIES_TTL_MS,
+    });
+    return caps;
+  } catch {
+    gatewayCapabilitiesCache.set(modelId, {
+      caps: fallback,
+      expiresAt: now + GATEWAY_CAPABILITIES_TTL_MS,
+    });
+    return fallback;
+  }
+}
+
+/**
+ * Capabilities for a single model. Ollama ids use static tables (no network).
+ * Gateway ids fetch once per model with in-memory TTL (shared with getCapabilities).
+ */
+export function getCapabilitiesForModel(
+  modelId: string
+): Promise<ModelCapabilities> {
+  if (isLocalModel(modelId)) {
+    const runtimeModelId = resolveRuntimeModelId(modelId);
+    return Promise.resolve(
+      localModelCapabilities[runtimeModelId] ?? defaultLocalCapabilities
+    );
+  }
+  return fetchGatewayCapabilities(modelId);
+}
 
 export async function getCapabilities(): Promise<
   Record<string, ModelCapabilities>
 > {
   const results = await Promise.all(
-    chatModels.map(async (model) => {
-      if (isLocalModel(model.id)) {
-        return [
-          model.id,
-          localModelCapabilities[model.id] ?? {
-            tools: false,
-            vision: false,
-            reasoning: false,
-          },
-        ];
-      }
-
-      try {
-        const res = await fetch(
-          `https://ai-gateway.vercel.sh/v1/models/${model.id}/endpoints`,
-          { next: { revalidate: 86_400 } }
-        );
-        if (!res.ok) {
-          return [model.id, { tools: false, vision: false, reasoning: false }];
-        }
-
-        const json = await res.json();
-        const endpoints = json.data?.endpoints ?? [];
-        const params = new Set(
-          endpoints.flatMap(
-            (e: { supported_parameters?: string[] }) =>
-              e.supported_parameters ?? []
-          )
-        );
-        const inputModalities = new Set(
-          json.data?.architecture?.input_modalities ?? []
-        );
-
-        return [
-          model.id,
-          {
-            tools: params.has("tools"),
-            vision: inputModalities.has("image"),
-            reasoning: params.has("reasoning"),
-          },
-        ];
-      } catch {
-        return [model.id, { tools: false, vision: false, reasoning: false }];
-      }
-    })
+    chatModels.map(
+      async (model) =>
+        [model.id, await getCapabilitiesForModel(model.id)] as const
+    )
   );
 
   return Object.fromEntries(results);

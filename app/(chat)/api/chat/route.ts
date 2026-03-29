@@ -11,41 +11,53 @@ import { checkBotId } from "botid/server";
 import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
 import { auth, type UserType } from "@/app/(auth)/auth";
-import { entitlementsByUserType } from "@/lib/ai/entitlements";
-import {
-  allowedModelIds,
-  chatModels,
-  DEFAULT_CHAT_MODEL,
-  getCapabilities,
-} from "@/lib/ai/models";
-import { type RequestHints } from "@/lib/ai/prompts";
-import {
-  buildFrontDeskSystemPrompt,
-  buildDefaultSystemPrompt,
-} from "@/lib/ai/front-desk-prompt";
+import { createModelMetricsStreamHooks } from "@/lib/ai/chat-stream-metrics";
 import { buildCompanionSystemPrompt } from "@/lib/ai/companion-prompt";
-import { saveMemory } from "@/lib/ai/tools/save-memory";
-import { recallMemory } from "@/lib/ai/tools/recall-memory";
-import { setReminder } from "@/lib/ai/tools/set-reminder";
-import { getLanguageModel } from "@/lib/ai/providers";
+import { entitlementsByUserType } from "@/lib/ai/entitlements";
+import { buildFrontDeskSystemPrompt } from "@/lib/ai/front-desk-prompt";
+import { buildLocalChatTitleFromUserMessage } from "@/lib/ai/local-title";
+import {
+  DEFAULT_CHAT_MODEL,
+  getChatModelWithLocalFallback,
+  getResolvedLocalModelClass,
+  isLocalModel,
+} from "@/lib/ai/models";
+import { isAllowedChatModelId } from "@/lib/ai/ollama-discovery";
+import type { RequestHints } from "@/lib/ai/prompts";
+import {
+  assertOllamaReachable,
+  getLanguageModel,
+  getOllamaBaseUrl,
+  getOllamaErrorStreamMessage,
+  getOllamaErrorUserPayload,
+} from "@/lib/ai/providers";
+import {
+  buildCompactCompanionPrompt,
+  buildCompactFrontDeskPrompt,
+  buildSlimCompanionPrompt,
+  buildSlimFrontDeskPrompt,
+} from "@/lib/ai/slim-prompt";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { editDocument } from "@/lib/ai/tools/edit-document";
-import { getWeather } from "@/lib/ai/tools/get-weather";
-import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
-import { updateDocument } from "@/lib/ai/tools/update-document";
-import { recordIntake } from "@/lib/ai/tools/record-intake";
 import { escalateToHuman } from "@/lib/ai/tools/escalate-to-human";
+import { getWeather } from "@/lib/ai/tools/get-weather";
+import { recallMemory } from "@/lib/ai/tools/recall-memory";
+import { recordIntake } from "@/lib/ai/tools/record-intake";
+import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
+import { saveMemory } from "@/lib/ai/tools/save-memory";
+import { setReminder } from "@/lib/ai/tools/set-reminder";
+import { submitProductOpportunity } from "@/lib/ai/tools/submit-product-opportunity";
 import { summarizeOpportunity } from "@/lib/ai/tools/summarize-opportunity";
+import { updateDocument } from "@/lib/ai/tools/update-document";
+import { estimateTokens, trimMessagesForBudget } from "@/lib/ai/trim-context";
+import { loadChatPromptContext } from "@/lib/chat/load-prompt-context";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
   deleteChatById,
   getChatById,
-  getBusinessProfileByUserId,
-  getPriorityNotes,
   getMessageCountByUserId,
   getMessagesByChatId,
-  getRecentMemories,
   saveChat,
   saveMessages,
   updateChatTitleById,
@@ -53,9 +65,14 @@ import {
 } from "@/lib/db/queries";
 import type { DBMessage } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
+import { isProductOpportunityConfigured } from "@/lib/github/product-opportunity-issue";
 import { checkIpRateLimit } from "@/lib/ratelimit";
 import type { ChatMessage } from "@/lib/types";
-import { convertToUIMessages, generateUUID } from "@/lib/utils";
+import {
+  convertToUIMessages,
+  generateUUID,
+  getTextFromMessage,
+} from "@/lib/utils";
 import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
@@ -73,6 +90,7 @@ export { getStreamContext };
 
 export async function POST(request: Request) {
   let requestBody: PostRequestBody;
+  let isOllamaRequest = false;
 
   try {
     const json = await request.json();
@@ -82,8 +100,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { id, message, messages, selectedChatModel, selectedVisibilityType } =
-      requestBody;
+    const {
+      id,
+      message,
+      messages,
+      selectedChatModel,
+      selectedVisibilityType,
+      showThinking: showThinkingRaw,
+    } = requestBody;
+    const showThinking = showThinkingRaw === true;
 
     const [, session] = await Promise.all([
       checkBotId().catch(() => null),
@@ -94,24 +119,32 @@ export async function POST(request: Request) {
       return new ChatbotError("unauthorized:chat").toResponse();
     }
 
-    const chatModel = allowedModelIds.has(selectedChatModel)
+    const chatModel = (await isAllowedChatModelId(selectedChatModel))
       ? selectedChatModel
       : DEFAULT_CHAT_MODEL;
+    isOllamaRequest = isLocalModel(chatModel);
 
     await checkIpRateLimit(ipAddress(request));
 
     const userType: UserType = session.user.type;
 
-    const messageCount = await getMessageCountByUserId({
-      id: session.user.id,
-      differenceInHours: 1,
-    });
+    const skipHourlyMessageCap =
+      isLocalModel(chatModel) ||
+      process.env.SKIP_CHAT_MESSAGE_RATE_LIMIT === "true";
 
-    if (messageCount > entitlementsByUserType[userType].maxMessagesPerHour) {
-      return new ChatbotError("rate_limit:chat").toResponse();
+    if (!skipHourlyMessageCap) {
+      const messageCount = await getMessageCountByUserId({
+        id: session.user.id,
+        differenceInHours: 1,
+      });
+
+      if (messageCount > entitlementsByUserType[userType].maxMessagesPerHour) {
+        return new ChatbotError("rate_limit:chat").toResponse();
+      }
     }
 
     const isToolApprovalFlow = Boolean(messages);
+    const isOllamaLocal = isOllamaRequest;
 
     const chat = await getChatById({ id });
     let messagesFromDb: DBMessage[] = [];
@@ -129,7 +162,11 @@ export async function POST(request: Request) {
         title: "New chat",
         visibility: selectedVisibilityType,
       });
-      titlePromise = generateTitleFromUserMessage({ message });
+      titlePromise = Promise.resolve(
+        isOllamaLocal
+          ? buildLocalChatTitleFromUserMessage(getTextFromMessage(message))
+          : generateTitleFromUserMessage({ message })
+      );
     }
 
     let uiMessages: ChatMessage[];
@@ -194,59 +231,118 @@ export async function POST(request: Request) {
       });
     }
 
-    const modelConfig = chatModels.find((m) => m.id === chatModel);
-    const modelCapabilities = await getCapabilities();
-    const capabilities = modelCapabilities[chatModel];
+    const modelConfig = getChatModelWithLocalFallback(chatModel);
+    const { capabilities, businessProfile, priorityNotes, recentMemories } =
+      await loadChatPromptContext({
+        userId: session.user.id,
+        chatModel,
+      });
     const isReasoningModel = capabilities?.reasoning === true;
     const supportsTools = capabilities?.tools === true;
+    const promptSupportsTools = supportsTools && !isOllamaLocal;
 
-    const businessProfile = await getBusinessProfileByUserId({
-      userId: session.user.id,
-    });
-    const priorityNotes = businessProfile
-      ? await getPriorityNotes({
-          businessProfileId: businessProfile.id,
+    const isBusinessMode =
+      businessProfile !== null &&
+      businessProfile.userId === session.user.id &&
+      businessProfile.businessModeEnabled !== false;
+
+    const ownerName =
+      session.user.name ?? session.user.email?.split("@")[0] ?? null;
+    const latestPriorityNote = priorityNotes[0]?.content ?? null;
+    const promptVariant = modelConfig?.promptVariant ?? "slim";
+    const localModelClass = getResolvedLocalModelClass(chatModel, modelConfig);
+
+    const productOpportunityEnabled =
+      !isOllamaLocal && isProductOpportunityConfigured();
+
+    const systemPromptText =
+      isOllamaLocal && promptVariant === "compact"
+        ? isBusinessMode
+          ? buildCompactFrontDeskPrompt({
+              profile: businessProfile,
+              priorityNote: latestPriorityNote,
+              localModelClass,
+            })
+          : buildCompactCompanionPrompt({
+              ownerName,
+              memories: recentMemories,
+              localModelClass,
+            })
+        : isOllamaLocal && promptVariant === "slim"
+          ? isBusinessMode
+            ? buildSlimFrontDeskPrompt({
+                profile: businessProfile,
+                priorityNote: latestPriorityNote,
+                localModelClass,
+              })
+            : buildSlimCompanionPrompt({
+                ownerName,
+                memories: recentMemories,
+                localModelClass,
+              })
+          : isBusinessMode
+            ? buildFrontDeskSystemPrompt({
+                profile: businessProfile,
+                priorityNotes,
+                requestHints,
+                supportsTools: promptSupportsTools,
+                productOpportunityEnabled,
+              })
+            : buildCompanionSystemPrompt({
+                ownerName,
+                memories: recentMemories,
+                requestHints,
+                supportsTools: promptSupportsTools,
+                productOpportunityEnabled,
+              });
+
+    const convertedModelMessages = await convertToModelMessages(uiMessages);
+    const systemTokenEstimate = estimateTokens(systemPromptText);
+    const modelMessages = isOllamaLocal
+      ? trimMessagesForBudget({
+          messages: convertedModelMessages,
+          systemTokenCount: systemTokenEstimate,
+          maxContextTokens: modelConfig?.maxContextTokens ?? 2048,
         })
-      : [];
+      : convertedModelMessages;
 
-    const isOwner =
-      businessProfile !== null && businessProfile.userId === session.user.id;
-
-    const recentMemories = isOwner
-      ? await getRecentMemories({
-          userId: session.user.id,
-          since: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-          limit: 15,
-        })
-      : [];
-
-    const systemPromptText = isOwner
-      ? buildCompanionSystemPrompt({
-          ownerName:
-            session.user.name ?? session.user.email?.split("@")[0] ?? null,
-          memories: recentMemories,
-          requestHints,
-          supportsTools,
-        })
-      : businessProfile
-        ? buildFrontDeskSystemPrompt({
-            profile: businessProfile,
-            priorityNotes,
-            requestHints,
-            supportsTools,
-          })
-        : buildDefaultSystemPrompt({ requestHints, supportsTools });
-
-    const modelMessages = await convertToModelMessages(uiMessages);
+    if (isOllamaLocal) {
+      await assertOllamaReachable();
+    }
 
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
-        const commonStreamArgs = {
-          model: getLanguageModel(chatModel),
+        const ollamaLanguageOptions = isOllamaLocal
+          ? {
+              ...modelConfig?.ollamaOptions,
+              ...(showThinking ? { think: true as const } : {}),
+            }
+          : undefined;
+
+        const metricsHooks = createModelMetricsStreamHooks({
+          chatModel,
+          dataStream,
+        });
+
+        const commonStreamArgsBase = {
+          model: getLanguageModel(chatModel, ollamaLanguageOptions),
           system: systemPromptText,
           messages: modelMessages,
           stopWhen: stepCountIs(5),
+          experimental_telemetry: {
+            isEnabled: isProductionEnvironment,
+            functionId: "stream-text",
+          },
+          ...metricsHooks,
+        };
+
+        const localCommonStreamArgs = {
+          ...commonStreamArgsBase,
+        };
+
+        const gatewayCommonStreamArgs = {
+          ...commonStreamArgsBase,
           providerOptions: {
             ...(modelConfig?.gatewayOrder && {
               gateway: { order: modelConfig.gatewayOrder },
@@ -254,10 +350,6 @@ export async function POST(request: Request) {
             ...(modelConfig?.reasoningEffort && {
               openai: { reasoningEffort: modelConfig.reasoningEffort },
             }),
-          },
-          experimental_telemetry: {
-            isEnabled: isProductionEnvironment,
-            functionId: "stream-text",
           },
         };
 
@@ -303,50 +395,71 @@ export async function POST(request: Request) {
 
         const noActiveTools = isReasoningModel && !supportsTools;
 
-        const result = isOwner
-          ? streamText({
-              ...commonStreamArgs,
-              tools: {
-                ...baseTools,
-                ...companionTools,
-              },
-              experimental_activeTools: noActiveTools
-                ? []
-                : [...baseToolNames, ...companionToolNames],
-            })
-          : businessProfile
-          ? streamText({
-              ...commonStreamArgs,
-              tools: {
-                ...baseTools,
-                recordIntake: recordIntake({
-                  businessProfileId: businessProfile.id,
-                  chatId: id,
-                }),
-                escalateToHuman: escalateToHuman({
-                  businessProfileId: businessProfile.id,
-                  chatId: id,
-                  businessName: businessProfile.businessName,
-                }),
-                summarizeOpportunity,
-              },
-              experimental_activeTools: noActiveTools
-                ? []
-                : [
-                    ...baseToolNames,
-                    "recordIntake",
-                    "escalateToHuman",
-                    "summarizeOpportunity",
-                  ],
-            })
-          : streamText({
-              ...commonStreamArgs,
-              tools: baseTools,
-              experimental_activeTools: noActiveTools ? [] : [...baseToolNames],
-            });
+        const productOpportunityTool = submitProductOpportunity({
+          userId: session.user.id,
+          chatId: id,
+          allowed: productOpportunityEnabled,
+        });
+
+        const result = isOllamaLocal
+          ? streamText(localCommonStreamArgs)
+          : isBusinessMode
+            ? streamText({
+                ...gatewayCommonStreamArgs,
+                tools: {
+                  ...baseTools,
+                  recordIntake: recordIntake({
+                    businessProfileId: businessProfile.id,
+                    chatId: id,
+                  }),
+                  escalateToHuman: escalateToHuman({
+                    businessProfileId: businessProfile.id,
+                    chatId: id,
+                    businessName: businessProfile.businessName,
+                    ownerUserId: session.user.id,
+                    businessOwnerUserId: businessProfile.userId,
+                  }),
+                  summarizeOpportunity,
+                  ...(productOpportunityEnabled
+                    ? { submitProductOpportunity: productOpportunityTool }
+                    : {}),
+                },
+                experimental_activeTools: noActiveTools
+                  ? []
+                  : [
+                      ...baseToolNames,
+                      "recordIntake",
+                      "escalateToHuman",
+                      "summarizeOpportunity",
+                      ...(productOpportunityEnabled
+                        ? (["submitProductOpportunity"] as const)
+                        : []),
+                    ],
+              })
+            : streamText({
+                ...gatewayCommonStreamArgs,
+                tools: {
+                  ...baseTools,
+                  ...companionTools,
+                  ...(productOpportunityEnabled
+                    ? { submitProductOpportunity: productOpportunityTool }
+                    : {}),
+                },
+                experimental_activeTools: noActiveTools
+                  ? []
+                  : [
+                      ...baseToolNames,
+                      ...companionToolNames,
+                      ...(productOpportunityEnabled
+                        ? (["submitProductOpportunity"] as const)
+                        : []),
+                    ],
+              });
 
         dataStream.merge(
-          result.toUIMessageStream({ sendReasoning: isReasoningModel })
+          result.toUIMessageStream({
+            sendReasoning: showThinking && (isReasoningModel || isOllamaLocal),
+          })
         );
 
         if (titlePromise) {
@@ -394,6 +507,7 @@ export async function POST(request: Request) {
         }
       },
       onError: (error) => {
+        console.error("Chat UI message stream error:", error);
         if (
           error instanceof Error &&
           error.message?.includes(
@@ -401,6 +515,15 @@ export async function POST(request: Request) {
           )
         ) {
           return "AI Gateway requires a valid credit card on file to service requests. Please visit https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dadd-credit-card to add a card and unlock your free credits.";
+        }
+        if (isOllamaLocal) {
+          const streamMsg = getOllamaErrorStreamMessage(
+            error,
+            getOllamaBaseUrl()
+          );
+          if (streamMsg) {
+            return streamMsg;
+          }
         }
         return "Oops, an error occurred!";
       },
@@ -441,6 +564,16 @@ export async function POST(request: Request) {
       )
     ) {
       return new ChatbotError("bad_request:activate_gateway").toResponse();
+    }
+
+    if (isOllamaRequest) {
+      const ollamaPayload = getOllamaErrorUserPayload(
+        error,
+        getOllamaBaseUrl()
+      );
+      if (ollamaPayload) {
+        return new ChatbotError("offline:ollama", ollamaPayload).toResponse();
+      }
     }
 
     console.error("Unhandled error in chat API:", error, { vercelId });

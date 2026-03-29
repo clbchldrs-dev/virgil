@@ -1,23 +1,27 @@
 import type { BusinessProfile, PriorityNote } from "@/lib/db/schema";
 import type { RequestHints } from "./prompts";
-import { getRequestPromptFromHints, artifactsPrompt } from "./prompts";
+import { artifactsPrompt, getRequestPromptFromHints } from "./prompts";
 
 export function buildFrontDeskSystemPrompt({
   profile,
   priorityNotes,
   requestHints,
   supportsTools,
+  productOpportunityEnabled = false,
 }: {
   profile: BusinessProfile;
   priorityNotes: PriorityNote[];
   requestHints: RequestHints;
   supportsTools: boolean;
+  productOpportunityEnabled?: boolean;
 }): string {
   const parts: string[] = [];
 
-  parts.push(`You are the front desk assistant for ${profile.businessName}.`);
   parts.push(
-    `Your tone should be ${profile.tonePreference}. You represent this business to customers.`
+    `You are Virgil, acting as the front desk assistant for ${profile.businessName}.`
+  );
+  parts.push(
+    `Your tone should be ${profile.tonePreference}. You represent this business to customers. Be courteous and clear without flattery or exaggerated praise.`
   );
 
   if (profile.industry) {
@@ -66,6 +70,12 @@ Your primary responsibilities:
     parts.push(artifactsPrompt);
   }
 
+  if (productOpportunityEnabled) {
+    parts.push(
+      "Optional: If the business owner wants to improve Virgil itself (not customer intake), use submitProductOpportunity to file a GitHub issue — only with their consent. Keep suggestions aligned with local-first, affordable operation."
+    );
+  }
+
   return parts.join("\n\n");
 }
 
@@ -76,7 +86,7 @@ export function buildDefaultSystemPrompt({
   requestHints: RequestHints;
   supportsTools: boolean;
 }): string {
-  const base = `You are a helpful front desk assistant. Keep responses concise and direct.
+  const base = `You are Virgil, acting as a helpful front desk assistant. Keep responses concise and direct. Be professional and kind without flattery or exaggerated praise toward customers.
 
 When a customer provides their information or describes a need, use the recordIntake tool to capture it.
 When you cannot answer confidently, use the escalateToHuman tool.

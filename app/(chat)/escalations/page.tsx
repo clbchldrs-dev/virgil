@@ -28,9 +28,7 @@ export default async function EscalationsPage() {
     <div className="flex min-h-dvh items-start justify-center bg-background p-4 pt-12 md:pt-20">
       <div className="w-full max-w-3xl space-y-6">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Escalations
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Escalations</h1>
           <p className="text-muted-foreground">
             Conversations the assistant couldn't handle and handed off to you.
           </p>

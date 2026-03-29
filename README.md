@@ -1,71 +1,91 @@
-<a href="https://chat.vercel.ai/">
-  <img alt="Chatbot" src="app/(chat)/opengraph-image.png">
-  <h1 align="center">Chatbot</h1>
-</a>
+# Virgil
 
-<p align="center">
-    Chatbot (formerly AI Chatbot) is a free, open-source template built with Next.js and the AI SDK that helps you quickly build powerful chatbot applications.
-</p>
+Virgil is a local-first personal AI assistant built to get the most useful behavior possible out of lightweight models.
 
-<p align="center">
-  <a href="https://chatbot.dev"><strong>Read Docs</strong></a> ·
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#model-providers"><strong>Model Providers</strong></a> ·
-  <a href="#deploy-your-own"><strong>Deploy Your Own</strong></a> ·
-  <a href="#running-locally"><strong>Running locally</strong></a>
-</p>
-<br/>
+The project is optimized for:
 
-## Features
+- low recurring cost
+- strong local-model performance on 3B/7B-class models
+- honest, proactive assistance instead of bloated prompts or hosted-model dependence
+- an optional business/front-desk mode when you explicitly configure it
 
-- [Next.js](https://nextjs.org) App Router
-  - Advanced routing for seamless navigation and performance
-  - React Server Components (RSCs) and Server Actions for server-side rendering and increased performance
-- [AI SDK](https://ai-sdk.dev/docs/introduction)
-  - Unified API for generating text, structured objects, and tool calls with LLMs
-  - Hooks for building dynamic chat and generative user interfaces
-  - Supports OpenAI, Anthropic, Google, xAI, and other model providers via AI Gateway
-- [shadcn/ui](https://ui.shadcn.com)
-  - Styling with [Tailwind CSS](https://tailwindcss.com)
-  - Component primitives from [Radix UI](https://radix-ui.com) for accessibility and flexibility
-- Data Persistence
-  - [Neon Serverless Postgres](https://vercel.com/marketplace/neon) for saving chat history and user data
-  - [Vercel Blob](https://vercel.com/storage/blob) for efficient file storage
-- [Auth.js](https://authjs.dev)
-  - Simple and secure authentication
+## What Virgil does
 
-## Model Providers
+- Runs locally with Ollama by default
+- Supports hosted models through AI Gateway when you want them
+- Stores chat history, memories, reminders, and optional business data in Postgres
+- Uses Redis for rate limits and stream support
+- Can run as a normal local dev app or as a one-command Docker stack
 
-This template uses the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) to access multiple AI models through a unified interface. Models are configured in `lib/ai/models.ts` with per-model provider routing. Included models: Mistral, Moonshot, DeepSeek, OpenAI, and xAI.
+## Recommended path
 
-### AI Gateway Authentication
+The repository is conventionally cloned as **`virgil`** (folder name). Paths in [AGENTS.md](AGENTS.md) and [packaging/README.md](packaging/README.md) use **placeholders** like `~/Documents/virgil` or “your clone path”—use the real directory on your machine (the one that contains `package.json`).
 
-**For Vercel deployments**: Authentication is handled automatically via OIDC tokens.
-
-**For non-Vercel deployments**: You need to provide an AI Gateway API key by setting the `AI_GATEWAY_API_KEY` environment variable in your `.env.local` file.
-
-With the [AI SDK](https://ai-sdk.dev/docs/introduction), you can also switch to direct LLM providers like [OpenAI](https://openai.com), [Anthropic](https://anthropic.com), [Cohere](https://cohere.com/), and [many more](https://ai-sdk.dev/providers/ai-sdk-providers) with just a few lines of code.
-
-## Deploy Your Own
-
-You can deploy your own version of Chatbot to Vercel with one click:
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/templates/next.js/chatbot)
-
-## Running locally
-
-You will need to use the environment variables [defined in `.env.example`](.env.example) to run Chatbot. It's recommended you use [Vercel Environment Variables](https://vercel.com/docs/projects/environment-variables) for this, but a `.env` file is all that is necessary.
-
-> Note: You should not commit your `.env` file or it will expose secrets that will allow others to control access to your various AI and authentication provider accounts.
-
-1. Install Vercel CLI: `npm i -g vercel`
-2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
-3. Download your environment variables: `vercel env pull`
+### Local dev
 
 ```bash
+cd ~/Documents/virgil   # example only — use your actual clone path
 pnpm install
-pnpm db:migrate # Setup database or apply latest database changes
+pnpm db:migrate
 pnpm dev
 ```
 
-Your app template should now be running on [localhost:3000](http://localhost:3000).
+Then open [http://localhost:3000](http://localhost:3000).
+
+### Docker Compose
+
+Virgil can run as one stack with **Postgres, Redis, Ollama, and the `virgil-app` container**:
+
+```bash
+cp .env.docker.example .env.docker
+# edit .env.docker — set AUTH_SECRET, etc.
+docker compose up --build
+```
+
+Open [http://localhost:3000](http://localhost:3000). The app uses the bundled **`ollama`** service at `http://ollama:11434` by default; **pull models** first, e.g. `docker compose exec ollama ollama pull qwen2.5:3b`.
+
+**Docker Desktop** users who prefer **Ollama on the host** (e.g. GPU): use [`docker-compose.host-ollama.yml`](docker-compose.host-ollama.yml) and set `OLLAMA_BASE_URL` — see [AGENTS.md](AGENTS.md#docker-compose-postgres--redis--ollama--app-in-one-command) and [docs/beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md).
+
+## Models
+
+Virgil currently ships with curated local presets for:
+
+- `ollama/qwen2.5:3b`
+- `ollama/qwen2.5:3b-turbo`
+- `ollama/qwen2.5:7b-instruct`
+- `ollama/qwen2.5:7b-lean`
+
+Pull the base runtime tags before chat:
+
+```bash
+ollama pull qwen2.5:3b
+ollama pull qwen2.5:7b-instruct
+```
+
+Hosted models remain available, but the default direction of the project is local-first.
+
+## Optional business mode
+
+Virgil is a personal assistant by default.
+
+If you complete onboarding, it can also act as a business front desk with intake, escalation, and opportunity capture. Those business-specific tools stay out of the default personal path unless you opt in.
+
+## Docs
+
+**SSOT map:** [docs/PROJECT.md](docs/PROJECT.md) lists where each topic lives (same structure as this section—read PROJECT first for intent and links).
+
+- [docs/PROJECT.md](docs/PROJECT.md): **start here** — intent, documentation map, architecture overview, agent handoff (new Cursor chat)
+- [AGENTS.md](AGENTS.md): **setup and deployment detail** (env, Docker, LAN, cron, Vercel, env var table) plus coding rules and checklists
+- [SETUP.md](SETUP.md), [DEPLOY.md](DEPLOY.md): thin link hubs → AGENTS.md (no duplicate tables)
+- [docs/beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md): LAN / Ubuntu home server — bundled Ollama in Compose, systemd, warmup, local vs remote access
+- [docs/DECISIONS.md](docs/DECISIONS.md): architecture decision records
+- [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md): enhancement backlog and review process
+- [docs/github-product-opportunity.md](docs/github-product-opportunity.md): optional GitHub Issues inbox for product feedback (gateway models)
+
+## Project management and agents
+
+For **product intent** (lightweight companion, cost, iterability), **where documentation lives**, and **handoff steps** for an agent in a fresh chat, read [docs/PROJECT.md](docs/PROJECT.md) first, then [AGENTS.md](AGENTS.md) for implementation rules.
+
+## Core principle
+
+Virgil should be as helpful as possible on small local models without becoming flattering, bloated, or expensive.

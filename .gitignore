@@ -12,11 +12,13 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .env.local
+.env.docker
 .env.development.local
 .env.test.local
 .env.production.local
 .turbo
 .env
+docker-compose.override.yml
 .vercel
 .env*.local
 /test-results/

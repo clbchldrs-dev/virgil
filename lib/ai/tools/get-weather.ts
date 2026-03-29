@@ -1,13 +1,14 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { assertAgentFetchUrlAllowed } from "@/lib/http/agent-egress";
 
 async function geocodeCity(
   city: string
 ): Promise<{ latitude: number; longitude: number } | null> {
+  const geocodeUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
+  assertAgentFetchUrlAllowed(geocodeUrl);
   try {
-    const response = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`
-    );
+    const response = await fetch(geocodeUrl);
 
     if (!response.ok) {
       return null;
@@ -40,6 +41,7 @@ export const getWeather = tool({
       .describe("City name (e.g., 'San Francisco', 'New York', 'London')")
       .optional(),
   }),
+  needsApproval: true,
   execute: async (input) => {
     let latitude: number;
     let longitude: number;
@@ -63,9 +65,9 @@ export const getWeather = tool({
       };
     }
 
-    const response = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m&hourly=temperature_2m&daily=sunrise,sunset&timezone=auto`
-    );
+    const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m&hourly=temperature_2m&daily=sunrise,sunset&timezone=auto`;
+    assertAgentFetchUrlAllowed(forecastUrl);
+    const response = await fetch(forecastUrl);
 
     const weatherData = await response.json();
 

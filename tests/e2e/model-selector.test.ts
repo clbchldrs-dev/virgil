@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const MODEL_BUTTON_REGEX = /Kimi|Codestral|Mistral|DeepSeek|GPT|Grok/i;
+const MODEL_BUTTON_REGEX = /Qwen|Kimi|Codestral|Mistral|DeepSeek|GPT|Grok/i;
 
 test.describe("Model Selector", () => {
   test.beforeEach(async ({ page }) => {
