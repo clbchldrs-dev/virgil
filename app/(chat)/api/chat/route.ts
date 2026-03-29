@@ -23,6 +23,10 @@ import {
   buildFrontDeskSystemPrompt,
   buildDefaultSystemPrompt,
 } from "@/lib/ai/front-desk-prompt";
+import { buildCompanionSystemPrompt } from "@/lib/ai/companion-prompt";
+import { saveMemory } from "@/lib/ai/tools/save-memory";
+import { recallMemory } from "@/lib/ai/tools/recall-memory";
+import { setReminder } from "@/lib/ai/tools/set-reminder";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { editDocument } from "@/lib/ai/tools/edit-document";
@@ -41,6 +45,7 @@ import {
   getPriorityNotes,
   getMessageCountByUserId,
   getMessagesByChatId,
+  getRecentMemories,
   saveChat,
   saveMessages,
   updateChatTitleById,
@@ -204,14 +209,33 @@ export async function POST(request: Request) {
         })
       : [];
 
-    const frontDeskSystemPrompt = businessProfile
-      ? buildFrontDeskSystemPrompt({
-          profile: businessProfile,
-          priorityNotes,
+    const isOwner =
+      businessProfile !== null && businessProfile.userId === session.user.id;
+
+    const recentMemories = isOwner
+      ? await getRecentMemories({
+          userId: session.user.id,
+          since: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          limit: 15,
+        })
+      : [];
+
+    const systemPromptText = isOwner
+      ? buildCompanionSystemPrompt({
+          ownerName:
+            session.user.name ?? session.user.email?.split("@")[0] ?? null,
+          memories: recentMemories,
           requestHints,
           supportsTools,
         })
-      : buildDefaultSystemPrompt({ requestHints, supportsTools });
+      : businessProfile
+        ? buildFrontDeskSystemPrompt({
+            profile: businessProfile,
+            priorityNotes,
+            requestHints,
+            supportsTools,
+          })
+        : buildDefaultSystemPrompt({ requestHints, supportsTools });
 
     const modelMessages = await convertToModelMessages(uiMessages);
 
@@ -220,7 +244,7 @@ export async function POST(request: Request) {
       execute: async ({ writer: dataStream }) => {
         const commonStreamArgs = {
           model: getLanguageModel(chatModel),
-          system: frontDeskSystemPrompt,
+          system: systemPromptText,
           messages: modelMessages,
           stopWhen: stepCountIs(5),
           providerOptions: {
@@ -265,9 +289,32 @@ export async function POST(request: Request) {
           "requestSuggestions",
         ] as const;
 
+        const companionTools = {
+          saveMemory: saveMemory({ userId: session.user.id, chatId: id }),
+          recallMemory: recallMemory({ userId: session.user.id }),
+          setReminder: setReminder({ userId: session.user.id, chatId: id }),
+        };
+
+        const companionToolNames = [
+          "saveMemory",
+          "recallMemory",
+          "setReminder",
+        ] as const;
+
         const noActiveTools = isReasoningModel && !supportsTools;
 
-        const result = businessProfile
+        const result = isOwner
+          ? streamText({
+              ...commonStreamArgs,
+              tools: {
+                ...baseTools,
+                ...companionTools,
+              },
+              experimental_activeTools: noActiveTools
+                ? []
+                : [...baseToolNames, ...companionToolNames],
+            })
+          : businessProfile
           ? streamText({
               ...commonStreamArgs,
               tools: {
