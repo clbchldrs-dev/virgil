@@ -215,3 +215,20 @@ export const escalationRecord = pgTable("EscalationRecord", {
 });
 
 export type EscalationRecord = InferSelectModel<typeof escalationRecord>;
+
+export const memory = pgTable("Memory", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  chatId: uuid("chatId").references(() => chat.id),
+  kind: varchar("kind", { enum: ["note", "fact", "goal", "opportunity"] })
+    .notNull()
+    .default("note"),
+  content: text("content").notNull(),
+  metadata: json("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type Memory = InferSelectModel<typeof memory>;

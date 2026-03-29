@@ -38,6 +38,8 @@ import {
   type IntakeSubmission,
   escalationRecord,
   type EscalationRecord,
+  memory,
+  type Memory,
 } from "./schema";
 import { generateHashedPassword } from "./utils";
 
@@ -52,6 +54,15 @@ export async function getUser(email: string): Promise<User[]> {
       "bad_request:database",
       "Failed to get user by email"
     );
+  }
+}
+
+export async function getUserById({ id }: { id: string }): Promise<User | null> {
+  try {
+    const [found] = await db.select().from(user).where(eq(user.id, id)).limit(1);
+    return found ?? null;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to get user by id");
   }
 }
 
@@ -889,6 +900,89 @@ export async function updateEscalationStatus({
     throw new ChatbotError(
       "bad_request:database",
       "Failed to update escalation status"
+    );
+  }
+}
+
+// --- Memory (companion assistant) ---
+
+export async function saveMemoryRecord({
+  userId,
+  chatId,
+  kind,
+  content,
+  metadata,
+}: {
+  userId: string;
+  chatId?: string;
+  kind: "note" | "fact" | "goal" | "opportunity";
+  content: string;
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    const [created] = await db
+      .insert(memory)
+      .values({ userId, chatId, kind, content, metadata: metadata ?? {} })
+      .returning();
+    return created;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to save memory");
+  }
+}
+
+export async function searchMemories({
+  userId,
+  query,
+  kind,
+  limit = 10,
+}: {
+  userId: string;
+  query: string;
+  kind?: "note" | "fact" | "goal" | "opportunity";
+  limit?: number;
+}): Promise<Memory[]> {
+  try {
+    const sanitized = query.replace(/[^\w\s]/g, " ").trim();
+    if (!sanitized) return [];
+
+    const tsquery = sanitized.split(/\s+/).filter(Boolean).join(" & ");
+    const kindClause = kind ? `AND "kind" = '${kind}'` : "";
+
+    const result = await client.unsafe<Memory[]>(
+      `SELECT "id", "userId", "chatId", "kind", "content", "metadata", "createdAt", "updatedAt"
+       FROM "Memory"
+       WHERE "userId" = $1 ${kindClause}
+         AND "tsv" @@ to_tsquery('english', $2)
+       ORDER BY ts_rank("tsv", to_tsquery('english', $2)) DESC
+       LIMIT $3`,
+      [userId, tsquery, limit]
+    );
+    return result;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to search memories");
+  }
+}
+
+export async function getRecentMemories({
+  userId,
+  since,
+  limit = 50,
+}: {
+  userId: string;
+  since: Date;
+  limit?: number;
+}): Promise<Memory[]> {
+  try {
+    return await db
+      .select()
+      .from(memory)
+      .where(and(eq(memory.userId, userId), gte(memory.createdAt, since)))
+      .orderBy(desc(memory.createdAt))
+      .limit(limit);
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get recent memories"
     );
   }
 }

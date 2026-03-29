@@ -15,6 +15,13 @@
       "when": 1711900000000,
       "tag": "0001_front_desk_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1712000000000,
+      "tag": "0002_memory_table",
+      "breakpoints": true
     }
   ]
 }
