@@ -8,6 +8,10 @@ export const titleModel = {
   gatewayOrder: ["mistral"],
 };
 
+export function isLocalModel(modelId: string): boolean {
+  return modelId.startsWith("ollama/");
+}
+
 export type ModelCapabilities = {
   tools: boolean;
   vision: boolean;
@@ -24,6 +28,12 @@ export type ChatModel = {
 };
 
 export const chatModels: ChatModel[] = [
+  {
+    id: "ollama/qwen2.5:3b",
+    name: "Qwen 2.5 3B (Local)",
+    provider: "ollama",
+    description: "Free local model — runs on your machine",
+  },
   {
     id: "deepseek/deepseek-v3.2",
     name: "DeepSeek V3.2",
@@ -84,11 +94,26 @@ export const chatModels: ChatModel[] = [
   },
 ];
 
+const localModelCapabilities: Record<string, ModelCapabilities> = {
+  "ollama/qwen2.5:3b": { tools: true, vision: false, reasoning: false },
+};
+
 export async function getCapabilities(): Promise<
   Record<string, ModelCapabilities>
 > {
   const results = await Promise.all(
     chatModels.map(async (model) => {
+      if (isLocalModel(model.id)) {
+        return [
+          model.id,
+          localModelCapabilities[model.id] ?? {
+            tools: false,
+            vision: false,
+            reasoning: false,
+          },
+        ];
+      }
+
       try {
         const res = await fetch(
           `https://ai-gateway.vercel.sh/v1/models/${model.id}/endpoints`,
