@@ -1,0 +1,217 @@
+import type { InferSelectModel } from "drizzle-orm";
+import {
+  boolean,
+  foreignKey,
+  json,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core";
+
+export const user = pgTable("User", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  email: varchar("email", { length: 64 }).notNull(),
+  password: varchar("password", { length: 64 }),
+  name: text("name"),
+  emailVerified: boolean("emailVerified").notNull().default(false),
+  image: text("image"),
+  isAnonymous: boolean("isAnonymous").notNull().default(false),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type User = InferSelectModel<typeof user>;
+
+export const chat = pgTable("Chat", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  createdAt: timestamp("createdAt").notNull(),
+  title: text("title").notNull(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  visibility: varchar("visibility", { enum: ["public", "private"] })
+    .notNull()
+    .default("private"),
+});
+
+export type Chat = InferSelectModel<typeof chat>;
+
+export const message = pgTable("Message_v2", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  chatId: uuid("chatId")
+    .notNull()
+    .references(() => chat.id),
+  role: varchar("role").notNull(),
+  parts: json("parts").notNull(),
+  attachments: json("attachments").notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+});
+
+export type DBMessage = InferSelectModel<typeof message>;
+
+export const vote = pgTable(
+  "Vote_v2",
+  {
+    chatId: uuid("chatId")
+      .notNull()
+      .references(() => chat.id),
+    messageId: uuid("messageId")
+      .notNull()
+      .references(() => message.id),
+    isUpvoted: boolean("isUpvoted").notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.chatId, table.messageId] }),
+  })
+);
+
+export type Vote = InferSelectModel<typeof vote>;
+
+export const document = pgTable(
+  "Document",
+  {
+    id: uuid("id").notNull().defaultRandom(),
+    createdAt: timestamp("createdAt").notNull(),
+    title: text("title").notNull(),
+    content: text("content"),
+    kind: varchar("text", { enum: ["text", "code", "image", "sheet"] })
+      .notNull()
+      .default("text"),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.id, table.createdAt] }),
+  })
+);
+
+export type Document = InferSelectModel<typeof document>;
+
+export const suggestion = pgTable(
+  "Suggestion",
+  {
+    id: uuid("id").notNull().defaultRandom(),
+    documentId: uuid("documentId").notNull(),
+    documentCreatedAt: timestamp("documentCreatedAt").notNull(),
+    originalText: text("originalText").notNull(),
+    suggestedText: text("suggestedText").notNull(),
+    description: text("description"),
+    isResolved: boolean("isResolved").notNull().default(false),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id),
+    createdAt: timestamp("createdAt").notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.id] }),
+    documentRef: foreignKey({
+      columns: [table.documentId, table.documentCreatedAt],
+      foreignColumns: [document.id, document.createdAt],
+    }),
+  })
+);
+
+export type Suggestion = InferSelectModel<typeof suggestion>;
+
+export const stream = pgTable(
+  "Stream",
+  {
+    id: uuid("id").notNull().defaultRandom(),
+    chatId: uuid("chatId").notNull(),
+    createdAt: timestamp("createdAt").notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.id] }),
+    chatRef: foreignKey({
+      columns: [table.chatId],
+      foreignColumns: [chat.id],
+    }),
+  })
+);
+
+export type Stream = InferSelectModel<typeof stream>;
+
+// --- Front Desk Chatbot: business context tables ---
+
+export const businessProfile = pgTable("BusinessProfile", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  businessName: text("businessName").notNull(),
+  industry: text("industry"),
+  hoursOfOperation: text("hoursOfOperation"),
+  services: json("services").$type<string[]>().notNull().default([]),
+  tonePreference: varchar("tonePreference", {
+    enum: ["friendly", "professional", "casual"],
+  })
+    .notNull()
+    .default("professional"),
+  neverPromise: json("neverPromise").$type<string[]>().notNull().default([]),
+  escalationContactName: text("escalationContactName"),
+  escalationContactEmail: text("escalationContactEmail"),
+  escalationRules: text("escalationRules"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type BusinessProfile = InferSelectModel<typeof businessProfile>;
+
+export const priorityNote = pgTable("PriorityNote", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  businessProfileId: uuid("businessProfileId")
+    .notNull()
+    .references(() => businessProfile.id),
+  content: text("content").notNull(),
+  version: timestamp("version").notNull().defaultNow(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type PriorityNote = InferSelectModel<typeof priorityNote>;
+
+export const intakeSubmission = pgTable("IntakeSubmission", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  businessProfileId: uuid("businessProfileId")
+    .notNull()
+    .references(() => businessProfile.id),
+  chatId: uuid("chatId").references(() => chat.id),
+  customerName: text("customerName"),
+  customerEmail: text("customerEmail"),
+  customerPhone: text("customerPhone"),
+  need: text("need"),
+  urgency: varchar("urgency", { enum: ["low", "medium", "high"] })
+    .notNull()
+    .default("medium"),
+  channelPreference: varchar("channelPreference", {
+    enum: ["email", "phone", "text", "chat"],
+  }),
+  notes: text("notes"),
+  data: json("data").$type<Record<string, unknown>>(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type IntakeSubmission = InferSelectModel<typeof intakeSubmission>;
+
+export const escalationRecord = pgTable("EscalationRecord", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  businessProfileId: uuid("businessProfileId")
+    .notNull()
+    .references(() => businessProfile.id),
+  chatId: uuid("chatId").references(() => chat.id),
+  customerName: text("customerName"),
+  summary: text("summary").notNull(),
+  urgency: varchar("urgency", { enum: ["low", "medium", "high"] })
+    .notNull()
+    .default("medium"),
+  status: varchar("status", { enum: ["pending", "acknowledged", "resolved"] })
+    .notNull()
+    .default("pending"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  resolvedAt: timestamp("resolvedAt"),
+});
+
+export type EscalationRecord = InferSelectModel<typeof escalationRecord>;
