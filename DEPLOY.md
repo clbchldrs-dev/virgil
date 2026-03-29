@@ -4,7 +4,8 @@
 
 - A [Vercel](https://vercel.com) account (Hobby tier, free)
 - A [Neon](https://neon.tech) account (free tier, no credit card)
-- An [Upstash](https://upstash.com) account (free tier)
+- An [Upstash](https://upstash.com) account (free tier — Redis + QStash)
+- A [Resend](https://resend.com) account (free tier — 100 emails/day)
 - Node.js 20+ and pnpm 10+
 
 ## 1. Provision storage
@@ -81,6 +82,11 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `REDIS_URL`           | Yes              | Yes                | Upstash Redis for rate limiting          |
 | `BLOB_READ_WRITE_TOKEN` | Yes           | Yes                | Vercel Blob for file uploads             |
 | `AI_GATEWAY_API_KEY`  | Yes              | **No** (OIDC)      | Only needed outside Vercel               |
+| `QSTASH_TOKEN`        | Yes              | Yes                | Upstash QStash for reminders             |
+| `QSTASH_CURRENT_SIGNING_KEY` | Yes       | Yes                | QStash webhook verification              |
+| `QSTASH_NEXT_SIGNING_KEY` | Yes          | Yes                | QStash webhook verification (rotation)   |
+| `RESEND_API_KEY`      | Yes              | Yes                | Resend for reminder and digest emails    |
+| `CRON_SECRET`         | Yes              | Yes                | Protects /api/digest cron endpoint       |
 
 ## Hobby-to-Pro threshold
 
@@ -88,7 +94,10 @@ Monitor these free-tier limits:
 
 - **Vercel Hobby**: 100 GB bandwidth/mo, 1,000 serverless fn-hours/mo
 - **Neon free**: 512 MB storage, 190 compute-hours/mo, 1 project
-- **Upstash free**: 10K commands/day, 256 MB storage
+- **Upstash Redis free**: 10K commands/day, 256 MB storage
+- **Upstash QStash free**: 500 messages/day
+- **Resend free**: 100 emails/day, 3,000/month
+- **Vercel Cron (Hobby)**: 2 cron jobs
 - **Vercel Blob**: 1 GB on Hobby
 
 At ~3 active business clients with moderate traffic, expect to need
