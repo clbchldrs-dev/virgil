@@ -41,6 +41,7 @@ import {
   type ChatModel,
   chatModels,
   DEFAULT_CHAT_MODEL,
+  isLocalModel,
   type ModelCapabilities,
 } from "@/lib/ai/models";
 import type { Attachment, ChatMessage } from "@/lib/types";
@@ -648,21 +649,31 @@ function PureAttachmentsButton({
   const caps: Record<string, ModelCapabilities> | undefined =
     modelsResponse?.capabilities ?? modelsResponse;
   const hasVision = caps?.[selectedModelId]?.vision ?? false;
+  const local = isLocalModel(selectedModelId);
+  /** Gateway models gate on vision; Ollama presets are marked vision:false in API but many users still want uploads (vision/VL tags or trial). */
+  const allowAttachments = hasVision || local;
 
   return (
     <Button
       className={cn(
         "h-7 w-7 rounded-lg border border-border/40 p-1 transition-colors",
-        hasVision
+        allowAttachments
           ? "text-foreground hover:border-border hover:text-foreground"
           : "text-muted-foreground/30 cursor-not-allowed"
       )}
       data-testid="attachments-button"
-      disabled={status !== "ready" || !hasVision}
+      disabled={status !== "ready" || !allowAttachments}
       onClick={(event) => {
         event.preventDefault();
         fileInputRef.current?.click();
       }}
+      title={
+        allowAttachments
+          ? local && !hasVision
+            ? "Attach JPEG/PNG. For best results use a vision model in Ollama (e.g. llava, qwen2-vl)."
+            : "Attach JPEG or PNG"
+          : "Select a vision-capable model to attach images."
+      }
       variant="ghost"
     >
       <PaperclipIcon size={14} style={{ width: 14, height: 14 }} />

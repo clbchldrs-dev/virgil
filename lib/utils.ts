@@ -13,16 +13,30 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const fetcher = async (url: string) => {
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    const body = (await response.json()) as {
+async function throwChatApiErrorFromResponse(response: Response): Promise<never> {
+  const text = await response.text();
+  try {
+    const body = JSON.parse(text) as {
       code?: string;
       cause?: string;
       message?: string;
     };
     throw chatbotErrorFromApiJson(body);
+  } catch (e) {
+    if (e instanceof ChatbotError) {
+      throw e;
+    }
+    throw new ChatbotError('bad_request:api', undefined, {
+      overrideMessage: `Chat request failed (${response.status} ${response.statusText}). Use the exact URL from your terminal (including port, e.g. http://localhost:3001).`,
+    });
+  }
+}
+
+export const fetcher = async (url: string) => {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    await throwChatApiErrorFromResponse(response);
   }
 
   return response.json();
@@ -36,18 +50,25 @@ export async function fetchWithErrorHandlers(
     const response = await fetch(input, init);
 
     if (!response.ok) {
-      const body = (await response.json()) as {
-        code?: string;
-        cause?: string;
-        message?: string;
-      };
-      throw chatbotErrorFromApiJson(body);
+      await throwChatApiErrorFromResponse(response);
     }
 
     return response;
   } catch (error: unknown) {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       throw new ChatbotError('offline:chat');
+    }
+
+    if (
+      error instanceof TypeError &&
+      (error.message.includes('fetch') ||
+        error.message.includes('Failed to fetch') ||
+        error.message.includes('Load failed'))
+    ) {
+      throw new ChatbotError('bad_request:api', undefined, {
+        overrideMessage:
+          'Could not reach the chat API. Open the app at the same host and port shown when you run pnpm dev (e.g. http://localhost:3001, not a different port).',
+      });
     }
 
     throw error;
