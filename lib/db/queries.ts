@@ -968,7 +968,7 @@ export async function searchMemories({
 
     const tsquery = sanitized.split(/\s+/).filter(Boolean).join(" & ");
 
-    const params: unknown[] = [userId, tsquery, limit];
+    const params: (string | number)[] = [userId, tsquery, limit];
     let kindClause = "";
     if (kind) {
       params.push(kind);

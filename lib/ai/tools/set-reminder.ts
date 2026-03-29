@@ -2,7 +2,9 @@ import { tool } from "ai";
 import { Client } from "@upstash/qstash";
 import { z } from "zod";
 
-const qstash = new Client({ token: process.env.QSTASH_TOKEN! });
+function getQStash() {
+  return new Client({ token: process.env.QSTASH_TOKEN! });
+}
 
 function getBaseUrl(): string {
   if (process.env.VERCEL_URL) {
@@ -47,7 +49,7 @@ export function setReminder({
         (deliverTime.getTime() - now.getTime()) / 1000
       );
 
-      await qstash.publishJSON({
+      await getQStash().publishJSON({
         url: `${getBaseUrl()}/api/reminders`,
         body: {
           userId,

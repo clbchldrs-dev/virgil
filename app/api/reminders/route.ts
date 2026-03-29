@@ -2,12 +2,16 @@ import { Receiver } from "@upstash/qstash";
 import { Resend } from "resend";
 import { getUserById, saveMemoryRecord } from "@/lib/db/queries";
 
-const receiver = new Receiver({
-  currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
-  nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY!,
-});
+function getReceiver() {
+  return new Receiver({
+    currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
+    nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY!,
+  });
+}
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -17,7 +21,7 @@ export async function POST(request: Request) {
     return new Response("Missing signature", { status: 401 });
   }
 
-  const isValid = await receiver.verify({ body, signature }).catch(() => false);
+  const isValid = await getReceiver().verify({ body, signature }).catch(() => false);
   if (!isValid) {
     return new Response("Invalid signature", { status: 401 });
   }
@@ -35,7 +39,7 @@ export async function POST(request: Request) {
 
   if (userEmail && !userEmail.startsWith("guest-")) {
     try {
-      await resend.emails.send({
+      await getResend().emails.send({
         from: "Assistant <onboarding@resend.dev>",
         to: userEmail,
         subject: `Reminder: ${payload.message.slice(0, 60)}`,

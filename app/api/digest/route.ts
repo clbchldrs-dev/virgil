@@ -1,7 +1,9 @@
 import { Resend } from "resend";
 import { getRecentMemories, getOwnerUsers } from "@/lib/db/queries";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -58,7 +60,7 @@ export async function GET(request: Request) {
 
       const body = `Here's what we covered in the last 24 hours:\n\n${sections.join("\n\n")}\n\nHave a good day.`;
 
-      await resend.emails.send({
+      await getResend().emails.send({
         from: "Assistant <onboarding@resend.dev>",
         to: owner.email,
         subject: `Your daily digest — ${new Date().toLocaleDateString()}`,
