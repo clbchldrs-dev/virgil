@@ -66,6 +66,27 @@ export async function getUserById({ id }: { id: string }): Promise<User | null> 
   }
 }
 
+export async function getOwnerUsers(): Promise<User[]> {
+  try {
+    return await db
+      .select({
+        id: user.id,
+        email: user.email,
+        password: user.password,
+        name: user.name,
+        emailVerified: user.emailVerified,
+        image: user.image,
+        isAnonymous: user.isAnonymous,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      })
+      .from(user)
+      .innerJoin(businessProfile, eq(businessProfile.userId, user.id));
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to get owner users");
+  }
+}
+
 export async function createUser(email: string, password: string) {
   const hashedPassword = generateHashedPassword(password);
 

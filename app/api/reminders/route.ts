@@ -29,16 +29,22 @@ export async function POST(request: Request) {
     scheduledFor: string;
   };
 
+  let emailSent = false;
   const owner = await getUserById({ id: payload.userId });
   const userEmail = owner?.email;
 
   if (userEmail && !userEmail.startsWith("guest-")) {
-    await resend.emails.send({
-      from: "Assistant <onboarding@resend.dev>",
-      to: userEmail,
-      subject: `Reminder: ${payload.message.slice(0, 60)}`,
-      text: `Hey — you asked me to remind you:\n\n${payload.message}\n\n(Originally scheduled for ${payload.scheduledFor})`,
-    });
+    try {
+      await resend.emails.send({
+        from: "Assistant <onboarding@resend.dev>",
+        to: userEmail,
+        subject: `Reminder: ${payload.message.slice(0, 60)}`,
+        text: `Hey — you asked me to remind you:\n\n${payload.message}\n\n(Originally scheduled for ${payload.scheduledFor})`,
+      });
+      emailSent = true;
+    } catch (error) {
+      console.error(`Reminder email failed for user ${payload.userId}:`, error);
+    }
   }
 
   await saveMemoryRecord({
@@ -49,6 +55,7 @@ export async function POST(request: Request) {
     metadata: {
       type: "reminder-delivered",
       scheduledFor: payload.scheduledFor,
+      emailSent,
     },
   });
 
