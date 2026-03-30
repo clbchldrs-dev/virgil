@@ -1,4 +1,3 @@
-import { VirgilError } from "@/lib/errors";
 import { getOllamaBaseUrl, getOllamaConnectionErrorCause } from "./providers";
 
 export type HealthCheckResult = {
@@ -7,9 +6,10 @@ export type HealthCheckResult = {
   ollama: {
     reachable: boolean;
     baseUrl: string;
+    models?: string[];
     error?: string;
   };
-  apis: Record<string, { configured: boolean; valid: boolean; error?: string }>;
+  env: Record<string, { configured: boolean; error?: string }>;
   errors: string[];
 };
 
@@ -17,11 +17,10 @@ const CHECK_CACHE_TTL_MS = 30_000;
 let lastCheckTime = 0;
 let cachedResult: HealthCheckResult | null = null;
 
-/**
- * Validate Ollama connectivity and model availability.
- * Returns null if OK, error message if not.
- */
-async function checkOllama(): Promise<string | null> {
+async function checkOllama(): Promise<{
+  error: string | null;
+  models: string[];
+}> {
   const baseUrl = getOllamaBaseUrl();
   try {
     const response = await fetch(`${baseUrl}/api/tags`, {
@@ -31,85 +30,125 @@ async function checkOllama(): Promise<string | null> {
     });
 
     if (!response.ok) {
-      return `Ollama returned status ${response.status}. Check if it's running at ${baseUrl}`;
+      return {
+        error: `Ollama returned status ${String(response.status)}. Is it running at ${baseUrl}?`,
+        models: [],
+      };
     }
 
-    const json = await response.json();
-    const models = json.models ?? [];
+    const json = (await response.json()) as { models?: { name: string }[] };
+    const models = (json.models ?? []).map((m) => m.name);
     if (models.length === 0) {
-      return `No models loaded in Ollama. Run 'ollama pull qwen2.5:3b' at ${baseUrl}`;
+      return {
+        error: `No models loaded. Run 'ollama pull qwen2.5:3b' to get started.`,
+        models: [],
+      };
     }
 
-    return null;
+    return { error: null, models };
   } catch (error) {
     const connectionError = getOllamaConnectionErrorCause(error, baseUrl);
     if (connectionError) {
-      return connectionError;
+      return { error: connectionError, models: [] };
     }
-    if (error instanceof Error) {
-      if (error.name === "AbortError") {
-        return `Ollama connection timeout at ${baseUrl}. Service may be overloaded.`;
-      }
-      return `Ollama error: ${error.message}`;
+    if (error instanceof Error && error.name === "AbortError") {
+      return {
+        error: `Ollama timeout at ${baseUrl} — service may be overloaded.`,
+        models: [],
+      };
     }
-    return `Ollama unreachable at ${baseUrl}`;
+    return {
+      error: `Ollama unreachable at ${baseUrl}`,
+      models: [],
+    };
   }
 }
 
-/**
- * Validate required API keys are present (basic check, not deep validation).
- */
-function checkApiKeys(): Record<
-  string,
-  { configured: boolean; valid: boolean; error?: string }
-> {
-  const checks: Record<
-    string,
-    { configured: boolean; valid: boolean; error?: string }
-  > = {};
+type EnvSpec = {
+  key: string;
+  required: boolean;
+  validate?: (v: string) => boolean;
+};
 
-  // MEM0
-  const mem0Key = process.env.MEM0_API_KEY?.trim();
-  checks.mem0 = {
-    configured: Boolean(mem0Key),
-    valid: mem0Key ? mem0Key.length > 10 : true, // if not configured, consider valid (optional)
-  };
+const ENV_SPECS: EnvSpec[] = [
+  {
+    key: "POSTGRES_URL",
+    required: true,
+    validate: (v) =>
+      v.startsWith("postgres://") || v.startsWith("postgresql://"),
+  },
+  {
+    key: "REDIS_URL",
+    required: true,
+    validate: (v) => v.startsWith("redis://") || v.startsWith("rediss://"),
+  },
+  {
+    key: "QSTASH_TOKEN",
+    required: false,
+    validate: (v) => v.startsWith("ey"),
+  },
+  {
+    key: "QSTASH_CURRENT_SIGNING_KEY",
+    required: false,
+  },
+  {
+    key: "QSTASH_NEXT_SIGNING_KEY",
+    required: false,
+  },
+  {
+    key: "RESEND_API_KEY",
+    required: false,
+    validate: (v) => v.startsWith("re_"),
+  },
+  {
+    key: "BLOB_READ_WRITE_TOKEN",
+    required: false,
+  },
+  {
+    key: "AI_GATEWAY_API_KEY",
+    required: false,
+  },
+  {
+    key: "CRON_SECRET",
+    required: false,
+  },
+];
 
-  // JIRA
-  const jiraToken = process.env.JIRA_API_TOKEN?.trim();
-  const jiraEmail = process.env.JIRA_EMAIL?.trim();
-  checks.jira = {
-    configured: Boolean(jiraToken && jiraEmail),
-    valid: jiraToken ? jiraToken.length > 5 : true,
-  };
+function checkEnvVars(): {
+  results: Record<string, { configured: boolean; error?: string }>;
+  errors: string[];
+} {
+  const results: Record<string, { configured: boolean; error?: string }> = {};
+  const errors: string[] = [];
 
-  // Upstash/QSTASH (for reminders)
-  const qstashToken = process.env.QSTASH_TOKEN?.trim();
-  checks.qstash = {
-    configured: Boolean(qstashToken),
-    valid: qstashToken ? qstashToken.length > 10 : true,
-  };
+  for (const spec of ENV_SPECS) {
+    const value = process.env[spec.key]?.trim();
+    if (!value) {
+      results[spec.key] = { configured: false };
+      if (spec.required) {
+        errors.push(`${spec.key} is missing (required)`);
+      }
+      continue;
+    }
 
-  // GitHub
-  const githubToken = process.env.GITHUB_PRODUCT_OPPORTUNITY_TOKEN?.trim();
-  checks.github = {
-    configured: Boolean(githubToken),
-    valid: githubToken ? githubToken.length > 10 : true,
-  };
+    if (spec.validate && !spec.validate(value)) {
+      results[spec.key] = {
+        configured: true,
+        error: "unexpected format",
+      };
+      errors.push(`${spec.key}: unexpected format`);
+      continue;
+    }
 
-  // AI Gateway
-  const aiGatewayKey = process.env.AI_GATEWAY_API_KEY?.trim();
-  checks.ai_gateway = {
-    configured: Boolean(aiGatewayKey),
-    valid: aiGatewayKey ? aiGatewayKey.length > 10 : true,
-  };
+    results[spec.key] = { configured: true };
+  }
 
-  return checks;
+  return { results, errors };
 }
 
 /**
- * Run full health check (Ollama + API keys).
- * Cached for 30s to avoid spam on repeated requests.
+ * Full health check: Ollama connectivity + env var presence.
+ * Cached for 30 s in long-running processes; harmless no-op on serverless cold starts.
  */
 export async function performHealthCheck(): Promise<HealthCheckResult> {
   const now = Date.now();
@@ -119,43 +158,33 @@ export async function performHealthCheck(): Promise<HealthCheckResult> {
 
   const baseUrl = getOllamaBaseUrl();
   const errors: string[] = [];
-  let ollamaError: string | null = null;
 
-  try {
-    ollamaError = await checkOllama();
-    if (ollamaError) {
-      errors.push(`Ollama: ${ollamaError}`);
-    }
-  } catch (error) {
-    const msg =
-      error instanceof Error
-        ? error.message
-        : "Unknown Ollama error";
-    errors.push(`Ollama check failed: ${msg}`);
-    ollamaError = msg;
+  const ollama = await checkOllama();
+  if (ollama.error) {
+    errors.push(`Ollama: ${ollama.error}`);
   }
 
-  const apiChecks = checkApiKeys();
-  const apiErrors = Object.entries(apiChecks)
-    .filter(([_, check]) => check.configured && !check.valid)
-    .map(([name, _]) => `${name}: invalid or truncated`);
+  const env = checkEnvVars();
+  errors.push(...env.errors);
 
-  errors.push(...apiErrors);
+  const hasOllamaError = Boolean(ollama.error);
+  const hasRequiredEnvMissing = env.errors.some((e) => e.includes("required"));
 
   const result: HealthCheckResult = {
     status:
-      errors.length === 0
-        ? "healthy"
-        : errors.some((e) => e.includes("Ollama"))
-          ? "error"
-          : "degraded",
+      hasOllamaError || hasRequiredEnvMissing
+        ? "error"
+        : errors.length > 0
+          ? "degraded"
+          : "healthy",
     timestamp: new Date().toISOString(),
     ollama: {
-      reachable: !ollamaError,
+      reachable: !hasOllamaError,
       baseUrl,
-      error: ollamaError ?? undefined,
+      models: ollama.models.length > 0 ? ollama.models : undefined,
+      error: ollama.error ?? undefined,
     },
-    apis: apiChecks,
+    env: env.results,
     errors,
   };
 
@@ -165,32 +194,40 @@ export async function performHealthCheck(): Promise<HealthCheckResult> {
 }
 
 /**
- * Called on app startup (or explicitly). Throws if critical checks fail.
- * Non-critical failures (optional APIs) are logged but don't block startup.
+ * Throws on critical failures (Ollama unreachable or required env missing).
+ * Logs non-critical issues without blocking startup.
  */
 export async function assertStartupReady(): Promise<void> {
   const check = await performHealthCheck();
 
   if (check.status === "error") {
-    const ollamaError = check.ollama.error;
-    throw new Error(
-      `Virgil startup check failed: ${ollamaError || check.errors.join("; ")}`
-    );
+    throw new Error(`Virgil startup check failed: ${check.errors.join("; ")}`);
   }
 
-  // Log degraded state but don't block
   if (check.status === "degraded" && check.errors.length > 0) {
-    console.warn(
-      `[Virgil] Startup check: some optional services unavailable:`,
-      check.errors.join("; ")
-    );
+    console.warn("[Virgil] Startup degraded:", check.errors.join("; "));
   }
 }
 
-/**
- * Clear the health check cache (e.g., after env reload).
- */
 export function clearHealthCheckCache(): void {
   cachedResult = null;
   lastCheckTime = 0;
+}
+
+/**
+ * Strip internal details (baseUrl, model list, per-key breakdown)
+ * for unauthenticated callers.
+ */
+export function redactHealthCheck(result: HealthCheckResult): Pick<
+  HealthCheckResult,
+  "status" | "timestamp" | "errors"
+> & {
+  ollama: { reachable: boolean };
+} {
+  return {
+    status: result.status,
+    timestamp: result.timestamp,
+    errors: result.errors,
+    ollama: { reachable: result.ollama.reachable },
+  };
 }
