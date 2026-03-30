@@ -302,13 +302,7 @@ const PurePreviewMessage = ({
       );
     }
 
-    if (
-      isToolUIPart(part) &&
-      type !== "tool-getWeather" &&
-      type !== "tool-createDocument" &&
-      type !== "tool-updateDocument" &&
-      type !== "tool-requestSuggestions"
-    ) {
+    if (isToolUIPart(part)) {
       const { toolCallId, state } = part;
       const approvalId = part.approval?.id;
       const isDenied =

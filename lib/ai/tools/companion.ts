@@ -31,6 +31,8 @@ export function getCompanionTools() {
   return { ...universalTools, ...localOnlyTools };
 }
 
-export function getCompanionToolNames(): string[] {
-  return Object.keys(getCompanionTools());
+export function getCompanionToolNames() {
+  return Object.keys(getCompanionTools()) as (keyof ReturnType<
+    typeof getCompanionTools
+  >)[];
 }

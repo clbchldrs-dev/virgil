@@ -1,0 +1,113 @@
+baseline_created: 2026-03-29
+
+=== FIVE-YEAR PLAN ===
+goal: early_retirement → indie_game_dev + freelance_writing
+timeline: 5 years (2029-2031 target)
+supporting: daily_journaling(750_words), python_study(consistent), agent_stack_buildout
+blockers: youtube_bingeing_eats_focus_time, limited_game_dev_portfolio, LLC_formation_pending
+dependency_chain: financial_stability → retirement → creative_freedom
+post_retirement_adds: piano, japanese_language
+
+=== NON-NEGOTIABLES ===
+daily: journaling_750_words
+weekly: python_study_hours (target: ≥5)
+weekly: martial_arts_training (BJJ 2-3x, Muay_Thai 2x)
+ongoing: ai_craft_coaching_skill_building
+ongoing: natchildersart_site_maintenance
+
+=== PERSONAL CONSTRAINTS ===
+time: full_time_job(senior_design_technologist) + martial_arts(4-5x/week) + spouse_household
+energy: training_days_reduce_evening_focus
+sequencing: LLC_formation blocks natalie_business_scaling
+sequencing: python_proficiency blocks indie_game_dev_start
+conflict: youtube_bingeing competes with journaling + python + game_dev_learning
+
+=== CURRENT PROJECTS ===
+project: virgil_ai_assistant
+  status: active_development
+  stack: next.js, drizzle, neon_postgres, upstash_redis, ollama_local, vercel_deploy
+  current: vercel_production_deploy, mem0_integration, phone_access
+  blockers: none_critical
+
+project: natchildersart.com
+  status: v1_launched
+  next: turso_migration, gallery_re-upload, LLC_formation(natalie)
+  blockers: LLC_paperwork_not_started
+
+project: agent_stack
+  status: planning_and_early_setup
+  hardware: ubuntu_machine(nvidia_titan), pocket_lab(pre-order_aug_2026)
+  software: agent_zero, gemini_api, tailscale
+  blockers: pocket_lab_not_shipped_yet
+
+project: python_learning
+  platform: coddy.tech
+  status: active_ongoing
+  target: proficiency_for_game_dev_and_agent_scripting
+
+project: game_dev_learning
+  engines: unity, unreal (tutorial_phase)
+  status: early_exploration
+  blockers: python_proficiency_first, time_budget
+
+=== PHYSICAL GOALS ===
+martial_art: BJJ
+  rank: purple_belt
+  experience: 7_years
+  role: youth_instructor
+  frequency: 2-3x/week
+
+martial_art: muay_thai
+  experience: 5_years
+  frequency: 2x/week
+
+goal: well_rounded_fighter
+goal: handstand_pushups
+goal: backflip
+goal: six_pack_visible
+approach: consistent_training + bodyweight_progressions
+
+=== PROFESSIONAL CONTEXT ===
+title: Senior Design Technologist
+company: Intuit (Mailchimp)
+team: DAMC (Design Automation & Marketing Creative)
+expertise: Voiceflow, Vesper, HelpGPT
+focus: ai_craft_skill_building, design_systems, conversational_ai
+tools: figma, typescript, react, next.js
+
+=== HOUSEHOLD/BUSINESS ===
+spouse: Natalie
+  business: natchildersart.com (art_sales)
+  next_step: LLC_formation (Georgia)
+  dependency: LLC → business_bank_account → scaling
+
+location: Decatur, Georgia
+pets: 6_cats, 1_dog(Fiona)
+household: garden(active)
+
+=== WORST BLOCKER ===
+name: YouTube/Shorts_bingeing
+impact: steals_journaling_time, steals_python_study_time, energy_drain, delayed_bedtime
+pattern: triggers_include(boredom, post-work_decompression, algorithm_autoplay, phone_in_hand)
+frequency: multiple_times_per_week
+cost: estimated_1-3_hrs/day_lost_on_bad_days
+action: actively_monitoring, working_to_reduce, virgil_should_track_and_nudge
+
+=== WEEKLY TRACKING METRICS ===
+metric: journaling_hours (target: ≥5.25, basis: 45min/day)
+metric: python_study_hours (target: ≥5)
+metric: youtube_hours (target: ≤5, current: likely_higher)
+metric: martial_arts_sessions (target: 4-5)
+metric: game_dev_hours (target: ≥1, aspirational)
+metric: natchildersart_hours (as_needed)
+review_day: Sunday
+
+=== COMMUNICATION PREFERENCES ===
+style: direct, no_compliments, no_fluff
+uncertainty: transparent, say_when_unsure
+files: request_proactively_when_needed
+coaching: challenge_gently, track_commitments, flag_drift
+
+=== DEMOGRAPHICS ===
+age: 39
+location: Decatur, GA
