@@ -219,6 +219,12 @@ export const chatModels: ChatModel[] = [
     description: "Fast non-reasoning model with tool use",
     gatewayOrder: ["xai"],
   },
+  {
+    id: "google/gemini-2.5-flash-lite",
+    name: "Gemini 2.5 Flash Lite",
+    provider: "google",
+    description: "Gemini model via Vercel AI Gateway",
+  },
 ];
 
 const localModelCapabilities: Record<string, ModelCapabilities> = {

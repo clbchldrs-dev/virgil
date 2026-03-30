@@ -178,7 +178,9 @@ test("slim companion prompt keeps warmth and is honest about limited memory", as
   assert.match(prompt, /Warm, direct, helpful/i);
   assert.match(prompt, /limited memory/i);
   assert.match(prompt, /Don't claim to remember things you can't see/i);
-  assert.doesNotMatch(prompt, /saveMemory|recallMemory|setReminder/);
+  // Slim/local prompt may mention the tool names to clarify they are unavailable.
+  assert.match(prompt, /no saveMemory or recallMemory tools/i);
+  assert.doesNotMatch(prompt, /setReminder/);
   assert.doesNotMatch(prompt, /Artifacts is a side panel/i);
 });
 
