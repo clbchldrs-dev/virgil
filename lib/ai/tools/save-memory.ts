@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { mem0AddText } from "@/lib/ai/mem0-client";
 import { chatOwnershipDenial } from "@/lib/ai/tool-policy";
 import { getChatById, saveMemoryRecord } from "@/lib/db/queries";
 
@@ -44,6 +45,13 @@ export function saveMemory({
         content: input.content,
         metadata: input.metadata,
       });
+
+      mem0AddText(input.content, userId, {
+        kind: input.kind,
+        chatId,
+        ...(input.metadata ?? {}),
+      }).catch(() => {});
+
       return {
         success: true,
         memoryId: record.id,

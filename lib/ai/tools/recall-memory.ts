@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { isMem0Configured, mem0Search } from "@/lib/ai/mem0-client";
 import { searchMemories } from "@/lib/db/queries";
 
 export function recallMemory({ userId }: { userId: string }) {
@@ -14,6 +15,29 @@ export function recallMemory({ userId }: { userId: string }) {
         .describe("Filter by memory type"),
     }),
     execute: async (input) => {
+      if (isMem0Configured()) {
+        const mem0Results = await mem0Search(input.query, userId, {
+          limit: 8,
+          ...(input.kind ? { categories: [input.kind] } : {}),
+        });
+
+        if (mem0Results.length === 0) {
+          return { found: false, message: "No relevant memories found." };
+        }
+
+        return {
+          found: true,
+          count: mem0Results.length,
+          memories: mem0Results.map((m) => ({
+            kind: m.categories?.at(0) ?? "note",
+            content: m.memory ?? "",
+            savedAt: m.created_at
+              ? new Date(m.created_at).toISOString()
+              : new Date().toISOString(),
+          })),
+        };
+      }
+
       const results = await searchMemories({
         userId,
         query: input.query,

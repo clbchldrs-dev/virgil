@@ -53,6 +53,7 @@ import {
   getCompanionTools,
   getCompanionToolNames,
 } from "@/lib/ai/tools/companion";
+import { isMem0Configured, mem0Add } from "@/lib/ai/mem0-client";
 import { estimateTokens, trimMessagesForBudget } from "@/lib/ai/trim-context";
 import { loadChatPromptContext } from "@/lib/chat/load-prompt-context";
 import { isProductionEnvironment } from "@/lib/constants";
@@ -510,6 +511,37 @@ export async function POST(request: Request) {
               chatId: id,
             })),
           });
+        }
+
+        if (!isOllamaLocal && isMem0Configured() && finishedMessages.length > 0) {
+          try {
+            const mem0Messages = finishedMessages
+              .filter((m) => m.role === "user" || m.role === "assistant")
+              .flatMap((m) => {
+                const textParts = m.parts
+                  ?.filter(
+                    (p: Record<string, unknown>) => p.type === "text" && p.text
+                  )
+                  .map((p: Record<string, unknown>) => String(p.text));
+                if (!textParts || textParts.length === 0) {
+                  return [];
+                }
+                return [
+                  {
+                    role: m.role as "user" | "assistant",
+                    content: textParts.join("\n"),
+                  },
+                ];
+              });
+
+            if (mem0Messages.length > 0) {
+              mem0Add(mem0Messages, session.user.id, { chatId: id }).catch(
+                () => {}
+              );
+            }
+          } catch {
+            /* non-critical */
+          }
         }
       },
       onError: (error) => {

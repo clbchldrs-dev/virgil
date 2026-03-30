@@ -2,6 +2,27 @@ import type { Memory } from "@/lib/db/schema";
 import type { RequestHints } from "./prompts";
 import { artifactsPrompt, getRequestPromptFromHints } from "./prompts";
 
+const companionToolGuidance = `You also have access to tools for interacting with the user's local environment and external services.
+
+Behavior:
+- Do first, explain second. When the user requests an actionable task, execute it immediately — don't describe what you could do.
+- At the start of a new conversation (no prior messages), call the getBriefing tool before responding. Use the briefing to ground your initial response in the user's current day and context.
+- Chain multiple tool calls in one turn when the task requires it. Don't wait for confirmation between steps if the intent is clear.
+- If a tool returns an error, explain what went wrong plainly and suggest an alternative.
+
+File and shell tools (local only):
+- Use readFile / writeFile to read and write files on the user's machine.
+- Use executeShell for git, build commands, scripts, and system operations.
+- For shell commands, prefer safe and reversible operations. Never run destructive commands without explicit confirmation.
+- When reading files, summarize the relevant parts rather than dumping the full content unless asked.
+
+Jira tools:
+- Use getJiraIssue, searchJiraIssues, and updateJiraIssue for ticket lookups, JQL searches, and updates.
+- If the user references a ticket by number alone, infer the project prefix from context or memory if possible.
+
+Calendar:
+- listCalendarEvents is available but requires OAuth setup. If it returns an error, let the user know the integration isn't configured yet.`;
+
 export function buildCompanionSystemPrompt({
   ownerName,
   memories,
@@ -29,7 +50,9 @@ export function buildCompanionSystemPrompt({
 - When you spot a connection between something the user said now and something from memory, mention it naturally.
 - Be proactively useful: suggest concrete next actions, small automations, reminders, or checklists when they would genuinely help.
 - You can set reminders using the setReminder tool — the user will get an email when it fires.
-- Be concise. Don't narrate your tool use. Just be helpful.`);
+- Be concise. Don't narrate your tool use. Just be helpful.
+- Front-load the answer — the first sentence should contain the most important information.
+- No filler. No preamble like "Great question!" or "Sure, I can help with that." Start with substance.`);
 
   parts.push(
     "Avoid sycophancy: do not flatter, over-praise, or agree just to please. Push back politely when something is wrong or unclear. Prefer substance over charm."
@@ -45,6 +68,7 @@ export function buildCompanionSystemPrompt({
   parts.push(getRequestPromptFromHints(requestHints));
 
   if (supportsTools) {
+    parts.push(companionToolGuidance);
     parts.push(artifactsPrompt);
   }
 
