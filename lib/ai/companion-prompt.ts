@@ -1,3 +1,4 @@
+import { buildGoalGuidancePromptAppendix } from "@/lib/ai/goal-guidance-prompt";
 import type { Memory } from "@/lib/db/schema";
 import type { RequestHints } from "./prompts";
 import { artifactsPrompt, getRequestPromptFromHints } from "./prompts";
@@ -29,6 +30,7 @@ export function buildCompanionSystemPrompt({
   requestHints,
   supportsTools,
   productOpportunityEnabled = false,
+  agentTaskEnabled = false,
 }: {
   ownerName: string | null;
   memories: Memory[];
@@ -36,6 +38,8 @@ export function buildCompanionSystemPrompt({
   supportsTools: boolean;
   /** Gateway + GitHub env: enables submitProductOpportunity tool guidance */
   productOpportunityEnabled?: boolean;
+  /** Gateway: enables submitAgentTask tool guidance */
+  agentTaskEnabled?: boolean;
 }): string {
   const parts: string[] = [];
 
@@ -70,11 +74,18 @@ export function buildCompanionSystemPrompt({
   if (supportsTools) {
     parts.push(companionToolGuidance);
     parts.push(artifactsPrompt);
+    parts.push(buildGoalGuidancePromptAppendix());
   }
 
   if (productOpportunityEnabled) {
     parts.push(
       "Product feedback (optional): If the user wants Virgil itself to improve, you may use submitProductOpportunity to open a GitHub issue for the owner. Only after they agree. Ideas must fit local-first, low-cost, small-model-friendly work — not generic feature dumps. Prefer one focused issue per agreed suggestion."
+    );
+  }
+
+  if (agentTaskEnabled) {
+    parts.push(
+      "Agent tasks: Use submitAgentTask when the user wants to queue an improvement, bug fix, refactor, or other task for Virgil itself. Confirm the task description before submitting. This creates a trackable task for Cursor or background agents to pick up. Include relevant file paths and a proposed approach when possible. Each task should be one focused, actionable change."
     );
   }
 

@@ -44,6 +44,13 @@ import {
   isLocalModel,
   type ModelCapabilities,
 } from "@/lib/ai/models";
+import { applyGoalRoutingHint } from "@/lib/chat/goal-routing-hint";
+import {
+  clearWeeklyDraft,
+  loadWeeklyDraftIfAny,
+  saveWeeklyDraft,
+  shouldPersistWeeklyDraft,
+} from "@/lib/chat/weekly-draft-storage";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
@@ -126,6 +133,28 @@ function PureMultimodalInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
   const hasAutoFocused = useRef(false);
+  const weeklyDraftHydrated = useRef(false);
+  useEffect(() => {
+    if (weeklyDraftHydrated.current) {
+      return;
+    }
+    weeklyDraftHydrated.current = true;
+    const draft = loadWeeklyDraftIfAny();
+    if (draft) {
+      setInput((prev) => (prev.trim() ? prev : draft));
+    }
+  }, [setInput]);
+
+  useEffect(() => {
+    if (!shouldPersistWeeklyDraft(input)) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      saveWeeklyDraft(input);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [input]);
+
   useEffect(() => {
     if (!hasAutoFocused.current && width) {
       const timer = setTimeout(() => {
@@ -236,6 +265,8 @@ function PureMultimodalInput({
       `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`
     );
 
+    const textToSend = applyGoalRoutingHint(input);
+
     sendMessage({
       role: "user",
       parts: [
@@ -247,10 +278,14 @@ function PureMultimodalInput({
         })),
         {
           type: "text",
-          text: input,
+          text: textToSend,
         },
       ],
     });
+
+    if (shouldPersistWeeklyDraft(input)) {
+      clearWeeklyDraft();
+    }
 
     setAttachments([]);
     setLocalStorageInput("");

@@ -143,10 +143,7 @@ export async function saveSuggestions({
   try {
     return await db.insert(suggestion).values(suggestions);
   } catch (_error) {
-    throw new VirgilError(
-      "bad_request:database",
-      "Failed to save suggestions"
-    );
+    throw new VirgilError("bad_request:database", "Failed to save suggestions");
   }
 }
 

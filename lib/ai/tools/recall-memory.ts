@@ -8,7 +8,11 @@ export function recallMemory({ userId }: { userId: string }) {
     description:
       "Search your memory for relevant past context. Use BEFORE answering questions that might relate to previous conversations — goals, preferences, past decisions, facts the user shared. Also use when you hear something that might connect to an earlier topic.",
     inputSchema: z.object({
-      query: z.string().describe("Natural-language query describing what to recall (e.g. 'what are the user goals for retirement')"),
+      query: z
+        .string()
+        .describe(
+          "Natural-language query describing what to recall (e.g. 'what are the user goals for retirement')"
+        ),
       kind: z
         .enum(["note", "fact", "goal", "opportunity"])
         .optional()

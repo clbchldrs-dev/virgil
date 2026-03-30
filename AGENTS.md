@@ -93,6 +93,8 @@ If the user is wrong, unclear, or about to do something unhelpful, Virgil should
 - `lib/db/schema.ts` — Drizzle schema
 - `lib/ai/tools/` — one tool per file
 - `lib/github/product-opportunity-issue.ts` — GitHub REST helper for gateway-only `submitProductOpportunity` ([docs/github-product-opportunity.md](docs/github-product-opportunity.md))
+- `lib/github/agent-task-issue.ts` — GitHub REST helper for `submitAgentTask` (agent task issues)
+- `lib/agent-tasks/` — background triage worker, config, schema, and prompts for agent task processing
 
 ## Local-First Rules
 
@@ -562,9 +564,15 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `NIGHT_REVIEW_EMAIL_ON_FINDINGS` | No   | No                 | Set to `1` to email when review finds material (needs Resend) |
 | `AGENT_FETCH_ALLOWLIST_HOSTS` | No      | No                 | Comma-separated hostnames for tool `fetch` (defaults include Open-Meteo) |
 | `MEM0_MONTHLY_SEARCH_LIMIT` | No | No | Monthly cap on mem0 search API calls; falls back to Postgres FTS when exhausted (default `1000`) |
+| `MEM0_MONTHLY_ADD_LIMIT` | No | No | Optional monthly cap on mem0 **add** (write) calls when `REDIS_URL` is set; when exhausted, mem0 writes are skipped (omit env for unlimited) |
+| `VIRGIL_CALENDAR_INTEGRATION` | No | No | Reserved: set to `1` when read-only calendar sync is implemented |
+| `VIRGIL_GIT_SIGNALS` | No | No | Reserved: set to `1` when Git/Vercel commit signals for study momentum are implemented |
+| `VIRGIL_JOURNAL_FILE_PARSE` | No | No | Reserved: set to `1` when optional journaling file parse is implemented |
 | `GITHUB_REPOSITORY` | No | No | `owner/repo` — enables `submitProductOpportunity` (gateway models); see [docs/github-product-opportunity.md](docs/github-product-opportunity.md) |
 | `GITHUB_PRODUCT_OPPORTUNITY_TOKEN` or `GITHUB_TOKEN` | No | No | PAT with `issues: write` on that repo |
 | `GITHUB_PRODUCT_OPPORTUNITY_LABELS` | No | No | Optional comma-separated issue labels |
+| `AGENT_TASK_TRIAGE_ENABLED` | No | No | Set to `1` to enable background triage of submitted agent tasks via local Ollama |
+| `AGENT_TASK_TRIAGE_MODEL` | No | No | Model id for triage worker (default `ollama/qwen2.5:7b-instruct`) |
 
 ### Hobby-to-Pro threshold
 
@@ -611,6 +619,29 @@ When changing local-model behavior, favor focused regression tests around:
 - trimmed-context behavior
 - local error messages
 
+## Agent Task Pickup Convention
+
+Virgil can accept self-improvement tasks via chat (`submitAgentTask` tool, gateway-only). Tasks are stored in the `AgentTask` Postgres table and optionally mirrored as GitHub Issues with `agent-task` + type labels.
+
+### For Cursor agents (or other automated agents)
+
+1. **On session start:** query the `AgentTask` table or GitHub Issues with label `approved-for-build` for approved tasks.
+2. **Pick** the highest-priority approved task.
+3. **Follow** existing coding guidance in this file (TypeScript strict, focused changes, local-first principles).
+4. **Update status** to `in_progress` via `PATCH /api/agent-tasks` before starting work, then `done` on completion (or note blockers).
+5. **Reference** the task ID in commit messages when implementing a task.
+
+### Background triage
+
+When `AGENT_TASK_TRIAGE_ENABLED=1`, a cron job (`GET /api/agent-tasks/enqueue`, same auth as night review) fans out via QStash to a triage worker that uses local Ollama (`generateObject`) to analyze submitted tasks against project principles. The worker writes `agentNotes` (alignment analysis, scope estimate, suggested files, risks) but does **not** auto-approve — the owner must approve via the API.
+
+**Scheduling:** Vercel Hobby is at the 2-cron limit (digest + night-review). Use self-hosted cron for the triage enqueue (e.g. `0 */6 * * *` every 6 hours, or piggyback on the `0 3 * * *` slot via a script that curls both endpoints). See [Scheduled jobs on the host](#scheduled-jobs-on-the-host-no-vercel-cron).
+
+### API
+
+- `GET /api/agent-tasks?status=approved` — list tasks (auth required)
+- `PATCH /api/agent-tasks` — update status/notes (auth required, body: `{ id, status, agentNotes? }`)
+
 ## Key Decisions
 
 Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](docs/DECISIONS.md)**.
@@ -623,6 +654,7 @@ Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](doc
 - **Product opportunity** (`submitProductOpportunity`): gateway-only; GitHub errors sanitized for tool results — [docs/github-product-opportunity.md](docs/github-product-opportunity.md), [docs/DECISIONS.md](docs/DECISIONS.md).
 - **Night insights** (`/night-insights`): grouped by night-review run; accept/dismiss updates memory metadata only — [workspace/night/README.md](workspace/night/README.md), [lib/night-review/digest-display.ts](lib/night-review/digest-display.ts).
 - **Self-hosted / LAN:** cron parity with [`vercel.json`](vercel.json) and `AUTH_URL` / `NEXT_PUBLIC_APP_URL` — [Scheduled jobs on the host](#scheduled-jobs-on-the-host-no-vercel-cron), [Self-hosted schedules](#self-hosted-schedules-no-vercel-cron) (alias anchor).
+- **Agent task orchestration** (`submitAgentTask`): gateway-only tool writes to `AgentTask` table + optional GitHub Issue; background triage via local Ollama `generateObject`; manual approval required before any agent picks up work — see [Agent Task Pickup Convention](#agent-task-pickup-convention).
 
 ## Enhancement Review Process
 

@@ -1,6 +1,7 @@
 import type { InferSelectModel } from "drizzle-orm";
 import {
   boolean,
+  date,
   foreignKey,
   integer,
   json,
@@ -8,6 +9,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -255,3 +257,80 @@ export const nightReviewRun = pgTable("NightReviewRun", {
 });
 
 export type NightReviewRun = InferSelectModel<typeof nightReviewRun>;
+
+/** Canonical weekly metrics for goal-guidance (Postgres-first; mem0 optional). */
+export const goalWeeklySnapshot = pgTable(
+  "GoalWeeklySnapshot",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    weekEnding: date("weekEnding").notNull(),
+    metrics: json("metrics").$type<Record<string, unknown>>().notNull(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    userWeekUnique: uniqueIndex(
+      "GoalWeeklySnapshot_userId_weekEnding_unique"
+    ).on(table.userId, table.weekEnding),
+  })
+);
+
+export type GoalWeeklySnapshot = InferSelectModel<typeof goalWeeklySnapshot>;
+
+export const blockerIncident = pgTable("BlockerIncident", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  chatId: uuid("chatId").references(() => chat.id, { onDelete: "set null" }),
+  blockerKey: varchar("blockerKey", { length: 128 }).notNull(),
+  summary: text("summary").notNull(),
+  triggerGuess: text("triggerGuess"),
+  mitigationNote: text("mitigationNote"),
+  metadata: json("metadata")
+    .$type<Record<string, unknown>>()
+    .notNull()
+    .default({}),
+  occurredAt: timestamp("occurredAt").notNull().defaultNow(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type BlockerIncident = InferSelectModel<typeof blockerIncident>;
+
+/** Tasks submitted via chat for Cursor or background agents to pick up. */
+export const agentTask = pgTable("AgentTask", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  chatId: uuid("chatId").references(() => chat.id, { onDelete: "set null" }),
+  taskType: varchar("taskType", {
+    enum: ["bug", "feature", "refactor", "prompt", "docs", "infra"],
+  }).notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  priority: varchar("priority", {
+    enum: ["low", "medium", "high", "critical"],
+  })
+    .notNull()
+    .default("medium"),
+  status: varchar("status", {
+    enum: ["submitted", "approved", "in_progress", "done", "rejected"],
+  })
+    .notNull()
+    .default("submitted"),
+  githubIssueNumber: integer("githubIssueNumber"),
+  githubIssueUrl: text("githubIssueUrl"),
+  agentNotes: text("agentNotes"),
+  metadata: json("metadata")
+    .$type<Record<string, unknown>>()
+    .notNull()
+    .default({}),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type AgentTask = InferSelectModel<typeof agentTask>;

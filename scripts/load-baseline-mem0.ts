@@ -24,7 +24,7 @@ if (!MEM0_API_KEY) {
 
 const userIdFlag = process.argv.indexOf("--user-id");
 const USER_ID: string | undefined =
-  (userIdFlag !== -1 ? process.argv[userIdFlag + 1] : undefined) ??
+  (userIdFlag === -1 ? undefined : process.argv[userIdFlag + 1]) ??
   process.env.USER_ID;
 
 if (!USER_ID) {
@@ -114,9 +114,7 @@ async function addToMem0(
 
 async function main() {
   const sections = parseSections(raw);
-  console.log(
-    `Parsed ${sections.length} sections from caleb-baseline.txt\n`
-  );
+  console.log(`Parsed ${sections.length} sections from caleb-baseline.txt\n`);
   console.log(`User ID: ${userId}\n`);
 
   let ok = 0;

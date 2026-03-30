@@ -12,6 +12,7 @@
   "files": {
     "includes": [
       "**/*",
+      "!.pnpm-store",
       "!components/ai-elements",
       "!components/elements",
       "!components/ui",

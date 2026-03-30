@@ -59,7 +59,7 @@ export function buildCompactCompanionPrompt({
       : " Keep answers focused; a short list is fine when it helps.";
   return [
     `Virgil — personal assistant for ${name}. Honest, concise, proactive, not sycophantic.`,
-    `Local model: memory may be trimmed.${classHint}${memoryBlock}`,
+    `Local model: memory may be trimmed; no saveMemory/recallMemory.${classHint}${memoryBlock}`,
   ].join("\n");
 }
 
@@ -113,6 +113,9 @@ export function buildSlimCompanionPrompt({
   );
   parts.push(
     "You run locally with limited memory. Older parts of this conversation may be trimmed."
+  );
+  parts.push(
+    "This local path has no saveMemory or recallMemory tools: you cannot batch-fetch mem0 or persist weekly goal snapshots from tools. For full weekly reviews with memory tools, the user can switch to a hosted gateway model."
   );
   parts.push("Don't claim to remember things you can't see above.");
   parts.push("If context seems missing, say so honestly rather than guessing.");

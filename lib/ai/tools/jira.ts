@@ -57,7 +57,7 @@ export const searchJiraIssues = tool({
   execute: async ({ jql, maxResults }) => {
     try {
       const data = await jiraFetch(
-        `/search?jql=${encodeURIComponent(jql)}&maxResults=${maxResults}`,
+        `/search?jql=${encodeURIComponent(jql)}&maxResults=${maxResults}`
       );
       return {
         total: data.total,
@@ -74,7 +74,7 @@ export const searchJiraIssues = tool({
             summary: issue.fields.summary,
             status: issue.fields.status.name,
             assignee: issue.fields.assignee?.displayName ?? "Unassigned",
-          }),
+          })
         ),
       };
     } catch (err: unknown) {
@@ -84,8 +84,7 @@ export const searchJiraIssues = tool({
 });
 
 export const updateJiraIssue = tool({
-  description:
-    "Update a Jira issue. Can change the summary or add a comment.",
+  description: "Update a Jira issue. Can change the summary or add a comment.",
   inputSchema: z.object({
     issueKey: z.string().describe("Jira issue key"),
     summary: z.string().optional().describe("New summary/title"),

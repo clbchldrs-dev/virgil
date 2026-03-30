@@ -82,10 +82,7 @@ export async function createStreamId({
       .insert(stream)
       .values({ id: streamId, chatId, createdAt: new Date() });
   } catch (_error) {
-    throw new VirgilError(
-      "bad_request:database",
-      "Failed to create stream id"
-    );
+    throw new VirgilError("bad_request:database", "Failed to create stream id");
   }
 }
 

@@ -1,12 +1,8 @@
-import { readFile, writeFile } from "./filesystem";
-import { executeShell } from "./shell";
-import {
-  getJiraIssue,
-  searchJiraIssues,
-  updateJiraIssue,
-} from "./jira";
-import { listCalendarEvents } from "./calendar";
 import { getBriefing } from "./briefing";
+import { listCalendarEvents } from "./calendar";
+import { readFile, writeFile } from "./filesystem";
+import { getJiraIssue, searchJiraIssues, updateJiraIssue } from "./jira";
+import { executeShell } from "./shell";
 
 const isVercel = Boolean(process.env.VERCEL);
 

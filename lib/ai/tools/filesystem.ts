@@ -8,7 +8,7 @@ function validatePath(resolved: string): string | null {
 
   if (allowedRoots.length > 0) {
     const withinRoot = allowedRoots.some((root) =>
-      resolved.startsWith(root.trim()),
+      resolved.startsWith(root.trim())
     );
     if (!withinRoot) {
       return `Path ${resolved} is outside allowed roots: ${allowedRoots.join(", ")}`;

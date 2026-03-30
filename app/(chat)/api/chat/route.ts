@@ -16,6 +16,7 @@ import { buildCompanionSystemPrompt } from "@/lib/ai/companion-prompt";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import { buildFrontDeskSystemPrompt } from "@/lib/ai/front-desk-prompt";
 import { buildLocalChatTitleFromUserMessage } from "@/lib/ai/local-title";
+import { isMem0Configured, mem0Add } from "@/lib/ai/mem0-client";
 import {
   DEFAULT_CHAT_MODEL,
   getChatModelWithLocalFallback,
@@ -37,6 +38,10 @@ import {
   buildSlimCompanionPrompt,
   buildSlimFrontDeskPrompt,
 } from "@/lib/ai/slim-prompt";
+import {
+  getCompanionToolNames,
+  getCompanionTools,
+} from "@/lib/ai/tools/companion";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { editDocument } from "@/lib/ai/tools/edit-document";
 import { escalateToHuman } from "@/lib/ai/tools/escalate-to-human";
@@ -46,14 +51,10 @@ import { recordIntake } from "@/lib/ai/tools/record-intake";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { saveMemory } from "@/lib/ai/tools/save-memory";
 import { setReminder } from "@/lib/ai/tools/set-reminder";
+import { submitAgentTask } from "@/lib/ai/tools/submit-agent-task";
 import { submitProductOpportunity } from "@/lib/ai/tools/submit-product-opportunity";
 import { summarizeOpportunity } from "@/lib/ai/tools/summarize-opportunity";
 import { updateDocument } from "@/lib/ai/tools/update-document";
-import {
-  getCompanionTools,
-  getCompanionToolNames,
-} from "@/lib/ai/tools/companion";
-import { isMem0Configured, mem0Add } from "@/lib/ai/mem0-client";
 import { estimateTokens, trimMessagesForBudget } from "@/lib/ai/trim-context";
 import { loadChatPromptContext } from "@/lib/chat/load-prompt-context";
 import { isProductionEnvironment } from "@/lib/constants";
@@ -260,6 +261,8 @@ export async function POST(request: Request) {
     const productOpportunityEnabled =
       !isOllamaLocal && isProductOpportunityConfigured();
 
+    const agentTaskEnabled = !isOllamaLocal;
+
     const systemPromptText =
       isOllamaLocal && promptVariant === "compact"
         ? isBusinessMode
@@ -299,6 +302,7 @@ export async function POST(request: Request) {
                 requestHints,
                 supportsTools: promptSupportsTools,
                 productOpportunityEnabled,
+                agentTaskEnabled,
               });
 
     const convertedModelMessages = await convertToModelMessages(uiMessages);
@@ -408,6 +412,26 @@ export async function POST(request: Request) {
           allowed: productOpportunityEnabled,
         });
 
+        const agentTaskTool = submitAgentTask({
+          userId: session.user.id,
+          chatId: id,
+          allowed: agentTaskEnabled,
+        });
+
+        const gatewayExtraTools = {
+          ...(productOpportunityEnabled
+            ? { submitProductOpportunity: productOpportunityTool }
+            : {}),
+          ...(agentTaskEnabled ? { submitAgentTask: agentTaskTool } : {}),
+        };
+
+        const gatewayExtraToolNames = [
+          ...(productOpportunityEnabled
+            ? (["submitProductOpportunity"] as const)
+            : []),
+          ...(agentTaskEnabled ? (["submitAgentTask"] as const) : []),
+        ];
+
         const result = isOllamaLocal
           ? streamText(localCommonStreamArgs)
           : isBusinessMode
@@ -427,9 +451,7 @@ export async function POST(request: Request) {
                     businessOwnerUserId: businessProfile.userId,
                   }),
                   summarizeOpportunity,
-                  ...(productOpportunityEnabled
-                    ? { submitProductOpportunity: productOpportunityTool }
-                    : {}),
+                  ...gatewayExtraTools,
                 },
                 experimental_activeTools: noActiveTools
                   ? []
@@ -438,9 +460,7 @@ export async function POST(request: Request) {
                       "recordIntake",
                       "escalateToHuman",
                       "summarizeOpportunity",
-                      ...(productOpportunityEnabled
-                        ? (["submitProductOpportunity"] as const)
-                        : []),
+                      ...gatewayExtraToolNames,
                     ],
               })
             : streamText({
@@ -448,18 +468,14 @@ export async function POST(request: Request) {
                 tools: {
                   ...baseTools,
                   ...companionTools,
-                  ...(productOpportunityEnabled
-                    ? { submitProductOpportunity: productOpportunityTool }
-                    : {}),
+                  ...gatewayExtraTools,
                 },
                 experimental_activeTools: noActiveTools
                   ? []
                   : [
                       ...baseToolNames,
                       ...companionToolNames,
-                      ...(productOpportunityEnabled
-                        ? (["submitProductOpportunity"] as const)
-                        : []),
+                      ...gatewayExtraToolNames,
                     ],
               });
 
@@ -513,7 +529,11 @@ export async function POST(request: Request) {
           });
         }
 
-        if (!isOllamaLocal && isMem0Configured() && finishedMessages.length > 0) {
+        if (
+          !isOllamaLocal &&
+          isMem0Configured() &&
+          finishedMessages.length > 0
+        ) {
           try {
             const mem0Messages = finishedMessages
               .filter((m) => m.role === "user" || m.role === "assistant")
