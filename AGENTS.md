@@ -453,14 +453,14 @@ Creates a demo user and sample businesses (see `lib/db/seed.ts`). Use only on a 
 ## Step 6 — Deploy to Vercel (when ready)
 
 1. Push the repo to GitHub (or use Vercel CLI `vercel link`).
-2. **Import** the repo in Vercel → set the same env vars in **Project → Settings → Environment Variables** (except you often **omit** `AI_GATEWAY_API_KEY` in production if OIDC is used—see [Deployment (production)](#deployment-production)).
+2. **Import** the repo in Vercel → set the same env vars in **Project → Settings → Environment Variables** (except you often **omit** `AI_GATEWAY_API_KEY` in production if OIDC is used—see [Deployment (production)](#deployment-production)). For a **copy order** and phone/HTTPS origins (`AUTH_URL` + `NEXT_PUBLIC_APP_URL`), see [docs/vercel-env-setup.md](docs/vercel-env-setup.md).
 3. Deploy, then run `pnpm db:migrate` against production **or** run migrations from CI / local with `POSTGRES_URL` pointing at production (careful).
 
-More detail: [Deployment (production)](#deployment-production).
+More detail: [Deployment (production)](#deployment-production), [docs/vercel-env-setup.md](docs/vercel-env-setup.md).
 
 ## Deployment (production)
 
-Vercel and production env: provisioning, deploy commands, **environment variable summary**, quotas, and cost posture.
+Vercel and production env: provisioning, deploy commands, **environment variable summary**, quotas, and cost posture. **Vercel dashboard checklist** (including `AUTH_URL` / `NEXT_PUBLIC_APP_URL`): [docs/vercel-env-setup.md](docs/vercel-env-setup.md).
 
 ### Prerequisites
 
@@ -561,6 +561,7 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `NIGHT_REVIEW_TIMEZONE` | No             | No                 | IANA tz for idempotency window key (default `UTC`) |
 | `NIGHT_REVIEW_EMAIL_ON_FINDINGS` | No   | No                 | Set to `1` to email when review finds material (needs Resend) |
 | `AGENT_FETCH_ALLOWLIST_HOSTS` | No      | No                 | Comma-separated hostnames for tool `fetch` (defaults include Open-Meteo) |
+| `MEM0_MONTHLY_SEARCH_LIMIT` | No | No | Monthly cap on mem0 search API calls; falls back to Postgres FTS when exhausted (default `1000`) |
 | `GITHUB_REPOSITORY` | No | No | `owner/repo` — enables `submitProductOpportunity` (gateway models); see [docs/github-product-opportunity.md](docs/github-product-opportunity.md) |
 | `GITHUB_PRODUCT_OPPORTUNITY_TOKEN` or `GITHUB_TOKEN` | No | No | PAT with `issues: write` on that repo |
 | `GITHUB_PRODUCT_OPPORTUNITY_LABELS` | No | No | Optional comma-separated issue labels |

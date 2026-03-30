@@ -1,7 +1,7 @@
 import { createClient } from "redis";
 
 import { isProductionEnvironment } from "@/lib/constants";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 
 const MAX_MESSAGES = 10;
 const TTL_SECONDS = 60 * 60;
@@ -17,6 +17,14 @@ function getClient() {
     });
   }
   return client;
+}
+
+export function getRedisClient() {
+  const redis = getClient();
+  if (!redis?.isReady) {
+    return null;
+  }
+  return redis;
 }
 
 export async function checkIpRateLimit(ip: string | undefined) {
@@ -38,10 +46,10 @@ export async function checkIpRateLimit(ip: string | undefined) {
       .exec();
 
     if (typeof count === "number" && count > MAX_MESSAGES) {
-      throw new ChatbotError("rate_limit:chat");
+      throw new VirgilError("rate_limit:chat");
     }
   } catch (error) {
-    if (error instanceof ChatbotError) {
+    if (error instanceof VirgilError) {
       throw error;
     }
   }
