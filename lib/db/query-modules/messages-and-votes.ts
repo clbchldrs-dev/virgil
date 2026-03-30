@@ -1,7 +1,7 @@
 import "server-only";
 
 import { and, asc, eq, gte, inArray } from "drizzle-orm";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 import { db } from "../client";
 import { type DBMessage, message, vote } from "../schema";
 
@@ -9,7 +9,7 @@ export async function saveMessages({ messages }: { messages: DBMessage[] }) {
   try {
     return await db.insert(message).values(messages);
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to save messages");
+    throw new VirgilError("bad_request:database", "Failed to save messages");
   }
 }
 
@@ -23,7 +23,7 @@ export async function updateMessage({
   try {
     return await db.update(message).set({ parts }).where(eq(message.id, id));
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to update message");
+    throw new VirgilError("bad_request:database", "Failed to update message");
   }
 }
 
@@ -35,7 +35,7 @@ export async function getMessagesByChatId({ id }: { id: string }) {
       .where(eq(message.chatId, id))
       .orderBy(asc(message.createdAt));
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get messages by chat id"
     );
@@ -69,7 +69,7 @@ export async function voteMessage({
       isUpvoted: type === "up",
     });
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to vote message");
+    throw new VirgilError("bad_request:database", "Failed to vote message");
   }
 }
 
@@ -77,7 +77,7 @@ export async function getVotesByChatId({ id }: { id: string }) {
   try {
     return await db.select().from(vote).where(eq(vote.chatId, id));
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get votes by chat id"
     );
@@ -88,7 +88,7 @@ export async function getMessageById({ id }: { id: string }) {
   try {
     return await db.select().from(message).where(eq(message.id, id));
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get message by id"
     );
@@ -128,7 +128,7 @@ export async function deleteMessagesByChatIdAfterTimestamp({
         );
     }
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to delete messages by chat id after timestamp"
     );

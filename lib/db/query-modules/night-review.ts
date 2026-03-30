@@ -1,7 +1,7 @@
 import "server-only";
 
 import { and, asc, count, desc, eq, gte, lte, sql } from "drizzle-orm";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 import { db } from "../client";
 import {
   chat,
@@ -42,7 +42,7 @@ export async function saveNightReviewRunLog({
       error: error ?? null,
     });
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to save night review run log"
     );
@@ -77,7 +77,7 @@ export async function getNightReviewMemoriesForUser({
       .orderBy(desc(memory.createdAt))
       .limit(limit);
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get night review memories"
     );
@@ -101,15 +101,15 @@ export async function setNightReviewMemoryDecision({
       .limit(1);
 
     if (!row) {
-      throw new ChatbotError("not_found:memory");
+      throw new VirgilError("not_found:memory");
     }
 
     const meta = row.metadata as Record<string, unknown>;
     if (meta.source !== "night-review") {
-      throw new ChatbotError("forbidden:memory");
+      throw new VirgilError("forbidden:memory");
     }
     if (String(meta.phase ?? "") === "complete") {
-      throw new ChatbotError("bad_request:api");
+      throw new VirgilError("bad_request:api");
     }
 
     const nextMetadata = {
@@ -125,14 +125,14 @@ export async function setNightReviewMemoryDecision({
       .returning();
 
     if (!updated) {
-      throw new ChatbotError("bad_request:database", "Failed to update memory");
+      throw new VirgilError("bad_request:database", "Failed to update memory");
     }
     return updated;
   } catch (error) {
-    if (error instanceof ChatbotError) {
+    if (error instanceof VirgilError) {
       throw error;
     }
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to set night review memory decision"
     );
@@ -162,7 +162,7 @@ export async function hasCompletedNightReviewForWindow({
       .limit(1);
     return rows.length > 0;
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to check night review idempotency"
     );
@@ -209,7 +209,7 @@ export async function getMessagesForUserInWindow({
       .orderBy(asc(message.createdAt))
       .limit(limit);
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to load messages for night review"
     );
@@ -239,7 +239,7 @@ export async function countMessagesForUserInWindow({
       );
     return Number(row?.c ?? 0);
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to count messages for night review"
     );

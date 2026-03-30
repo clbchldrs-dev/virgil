@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document defines the tool-use layer for the chatbot companion. Tools are built on the Vercel AI SDK's native `tool()` API and registered conditionally based on runtime environment (local vs. Vercel).
+This document defines the tool-use layer for Virgil (companion mode). Tools are built on the Vercel AI SDK's native `tool()` API and registered conditionally based on runtime environment (local vs. Vercel).
 
 ## File Structure
 

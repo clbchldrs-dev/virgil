@@ -3,15 +3,15 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: chatbot
-      POSTGRES_PASSWORD: chatbot
-      POSTGRES_DB: chatbot
+      POSTGRES_USER: virgil
+      POSTGRES_PASSWORD: virgil
+      POSTGRES_DB: virgil
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chatbot -d chatbot"]
+      test: ["CMD-SHELL", "pg_isready -U virgil -d virgil"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -54,7 +54,7 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      POSTGRES_URL: postgresql://chatbot:chatbot@postgres:5432/chatbot
+      POSTGRES_URL: postgresql://virgil:virgil@postgres:5432/virgil
       REDIS_URL: redis://redis:6379
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}

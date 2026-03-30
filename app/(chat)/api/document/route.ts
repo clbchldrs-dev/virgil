@@ -7,7 +7,7 @@ import {
   saveDocument,
   updateDocumentContent,
 } from "@/lib/db/queries";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 
 const documentSchema = z.object({
   content: z.string(),
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   const id = searchParams.get("id");
 
   if (!id) {
-    return new ChatbotError(
+    return new VirgilError(
       "bad_request:api",
       "Parameter id is missing"
     ).toResponse();
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
   const session = await auth();
 
   if (!session?.user) {
-    return new ChatbotError("unauthorized:document").toResponse();
+    return new VirgilError("unauthorized:document").toResponse();
   }
 
   const documents = await getDocumentsById({ id });
@@ -38,11 +38,11 @@ export async function GET(request: Request) {
   const [document] = documents;
 
   if (!document) {
-    return new ChatbotError("not_found:document").toResponse();
+    return new VirgilError("not_found:document").toResponse();
   }
 
   if (document.userId !== session.user.id) {
-    return new ChatbotError("forbidden:document").toResponse();
+    return new VirgilError("forbidden:document").toResponse();
   }
 
   return Response.json(documents, { status: 200 });
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   const id = searchParams.get("id");
 
   if (!id) {
-    return new ChatbotError(
+    return new VirgilError(
       "bad_request:api",
       "Parameter id is required."
     ).toResponse();
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
   const session = await auth();
 
   if (!session?.user) {
-    return new ChatbotError("not_found:document").toResponse();
+    return new VirgilError("not_found:document").toResponse();
   }
 
   let content: string;
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     kind = parsed.kind;
     isManualEdit = parsed.isManualEdit;
   } catch {
-    return new ChatbotError(
+    return new VirgilError(
       "bad_request:api",
       "Invalid request body."
     ).toResponse();
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     const [doc] = documents;
 
     if (doc.userId !== session.user.id) {
-      return new ChatbotError("forbidden:document").toResponse();
+      return new VirgilError("forbidden:document").toResponse();
     }
   }
 
@@ -115,14 +115,14 @@ export async function DELETE(request: Request) {
   const timestamp = searchParams.get("timestamp");
 
   if (!id) {
-    return new ChatbotError(
+    return new VirgilError(
       "bad_request:api",
       "Parameter id is required."
     ).toResponse();
   }
 
   if (!timestamp) {
-    return new ChatbotError(
+    return new VirgilError(
       "bad_request:api",
       "Parameter timestamp is required."
     ).toResponse();
@@ -131,7 +131,7 @@ export async function DELETE(request: Request) {
   const session = await auth();
 
   if (!session?.user) {
-    return new ChatbotError("unauthorized:document").toResponse();
+    return new VirgilError("unauthorized:document").toResponse();
   }
 
   const documents = await getDocumentsById({ id });
@@ -139,13 +139,13 @@ export async function DELETE(request: Request) {
   const [document] = documents;
 
   if (document.userId !== session.user.id) {
-    return new ChatbotError("forbidden:document").toResponse();
+    return new VirgilError("forbidden:document").toResponse();
   }
 
   const parsedTimestamp = new Date(timestamp);
 
   if (Number.isNaN(parsedTimestamp.getTime())) {
-    return new ChatbotError(
+    return new VirgilError(
       "bad_request:api",
       "Invalid timestamp."
     ).toResponse();

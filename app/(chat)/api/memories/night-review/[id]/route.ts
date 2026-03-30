@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { auth } from "@/app/(auth)/auth";
 import { setNightReviewMemoryDecision } from "@/lib/db/queries";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 
 const bodySchema = z.object({
   decision: z.enum(["accepted", "dismissed"]),
@@ -14,7 +14,7 @@ export async function PATCH(
 ) {
   const session = await auth();
   if (!session?.user) {
-    return new ChatbotError("unauthorized:chat").toResponse();
+    return new VirgilError("unauthorized:chat").toResponse();
   }
 
   const { id } = await context.params;
@@ -22,12 +22,12 @@ export async function PATCH(
   try {
     json = await _request.json();
   } catch {
-    return new ChatbotError("bad_request:api").toResponse();
+    return new VirgilError("bad_request:api").toResponse();
   }
 
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
-    return new ChatbotError("bad_request:api").toResponse();
+    return new VirgilError("bad_request:api").toResponse();
   }
 
   try {
@@ -38,9 +38,9 @@ export async function PATCH(
     });
     return Response.json({ memory });
   } catch (error) {
-    if (error instanceof ChatbotError) {
+    if (error instanceof VirgilError) {
       return error.toResponse();
     }
-    return new ChatbotError("offline:chat").toResponse();
+    return new VirgilError("offline:chat").toResponse();
   }
 }

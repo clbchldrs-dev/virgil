@@ -1,7 +1,7 @@
 import "server-only";
 
 import { and, desc, eq, gte } from "drizzle-orm";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 import { client, db } from "../client";
 import { type Memory, memory } from "../schema";
 
@@ -27,7 +27,7 @@ export async function saveMemoryRecord({
       .returning();
     return created;
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to save memory");
+    throw new VirgilError("bad_request:database", "Failed to save memory");
   }
 }
 
@@ -68,7 +68,7 @@ export async function searchMemories({
     );
     return result;
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to search memories");
+    throw new VirgilError("bad_request:database", "Failed to search memories");
   }
 }
 
@@ -89,7 +89,7 @@ export async function getRecentMemories({
       .orderBy(desc(memory.createdAt))
       .limit(limit);
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get recent memories"
     );

@@ -1,7 +1,7 @@
 import { customProvider, gateway, type LanguageModel } from "ai";
 import { createOllama } from "ai-sdk-ollama";
 import { isTestEnvironment } from "../constants";
-import { ChatbotError } from "../errors";
+import { VirgilError } from "../errors";
 import type { ChatModel } from "./models";
 import { isLocalModel, resolveRuntimeModelId, titleModel } from "./models";
 
@@ -62,7 +62,7 @@ const OLLAMA_FULL_MESSAGE_PREFIX = "__FULL__:" as const;
 /**
  * User-safe explanation for Ollama failures (connection, missing model, timeouts).
  * Connection errors return the same wording as today; other cases use __FULL__ prefix
- * so {@link ChatbotError} does not prepend "Ollama is not reachable at …".
+ * so {@link VirgilError} does not prepend "Ollama is not reachable at …".
  */
 export function getOllamaErrorUserPayload(
   error: unknown,
@@ -103,7 +103,7 @@ export function getOllamaErrorUserPayload(
   return `${OLLAMA_FULL_MESSAGE_PREFIX}Ollama reported an error: ${sanitized}. If this persists, check \`ollama list\` and the Ollama service logs.`;
 }
 
-/** Message for SSE/stream onError (plain text, no ChatbotError wrapper). */
+/** Message for SSE/stream onError (plain text, no VirgilError wrapper). */
 export function getOllamaErrorStreamMessage(
   error: unknown,
   baseUrl = getOllamaBaseUrl()
@@ -136,11 +136,11 @@ export async function assertOllamaReachable(baseUrl = getOllamaBaseUrl()) {
     });
 
     if (!response.ok) {
-      throw new ChatbotError("offline:ollama", baseUrl);
+      throw new VirgilError("offline:ollama", baseUrl);
     }
     ollamaReachabilityCache.set(baseUrl, Date.now());
   } catch (error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "offline:ollama",
       getOllamaConnectionErrorCause(error, baseUrl) ?? baseUrl
     );

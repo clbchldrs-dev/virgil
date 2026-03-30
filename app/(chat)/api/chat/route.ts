@@ -69,7 +69,7 @@ import {
   updateMessage,
 } from "@/lib/db/queries";
 import type { DBMessage } from "@/lib/db/schema";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 import { isProductOpportunityConfigured } from "@/lib/github/product-opportunity-issue";
 import { checkIpRateLimit } from "@/lib/ratelimit";
 import type { ChatMessage } from "@/lib/types";
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
     const json = await request.json();
     requestBody = postRequestBodySchema.parse(json);
   } catch (_) {
-    return new ChatbotError("bad_request:api").toResponse();
+    return new VirgilError("bad_request:api").toResponse();
   }
 
   try {
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
     ]);
 
     if (!session?.user) {
-      return new ChatbotError("unauthorized:chat").toResponse();
+      return new VirgilError("unauthorized:chat").toResponse();
     }
 
     const chatModel = (await isAllowedChatModelId(selectedChatModel))
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
       });
 
       if (messageCount > entitlementsByUserType[userType].maxMessagesPerHour) {
-        return new ChatbotError("rate_limit:chat").toResponse();
+        return new VirgilError("rate_limit:chat").toResponse();
       }
     }
 
@@ -157,7 +157,7 @@ export async function POST(request: Request) {
 
     if (chat) {
       if (chat.userId !== session.user.id) {
-        return new ChatbotError("forbidden:chat").toResponse();
+        return new VirgilError("forbidden:chat").toResponse();
       }
       messagesFromDb = await getMessagesByChatId({ id });
     } else if (message?.role === "user") {
@@ -591,7 +591,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const vercelId = request.headers.get("x-vercel-id");
 
-    if (error instanceof ChatbotError) {
+    if (error instanceof VirgilError) {
       return error.toResponse();
     }
 
@@ -601,7 +601,7 @@ export async function POST(request: Request) {
         "AI Gateway requires a valid credit card on file to service requests"
       )
     ) {
-      return new ChatbotError("bad_request:activate_gateway").toResponse();
+      return new VirgilError("bad_request:activate_gateway").toResponse();
     }
 
     if (isOllamaRequest) {
@@ -610,12 +610,12 @@ export async function POST(request: Request) {
         getOllamaBaseUrl()
       );
       if (ollamaPayload) {
-        return new ChatbotError("offline:ollama", ollamaPayload).toResponse();
+        return new VirgilError("offline:ollama", ollamaPayload).toResponse();
       }
     }
 
     console.error("Unhandled error in chat API:", error, { vercelId });
-    return new ChatbotError("offline:chat").toResponse();
+    return new VirgilError("offline:chat").toResponse();
   }
 }
 
@@ -624,19 +624,19 @@ export async function DELETE(request: Request) {
   const id = searchParams.get("id");
 
   if (!id) {
-    return new ChatbotError("bad_request:api").toResponse();
+    return new VirgilError("bad_request:api").toResponse();
   }
 
   const session = await auth();
 
   if (!session?.user) {
-    return new ChatbotError("unauthorized:chat").toResponse();
+    return new VirgilError("unauthorized:chat").toResponse();
   }
 
   const chat = await getChatById({ id });
 
   if (chat?.userId !== session.user.id) {
-    return new ChatbotError("forbidden:chat").toResponse();
+    return new VirgilError("forbidden:chat").toResponse();
   }
 
   const deletedChat = await deleteChatById({ id });

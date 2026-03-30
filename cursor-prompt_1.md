@@ -1,8 +1,8 @@
-# Cursor Prompt: Add Tool-Use Layer to Chatbot Companion
+# Cursor Prompt: Add Tool-Use Layer to Virgil Companion
 
 ## Context
 
-This is a Next.js chatbot built on the Vercel AI SDK template (ai-chatbot). It uses:
+This is Virgil (Next.js) built on the Vercel AI SDK template (ai-chatbot). It uses:
 - Next.js App Router with React Server Components
 - Vercel AI SDK for LLM integration (`streamText`, `tool()`)
 - shadcn/ui + Tailwind CSS
@@ -10,7 +10,7 @@ This is a Next.js chatbot built on the Vercel AI SDK template (ai-chatbot). It u
 - Auth.js for authentication
 - Vercel AI Gateway for multi-model routing
 
-The goal is to add a tool-use layer that gives the chatbot the ability to execute tasks on the user's behalf — making it a companion rather than just a chat interface. The system runs in two environments: locally (full capabilities) and on Vercel (API-only tools).
+The goal is to add a tool-use layer that gives Virgil the ability to execute tasks on the user's behalf — making it a companion rather than just a chat interface. The system runs in two environments: locally (full capabilities) and on Vercel (API-only tools).
 
 ## What to Build
 

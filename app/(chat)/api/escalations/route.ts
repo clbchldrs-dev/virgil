@@ -4,12 +4,12 @@ import {
   getEscalationRecords,
   updateEscalationStatus,
 } from "@/lib/db/queries";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
-    return new ChatbotError("unauthorized:chat").toResponse();
+    return new VirgilError("unauthorized:chat").toResponse();
   }
 
   const profile = await getBusinessProfileByUserId({
@@ -29,12 +29,12 @@ export async function GET() {
 export async function PATCH(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
-    return new ChatbotError("unauthorized:chat").toResponse();
+    return new VirgilError("unauthorized:chat").toResponse();
   }
 
   const { id, status } = await request.json();
   if (!id || !["pending", "acknowledged", "resolved"].includes(status)) {
-    return new ChatbotError("bad_request:api").toResponse();
+    return new VirgilError("bad_request:api").toResponse();
   }
 
   const updated = await updateEscalationStatus({ id, status });

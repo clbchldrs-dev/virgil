@@ -2,7 +2,7 @@ import "server-only";
 
 import { and, asc, desc, eq, gt } from "drizzle-orm";
 import type { ArtifactKind } from "@/components/chat/artifact";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 import { db } from "../client";
 import { document, type Suggestion, suggestion } from "../schema";
 
@@ -32,7 +32,7 @@ export async function saveDocument({
       })
       .returning();
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to save document");
+    throw new VirgilError("bad_request:database", "Failed to save document");
   }
 }
 
@@ -53,7 +53,7 @@ export async function updateDocumentContent({
 
     const latest = docs[0];
     if (!latest) {
-      throw new ChatbotError("not_found:database", "Document not found");
+      throw new VirgilError("not_found:database", "Document not found");
     }
 
     return await db
@@ -62,10 +62,10 @@ export async function updateDocumentContent({
       .where(and(eq(document.id, id), eq(document.createdAt, latest.createdAt)))
       .returning();
   } catch (_error) {
-    if (_error instanceof ChatbotError) {
+    if (_error instanceof VirgilError) {
       throw _error;
     }
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to update document content"
     );
@@ -82,7 +82,7 @@ export async function getDocumentsById({ id }: { id: string }) {
 
     return documents;
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get documents by id"
     );
@@ -99,7 +99,7 @@ export async function getDocumentById({ id }: { id: string }) {
 
     return selectedDocument;
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get document by id"
     );
@@ -128,7 +128,7 @@ export async function deleteDocumentsByIdAfterTimestamp({
       .where(and(eq(document.id, id), gt(document.createdAt, timestamp)))
       .returning();
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to delete documents by id after timestamp"
     );
@@ -143,7 +143,7 @@ export async function saveSuggestions({
   try {
     return await db.insert(suggestion).values(suggestions);
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to save suggestions"
     );
@@ -161,7 +161,7 @@ export async function getSuggestionsByDocumentId({
       .from(suggestion)
       .where(eq(suggestion.documentId, documentId));
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get suggestions by document id"
     );

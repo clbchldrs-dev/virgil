@@ -1,7 +1,7 @@
 import "server-only";
 
 import { and, desc, eq } from "drizzle-orm";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 import { db } from "../client";
 import {
   type BusinessProfile,
@@ -27,7 +27,7 @@ export async function getBusinessProfileByUserId({
       .limit(1);
     return profile ?? null;
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get business profile"
     );
@@ -54,10 +54,10 @@ export async function setBusinessModeEnabled({
       .returning();
     return updated ?? null;
   } catch (_error) {
-    if (_error instanceof ChatbotError) {
+    if (_error instanceof VirgilError) {
       throw _error;
     }
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to update business mode"
     );
@@ -90,10 +90,10 @@ export async function upsertBusinessProfile({
       .returning();
     return created;
   } catch (_error) {
-    if (_error instanceof ChatbotError) {
+    if (_error instanceof VirgilError) {
       throw _error;
     }
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to upsert business profile"
     );
@@ -114,7 +114,7 @@ export async function getPriorityNotes({
       .where(eq(priorityNote.businessProfileId, businessProfileId))
       .orderBy(desc(priorityNote.version));
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get priority notes"
     );
@@ -135,7 +135,7 @@ export async function savePriorityNote({
       .returning();
     return created;
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to save priority note"
     );
@@ -185,7 +185,7 @@ export async function saveIntakeSubmission({
       .returning();
     return created;
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to save intake submission"
     );
@@ -207,7 +207,7 @@ export async function getIntakeSubmissions({
       .orderBy(desc(intakeSubmission.createdAt))
       .limit(limit);
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get intake submissions"
     );
@@ -236,7 +236,7 @@ export async function saveEscalationRecord({
       .returning();
     return created;
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to save escalation record"
     );
@@ -266,7 +266,7 @@ export async function getEscalationRecords({
       .orderBy(desc(escalationRecord.createdAt))
       .limit(limit);
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get escalation records"
     );
@@ -291,7 +291,7 @@ export async function updateEscalationStatus({
       .returning();
     return updated;
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to update escalation status"
     );

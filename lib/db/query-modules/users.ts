@@ -1,7 +1,7 @@
 import "server-only";
 
 import { and, eq, exists, or, sql } from "drizzle-orm";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 import { generateUUID } from "@/lib/utils";
 import { db } from "../client";
 import { businessProfile, chat, type User, user } from "../schema";
@@ -11,7 +11,7 @@ export async function getUser(email: string): Promise<User[]> {
   try {
     return await db.select().from(user).where(eq(user.email, email));
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get user by email"
     );
@@ -31,7 +31,7 @@ export async function getUserById({
       .limit(1);
     return found ?? null;
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to get user by id");
+    throw new VirgilError("bad_request:database", "Failed to get user by id");
   }
 }
 
@@ -52,7 +52,7 @@ export async function getOwnerUsers(): Promise<User[]> {
       .from(user)
       .innerJoin(businessProfile, eq(businessProfile.userId, user.id));
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to get owner users");
+    throw new VirgilError("bad_request:database", "Failed to get owner users");
   }
 }
 
@@ -97,7 +97,7 @@ export async function getUsersEligibleForCompanionBackgroundJobs(): Promise<
         )
       );
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get companion-eligible users"
     );
@@ -110,7 +110,7 @@ export async function createUser(email: string, password: string) {
   try {
     return await db.insert(user).values({ email, password: hashedPassword });
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to create user");
+    throw new VirgilError("bad_request:database", "Failed to create user");
   }
 }
 
@@ -124,7 +124,7 @@ export async function createGuestUser() {
       email: user.email,
     });
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to create guest user"
     );

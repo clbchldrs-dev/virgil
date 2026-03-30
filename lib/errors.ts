@@ -39,7 +39,7 @@ export const visibilityBySurface: Record<Surface, ErrorVisibility> = {
   memory: "response",
 };
 
-export class ChatbotError extends Error {
+export class VirgilError extends Error {
   type: ErrorType;
   surface: Surface;
   statusCode: number;
@@ -81,21 +81,21 @@ export class ChatbotError extends Error {
   }
 }
 
-/** Rebuild a {@link ChatbotError} from JSON API error bodies (including `code: ""` log-surface responses). */
-export function chatbotErrorFromApiJson(body: {
+/** Rebuild a {@link VirgilError} from JSON API error bodies (including `code: ""` log-surface responses). */
+export function virgilErrorFromApiJson(body: {
   code?: string;
   cause?: string;
   message?: string;
-}): ChatbotError {
+}): VirgilError {
   if (body.code) {
-    return new ChatbotError(body.code as ErrorCode, body.cause);
+    return new VirgilError(body.code as ErrorCode, body.cause);
   }
   if (body.message) {
-    return new ChatbotError("bad_request:api", undefined, {
+    return new VirgilError("bad_request:api", undefined, {
       overrideMessage: body.message,
     });
   }
-  return new ChatbotError("offline:chat");
+  return new VirgilError("offline:chat");
 }
 
 export function getMessageByErrorCode(

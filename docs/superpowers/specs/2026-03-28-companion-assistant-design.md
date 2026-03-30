@@ -2,7 +2,7 @@
 
 ## Problem
 
-The chatbot currently serves one role: a business front desk that greets visitors, collects intake, and escalates to a human. The owner has no reason to use it themselves.
+Virgil currently serves one role: a business front desk that greets visitors, collects intake, and escalates to a human. The owner has no reason to use it themselves.
 
 We want the bot to also be a **personal companion** for the owner — something that listens, remembers, assists, follows up, and spots connections. The visitor-facing front desk stays intact.
 

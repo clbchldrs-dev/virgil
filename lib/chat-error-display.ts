@@ -1,9 +1,9 @@
 import { isLocalModel } from "@/lib/ai/models";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 
 /** User-visible text for any chat request error (API or stream). */
 export function describeChatError(error: unknown): string {
-  if (error instanceof ChatbotError) {
+  if (error instanceof VirgilError) {
     return error.message;
   }
   if (error instanceof Error && error.message) {

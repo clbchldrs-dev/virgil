@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { auth } from "@/app/(auth)/auth";
 import { getNightReviewMemoriesForUser } from "@/lib/db/queries";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 
 /**
  * In-app surfacing of recent night-review memories (last 14 days by default).
@@ -10,7 +10,7 @@ import { ChatbotError } from "@/lib/errors";
 export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user) {
-    return new ChatbotError("unauthorized:chat").toResponse();
+    return new VirgilError("unauthorized:chat").toResponse();
   }
 
   const days = Math.min(

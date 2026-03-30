@@ -2,7 +2,7 @@ import "server-only";
 
 import { and, desc, eq, gt, inArray, lt, type SQL } from "drizzle-orm";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 import { db } from "../client";
 import { type Chat, chat, message, stream, vote } from "../schema";
 
@@ -26,7 +26,7 @@ export async function saveChat({
       visibility,
     });
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to save chat");
+    throw new VirgilError("bad_request:database", "Failed to save chat");
   }
 }
 
@@ -42,7 +42,7 @@ export async function deleteChatById({ id }: { id: string }) {
       .returning();
     return chatsDeleted;
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to delete chat by id"
     );
@@ -73,7 +73,7 @@ export async function deleteAllChatsByUserId({ userId }: { userId: string }) {
 
     return { deletedCount: deletedChats.length };
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to delete all chats by user id"
     );
@@ -116,7 +116,7 @@ export async function getChatsByUserId({
         .limit(1);
 
       if (!selectedChat) {
-        throw new ChatbotError(
+        throw new VirgilError(
           "not_found:database",
           `Chat with id ${startingAfter} not found`
         );
@@ -131,7 +131,7 @@ export async function getChatsByUserId({
         .limit(1);
 
       if (!selectedChat) {
-        throw new ChatbotError(
+        throw new VirgilError(
           "not_found:database",
           `Chat with id ${endingBefore} not found`
         );
@@ -149,7 +149,7 @@ export async function getChatsByUserId({
       hasMore,
     };
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get chats by user id"
     );
@@ -165,6 +165,6 @@ export async function getChatById({ id }: { id: string }) {
 
     return selectedChat;
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to get chat by id");
+    throw new VirgilError("bad_request:database", "Failed to get chat by id");
   }
 }

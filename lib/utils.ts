@@ -6,7 +6,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { formatISO } from 'date-fns';
 import { twMerge } from 'tailwind-merge';
 import type { DBMessage, Document } from '@/lib/db/schema';
-import { ChatbotError, chatbotErrorFromApiJson } from './errors';
+import { VirgilError, virgilErrorFromApiJson } from './errors';
 import type { ChatMessage, ChatTools, CustomUIDataTypes } from './types';
 
 export function cn(...inputs: ClassValue[]) {
@@ -21,12 +21,12 @@ async function throwChatApiErrorFromResponse(response: Response): Promise<never>
       cause?: string;
       message?: string;
     };
-    throw chatbotErrorFromApiJson(body);
+    throw virgilErrorFromApiJson(body);
   } catch (e) {
-    if (e instanceof ChatbotError) {
+    if (e instanceof VirgilError) {
       throw e;
     }
-    throw new ChatbotError('bad_request:api', undefined, {
+    throw new VirgilError('bad_request:api', undefined, {
       overrideMessage: `Chat request failed (${response.status} ${response.statusText}). Use the exact URL from your terminal (including port, e.g. http://localhost:3001).`,
     });
   }
@@ -56,7 +56,7 @@ export async function fetchWithErrorHandlers(
     return response;
   } catch (error: unknown) {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      throw new ChatbotError('offline:chat');
+      throw new VirgilError('offline:chat');
     }
 
     if (
@@ -65,7 +65,7 @@ export async function fetchWithErrorHandlers(
         error.message.includes('Failed to fetch') ||
         error.message.includes('Load failed'))
     ) {
-      throw new ChatbotError('bad_request:api', undefined, {
+      throw new VirgilError('bad_request:api', undefined, {
         overrideMessage:
           'Could not reach the chat API. Open the app at the same host and port shown when you run pnpm dev (e.g. http://localhost:3001, not a different port).',
       });

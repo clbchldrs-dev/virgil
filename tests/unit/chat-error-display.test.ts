@@ -5,10 +5,10 @@ import {
   isLikelyLocalModelErrorText,
   shouldEmphasizeLocalModelError,
 } from "@/lib/chat-error-display";
-import { ChatbotError } from "@/lib/errors";
+import { VirgilError } from "@/lib/errors";
 
-test("describeChatError uses ChatbotError message", () => {
-  const e = new ChatbotError(
+test("describeChatError uses VirgilError message", () => {
+  const e = new VirgilError(
     "offline:ollama",
     "Ollama is not reachable at http://127.0.0.1:11434"
   );

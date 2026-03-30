@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a personal companion layer to the front-desk chatbot — memory, reminders, daily digest — while keeping the visitor-facing front desk intact.
+**Goal:** Add a personal companion layer to the front-desk Virgil experience — memory, reminders, daily digest — while keeping the visitor-facing front desk intact.
 
 **Architecture:** Dual-mode routing (owner vs. visitor) at the chat API level. A single Memory table with Postgres FTS powers recall. QStash handles scheduled reminders. Resend + Vercel Cron deliver a daily digest email.
 
@@ -152,7 +152,7 @@ export async function saveMemoryRecord({
       .returning();
     return created;
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to save memory");
+    throw new VirgilError("bad_request:database", "Failed to save memory");
   }
 }
 ```
@@ -191,7 +191,7 @@ export async function searchMemories({
     );
     return result;
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to search memories");
+    throw new VirgilError("bad_request:database", "Failed to search memories");
   }
 }
 ```
@@ -218,7 +218,7 @@ export async function getRecentMemories({
       .orderBy(desc(memory.createdAt))
       .limit(limit);
   } catch (_error) {
-    throw new ChatbotError(
+    throw new VirgilError(
       "bad_request:database",
       "Failed to get recent memories"
     );

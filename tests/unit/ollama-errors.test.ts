@@ -5,7 +5,7 @@ import {
   getOllamaErrorStreamMessage,
   getOllamaErrorUserPayload,
 } from "../../lib/ai/providers";
-import { ChatbotError } from "../../lib/errors";
+import { VirgilError } from "../../lib/errors";
 
 describe("getOllamaConnectionErrorCause", () => {
   test("detects unreachable host", () => {
@@ -54,9 +54,9 @@ describe("getOllamaErrorUserPayload", () => {
   });
 });
 
-describe("ChatbotError offline:ollama with __FULL__ cause", () => {
+describe("VirgilError offline:ollama with __FULL__ cause", () => {
   test("exposes full message without reachability prefix", () => {
-    const err = new ChatbotError(
+    const err = new VirgilError(
       "offline:ollama",
       "__FULL__:Model missing — run ollama pull."
     );
