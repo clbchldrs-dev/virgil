@@ -1,4 +1,4 @@
-export const DEFAULT_CHAT_MODEL = "ollama/qwen2.5:3b-turbo";
+export const DEFAULT_CHAT_MODEL = "deepseek/deepseek-v3.2";
 
 export const titleModel = {
   id: "mistral/mistral-small",

@@ -183,7 +183,6 @@ export function getLanguageModel(
   ollamaOptions?: OllamaLanguageModelOptions
 ): LanguageModel {
   if (isTestEnvironment && myProvider) {
-    // Mock provider only registers "chat-model" / "title-model"; UI still sends real model ids.
     return myProvider.languageModel("chat-model") as LanguageModel;
   }
 

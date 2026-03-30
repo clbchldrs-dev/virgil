@@ -49,6 +49,10 @@ import { setReminder } from "@/lib/ai/tools/set-reminder";
 import { submitProductOpportunity } from "@/lib/ai/tools/submit-product-opportunity";
 import { summarizeOpportunity } from "@/lib/ai/tools/summarize-opportunity";
 import { updateDocument } from "@/lib/ai/tools/update-document";
+import {
+  getCompanionTools,
+  getCompanionToolNames,
+} from "@/lib/ai/tools/companion";
 import { estimateTokens, trimMessagesForBudget } from "@/lib/ai/trim-context";
 import { loadChatPromptContext } from "@/lib/chat/load-prompt-context";
 import { isProductionEnvironment } from "@/lib/constants";
@@ -385,12 +389,14 @@ export async function POST(request: Request) {
           saveMemory: saveMemory({ userId: session.user.id, chatId: id }),
           recallMemory: recallMemory({ userId: session.user.id }),
           setReminder: setReminder({ userId: session.user.id, chatId: id }),
+          ...getCompanionTools(),
         };
 
         const companionToolNames = [
           "saveMemory",
           "recallMemory",
           "setReminder",
+          ...getCompanionToolNames(),
         ] as const;
 
         const noActiveTools = isReasoningModel && !supportsTools;

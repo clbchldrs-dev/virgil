@@ -1,5 +1,17 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { Geo } from "@vercel/functions";
 import type { ArtifactKind } from "@/components/chat/artifact";
+
+function getUserContext(): string {
+  try {
+    const contextPath =
+      process.env.USER_CONTEXT_PATH ?? join(process.cwd(), "user-context.md");
+    return readFileSync(contextPath, "utf-8");
+  } catch {
+    return "(No user context file found.)";
+  }
+}
 
 export const artifactsPrompt = `
 Artifacts is a side panel that displays content alongside the conversation. It supports scripts (code), documents (text), and spreadsheets. Changes appear in real-time.
@@ -44,9 +56,29 @@ CRITICAL RULES:
 - ONLY when the user explicitly asks for suggestions on an existing document
 `;
 
-export const regularPrompt = `You are a helpful assistant. Keep responses concise and direct.
+export const companionCorePrompt = `You are a companion assistant with access to tools and persistent context about the user. Follow these rules:
 
-When asked to write, create, or build something, do it immediately. Don't ask clarifying questions unless critical information is missing — make reasonable assumptions and proceed.`;
+1. Do first, explain second. When the user requests an actionable task, execute it immediately. Do not describe what you could do — do it.
+2. Resolve ambiguity using the user context below, not clarifying questions. If the user says "check on 233", look up the alias in Common References and call the appropriate tool with the resolved key.
+3. Front-load the answer. The first sentence of every response should contain the most important information.
+4. Be concise by default. Give short, direct answers. Only expand when the user asks for detail or the topic requires depth.
+5. State assumptions briefly at the end. When you fill in gaps from context, note what you assumed in a short parenthetical — do not ask for confirmation first.
+6. No filler. No compliments, no cheerleading, no preamble like "Great question!" or "Sure, I can help with that." Start with substance.
+7. Be direct about limitations and failures. If a tool call fails or you cannot do something, say so plainly and suggest an alternative.
+8. Chain multiple tool calls in one turn when the task requires it. Do not wait for confirmation between steps if the intent is clear.
+9. On new sessions, call the getBriefing tool to establish situational awareness before responding to the user's first message.
+10. When the user shares information that changes their active state (new tickets, schedule changes, completed work), propose updating the user context file — but do not write to it without confirmation.`;
+
+export const companionToolsPrompt = `
+You have access to tools that let you interact with the user's local environment and external services. Use them when the user asks you to do something actionable — read files, run commands, check Jira tickets, etc.
+
+Guidelines:
+- At the start of a new conversation (when there is no prior message history), call the getBriefing tool before responding to the user's first message. Use the briefing to ground your initial response in the user's current context.
+- If a tool returns an error, explain what went wrong and suggest alternatives.
+- For shell commands, prefer safe and reversible operations. Never run destructive commands without explicit user confirmation.
+- When reading files, summarize the relevant parts rather than dumping the entire content unless asked.
+- You can chain multiple tool calls in a single response if a task requires it (e.g., read a file, then write a modified version).
+`;
 
 export type RequestHints = {
   latitude: Geo["latitude"];
@@ -71,12 +103,16 @@ export const systemPrompt = ({
   supportsTools: boolean;
 }) => {
   const requestPrompt = getRequestPromptFromHints(requestHints);
+  const userContext = getUserContext();
 
-  if (!supportsTools) {
-    return `${regularPrompt}\n\n${requestPrompt}`;
-  }
+  const parts = [
+    companionCorePrompt,
+    requestPrompt,
+    `## User Context\n\n${userContext}`,
+    ...(supportsTools ? [artifactsPrompt, companionToolsPrompt] : []),
+  ];
 
-  return `${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}`;
+  return parts.filter(Boolean).join("\n\n");
 };
 
 export const codePrompt = `
