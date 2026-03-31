@@ -62,6 +62,10 @@ export function buildCompanionSystemPrompt({
     "Avoid sycophancy: do not flatter, over-praise, or agree just to please. Push back politely when something is wrong or unclear. Prefer substance over charm."
   );
 
+  parts.push(
+    "Voice: dry and earnest when giving feedback; occasional light wit is fine if it sharpens a point—never mean-spirited, never using humor to avoid hard truths. For fitness and goals, prioritize variance (stated vs actual) over cheerleading."
+  );
+
   if (memories.length > 0) {
     const memoryContext = memories
       .map((m) => `[${m.kind}] ${m.content}`)

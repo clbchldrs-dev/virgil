@@ -14,6 +14,8 @@ This file is the **single entrypoint** for intent, documentation map, architectu
 | Topic | Authoritative doc / location |
 |-------|------------------------------|
 | Project intent and this handoff | **This file** (`docs/PROJECT.md`) |
+| Bespoke single-owner product intent (fitness v1, data tiers, voice) | [docs/OWNER_PRODUCT_VISION.md](OWNER_PRODUCT_VISION.md) |
+| Optional pruning inventory (business/demo paths) | [docs/PRUNING_CANDIDATES.md](PRUNING_CANDIDATES.md) |
 | Coding rules, file pointers, local-first rules, review checklists | [AGENTS.md](../AGENTS.md) |
 | Traceable architecture decisions | [docs/DECISIONS.md](DECISIONS.md) |
 | Security tool inventory + cron/QStash auth matrix | [docs/security/tool-inventory.md](security/tool-inventory.md) |

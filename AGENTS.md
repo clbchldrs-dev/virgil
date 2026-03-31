@@ -646,7 +646,7 @@ When `AGENT_TASK_TRIAGE_ENABLED=1`, a cron job (`GET /api/agent-tasks/enqueue`, 
 
 Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](docs/DECISIONS.md)**.
 
-- Personal first; business mode optional. Local models default; gateway optional.
+- **Bespoke single-owner** product intent: [docs/OWNER_PRODUCT_VISION.md](docs/OWNER_PRODUCT_VISION.md) (2026-03-31 ADR). Commercial multi-tenant SaaS is not a design goal for this repo. Business/demo code paths are optional pruning candidates: [docs/PRUNING_CANDIDATES.md](docs/PRUNING_CANDIDATES.md). Local models default; gateway optional.
 - Postgres FTS for recall (no casual vector DB). QStash for reminders. Docker Compose defaults include **bundled Ollama** + health-gated **`virgil-app`** (see `docker-compose.yml`); host-Ollama layout in `docker-compose.host-ollama.yml`.
 - Night review optional ([workspace/night/README.md](workspace/night/README.md)). HTTP auth cookies via `shouldUseSecureAuthCookie()` where applicable.
 - Voice: clarity over flattery; slim prompts stay minimal. Local **slim/compact** copy branches on `LocalModelClass` (`3b` vs `7b`, tag-inferred when unset) — see [docs/DECISIONS.md](docs/DECISIONS.md).

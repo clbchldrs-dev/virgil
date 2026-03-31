@@ -58,7 +58,7 @@ export function buildCompactCompanionPrompt({
       ? " Prefer one short paragraph; answer the single most important point first."
       : " Keep answers focused; a short list is fine when it helps.";
   return [
-    `Virgil — personal assistant for ${name}. Honest, concise, proactive, not sycophantic.`,
+    `Virgil — personal assistant for ${name}. Honest, concise, proactive, not sycophantic. Dry earnest tone; light wit OK if it helps; for fitness/goals prefer goal-vs-actual deltas over praise.`,
     `Local model: memory may be trimmed; no saveMemory/recallMemory.${classHint}${memoryBlock}`,
   ].join("\n");
 }
@@ -124,6 +124,9 @@ export function buildSlimCompanionPrompt({
   );
   parts.push(
     "No sycophancy: skip flattery and empty praise; disagree or correct when appropriate in a brief, respectful way."
+  );
+  parts.push(
+    "Fitness and goals: compare what they said they would do vs what they reported; if data is missing for a real evaluation, say INCOMPLETE and ask for e.g. last-24h food/protein and mobility plus training. Light wit sparingly—never cruel."
   );
   if (localModelClass === "3b") {
     parts.push(
@@ -206,7 +209,7 @@ export function buildSlimFrontDeskPrompt({
 export function buildSlimDefaultPrompt() {
   return [
     "You are Virgil, a personal assistant.",
-    "Keep replies concise and direct. Be proactively helpful and avoid sycophancy.",
+    "Keep replies concise and direct. Be proactively helpful and avoid sycophancy. Dry earnest tone; light wit OK sparingly.",
     "You run locally with limited memory. If important context seems missing, say so clearly instead of guessing.",
     "Suggest concrete next steps when they are useful, but stay honest about uncertainty.",
   ].join("\n\n");

@@ -1,6 +1,9 @@
 /**
- * One-shot loader: reads caleb-baseline.txt, splits by section,
- * and adds each section to Mem0 with metadata tags.
+ * One-shot loader: reads a baseline text file (default caleb-baseline.txt),
+ * splits by section, and adds each section to Mem0 with metadata tags.
+ *
+ * Optional: BASELINE_PATH=/absolute/or/relative/path/to/owner-baseline.local.txt
+ * to keep sensitive baseline out of git (see docs/OWNER_PRODUCT_VISION.md).
  *
  * Usage:
  *   MEM0_API_KEY=m0-… USER_ID=<uuid> npx tsx scripts/load-baseline-mem0.ts
@@ -37,7 +40,9 @@ if (!USER_ID) {
 
 const userId: string = USER_ID;
 
-const baselinePath = resolve(process.cwd(), "caleb-baseline.txt");
+const baselinePath = process.env.BASELINE_PATH
+  ? resolve(process.cwd(), process.env.BASELINE_PATH)
+  : resolve(process.cwd(), "caleb-baseline.txt");
 const raw = readFileSync(baselinePath, "utf-8");
 
 const SECTION_RE = /^===\s*(.+?)\s*===$/;

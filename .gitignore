@@ -21,9 +21,15 @@ yarn-error.log*
 docker-compose.override.yml
 .vercel
 .env*.local
+
+# Owner-only personal baseline (see docs/OWNER_PRODUCT_VISION.md)
+owner-baseline.local.txt
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/*
 next-env.d.ts
 tsconfig.tsbuildinfo
+
+# Local pnpm store (should not be committed)
+.pnpm-store/

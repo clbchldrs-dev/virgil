@@ -22,6 +22,23 @@ Use when adding a decision:
 
 ---
 
+## 2026-03-31 — Bespoke single-owner scope — fitness v1 — Accepted
+
+**Context:** The assistant is intentionally **one owner’s** personal system, not a multi-tenant SaaS foundation. Fitness is the first domain to stress-test prioritization (recovery, training, mobility, nutrition). Financial safety requires **descriptive** status only—no banking API credentials or plaintext finance tokens in app scope.
+
+**Decision:**
+
+- **Audience:** Single user; commercial multi-tenant SaaS is **out of scope for this repository**—a future commercial product would be a **new codebase**, not an evolution path preserved here.
+- **V1 domain:** Fitness-first feedback (variance vs goals, recovery tradeoffs, structural prehab vs reactive stretching) with room to add other personal domains later using the same weekly/blocker scaffold.
+- **Feedback:** **Variance-based**—deltas between stated goals and logged adherence; avoid hollow praise. Voice: dry, earnest, systems-level, with **light wit** where it sharpens a point—never sycophantic or cruel.
+- **Data:** No programmatic access to banking APIs; no storage of financial auth tokens. Descriptive lifestyle data and **aggregates** (e.g. retirement progress toward a stated target) may inform context. See [docs/OWNER_PRODUCT_VISION.md](OWNER_PRODUCT_VISION.md).
+
+**Consequences:** Prompts and docs align to owner intent; [docs/PRUNING_CANDIDATES.md](PRUNING_CANDIDATES.md) lists optional removal of demo/business/multi-user paths when the owner confirms they are unused.
+
+**Links:** [docs/OWNER_PRODUCT_VISION.md](OWNER_PRODUCT_VISION.md)
+
+---
+
 ## 2026-03-29 — Self-hosted cron + LAN env SSOT — Accepted
 
 **Context:** Phase Four ops needed Ubuntu-friendly alternatives to Vercel Cron and clearer `AUTH_URL` / `NEXT_PUBLIC_APP_URL` documentation for LAN and Docker.
