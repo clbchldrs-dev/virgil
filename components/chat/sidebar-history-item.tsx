@@ -46,11 +46,13 @@ const PureChatItem = ({
     <SidebarMenuItem>
       <SidebarMenuButton
         asChild
-        className="h-8 rounded-none text-[13px] text-sidebar-foreground/50 transition-all duration-150 hover:bg-transparent hover:text-sidebar-foreground data-active:bg-transparent data-active:font-normal data-active:text-sidebar-foreground/50 data-[active=true]:text-sidebar-foreground data-[active=true]:font-medium data-[active=true]:border-b data-[active=true]:border-dashed data-[active=true]:border-sidebar-foreground/50"
+        className="win2k-nav-item h-7 rounded-none text-[11px] w-full justify-start"
         isActive={isActive}
+        style={isActive ? { background: "#0a5fa3", color: "#ffffff" } : {}}
       >
-        <Link href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)}>
-          <span className="truncate">{chat.title}</span>
+        <Link href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ fontSize: "10px", flexShrink: 0 }}>💬</span>
+          <span className="truncate" style={{ fontSize: "11px" }}>{chat.title}</span>
         </Link>
       </SidebarMenuButton>
 
