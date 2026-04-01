@@ -169,18 +169,18 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
   if (isLoading) {
     return (
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-        <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/70">
-          History
+        <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-wide text-sidebar-foreground px-2 py-1 border-b border-sidebar-border" style={{ fontFamily: '"Tahoma", sans-serif', fontSize: "10px" }}>
+          Chat History
         </SidebarGroupLabel>
         <SidebarGroupContent>
-          <div className="flex flex-col gap-0.5 px-1">
+          <div className="flex flex-col gap-0 px-0">
             {[44, 32, 28, 64, 52].map((item) => (
               <div
-                className="flex h-8 items-center gap-2 rounded-lg px-2"
+                className="flex h-7 items-center gap-2 px-2"
                 key={item}
               >
                 <div
-                  className="h-3 max-w-(--skeleton-width) flex-1 animate-pulse rounded-md bg-sidebar-foreground/[0.06]"
+                  className="h-2.5 max-w-(--skeleton-width) flex-1 animate-pulse bg-sidebar-foreground/[0.08]"
                   style={
                     {
                       "--skeleton-width": `${item}%`,
@@ -230,7 +230,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                   <div className="flex flex-col gap-4">
                     {groupedChats.today.length > 0 && (
                       <div>
-                        <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/70">
+                        <div className="win2k-titlebar px-2 py-0.5 text-[10px] font-bold" style={{ height: "auto", background: "linear-gradient(to right, #0a246a, #a6caf0)", fontSize: "10px" }}>
                           Today
                         </div>
                         {groupedChats.today.map((chat) => (
@@ -250,7 +250,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
 
                     {groupedChats.yesterday.length > 0 && (
                       <div>
-                        <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/70">
+                        <div className="win2k-titlebar px-2 py-0.5 text-[10px] font-bold" style={{ height: "auto", background: "linear-gradient(to right, #0a246a, #a6caf0)", fontSize: "10px" }}>
                           Yesterday
                         </div>
                         {groupedChats.yesterday.map((chat) => (
@@ -270,7 +270,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
 
                     {groupedChats.lastWeek.length > 0 && (
                       <div>
-                        <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/70">
+                        <div className="win2k-titlebar px-2 py-0.5 text-[10px] font-bold" style={{ height: "auto", background: "linear-gradient(to right, #0a246a, #a6caf0)", fontSize: "10px" }}>
                           Last 7 days
                         </div>
                         {groupedChats.lastWeek.map((chat) => (
@@ -290,7 +290,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
 
                     {groupedChats.lastMonth.length > 0 && (
                       <div>
-                        <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/70">
+                        <div className="win2k-titlebar px-2 py-0.5 text-[10px] font-bold" style={{ height: "auto", background: "linear-gradient(to right, #0a246a, #a6caf0)", fontSize: "10px" }}>
                           Last 30 days
                         </div>
                         {groupedChats.lastMonth.map((chat) => (
@@ -310,7 +310,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
 
                     {groupedChats.older.length > 0 && (
                       <div>
-                        <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/70">
+                        <div className="win2k-titlebar px-2 py-0.5 text-[10px] font-bold" style={{ height: "auto", background: "linear-gradient(to right, #0a246a, #a6caf0)", fontSize: "10px" }}>
                           Older
                         </div>
                         {groupedChats.older.map((chat) => (

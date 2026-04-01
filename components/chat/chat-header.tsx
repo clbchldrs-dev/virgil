@@ -23,22 +23,23 @@ function PureChatHeader({
   }
 
   return (
-    <header className="sticky top-0 flex h-14 items-center gap-2 bg-sidebar px-3">
+    <header className="win2k-titlebar sticky top-0 z-10 flex h-8 shrink-0 items-center gap-1">
+      {/* Win2K window icon */}
+      <span className="mr-1 text-[10px]">💬</span>
+
       <Button
-        className="md:hidden"
+        className="mr-1 md:hidden"
         onClick={toggleSidebar}
         size="icon-sm"
         variant="ghost"
+        style={{ background: "none", border: "none", color: "white", padding: 0, width: 16, height: 14, minWidth: 0 }}
       >
-        <PanelLeftIcon className="size-4" />
+        <PanelLeftIcon className="size-3" />
       </Button>
 
-      <Link
-        className="px-2 text-sm font-medium tracking-wide md:hidden"
-        href="/"
-      >
-        Virgil
-      </Link>
+      <span className="flex-1 text-[11px] font-bold text-white" style={{ textShadow: "1px 1px 1px rgba(0,0,0,0.5)" }}>
+        Virgil — AI Assistant
+      </span>
 
       {!isReadonly && (
         <VisibilitySelector
@@ -47,8 +48,17 @@ function PureChatHeader({
         />
       )}
 
-      <div className="ml-auto hidden text-sm font-medium text-muted-foreground md:block">
-        Virgil
+      {/* Win2K titlebar buttons */}
+      <div className="ml-1 flex items-center gap-0.5">
+        <button className="win2k-titlebar-btn" type="button" aria-label="Minimize" title="Minimize">
+          _
+        </button>
+        <button className="win2k-titlebar-btn" type="button" aria-label="Maximize" title="Maximize">
+          □
+        </button>
+        <button className="win2k-titlebar-btn" type="button" aria-label="Close" title="Close" style={{ fontWeight: "bold", fontSize: "10px" }}>
+          ✕
+        </button>
       </div>
     </header>
   );

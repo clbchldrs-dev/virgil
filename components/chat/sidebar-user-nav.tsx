@@ -55,26 +55,36 @@ export function SidebarUserNav({ user }: { user: User }) {
               </SidebarMenuButton>
             ) : (
               <SidebarMenuButton
-                className="h-8 px-2 rounded-lg bg-transparent text-sidebar-foreground/70 transition-colors duration-150 hover:text-sidebar-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                className="win2k-raised h-7 px-2 rounded-none text-[11px] justify-start gap-2"
                 data-testid="user-nav-button"
+                style={{ fontFamily: '"Tahoma", sans-serif' }}
               >
                 <div
-                  className="size-5 shrink-0 rounded-full ring-1 ring-sidebar-border/50"
+                  className="size-4 shrink-0"
                   style={{
-                    background: `linear-gradient(135deg, oklch(0.35 0.08 ${emailToHue(user.email ?? "")}), oklch(0.25 0.05 ${emailToHue(user.email ?? "") + 40}))`,
+                    background: `#0a5fa3`,
+                    border: "1px solid #ffffff",
+                    boxShadow: "inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf",
                   }}
                 />
-                <span className="truncate text-[13px]" data-testid="user-email">
+                <span className="truncate text-[11px]" data-testid="user-email">
                   {isGuest ? "Guest" : user?.email}
                 </span>
-                <ChevronUp className="ml-auto size-3.5 text-sidebar-foreground/50" />
+                <ChevronUp className="ml-auto size-3 text-sidebar-foreground/60" />
               </SidebarMenuButton>
             )}
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-popper-anchor-width) rounded-lg border border-border/60 bg-card/95 backdrop-blur-xl shadow-[var(--shadow-float)]"
+            className="w-(--radix-popper-anchor-width) rounded-none border-0 bg-card"
             data-testid="user-nav-menu"
             side="top"
+            style={{
+              fontFamily: '"Tahoma", sans-serif',
+              fontSize: "11px",
+              border: "1px solid",
+              borderColor: "#ffffff #808080 #808080 #ffffff",
+              boxShadow: "inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf, 2px 2px 4px rgba(0,0,0,0.3)",
+            }}
           >
             <DropdownMenuItem
               className="cursor-pointer text-[13px]"

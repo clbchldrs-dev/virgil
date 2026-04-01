@@ -18,6 +18,9 @@ const pixelFont = VT323({
   variable: "--font-pixel",
 });
 
+// Win2K font: we re-use Geist Mono as a fallback for the monospace areas,
+// but the main UI font is overridden to Tahoma via CSS.
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>

@@ -13,6 +13,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --font-win2k: "Tahoma", "MS Sans Serif", "Arial", sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -47,47 +48,72 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.12 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.12 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.12 0 0);
-  --primary: oklch(0.12 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.965 0 0);
-  --secondary-foreground: oklch(0.38 0 0);
-  --muted: oklch(0.94 0 0);
-  --muted-foreground: oklch(0.58 0 0);
-  --accent: oklch(0.965 0 0);
-  --accent-foreground: oklch(0.12 0 0);
-  --destructive: oklch(0.55 0.15 25);
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.9 0 0);
-  --ring: oklch(0.5 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.97 0 0);
-  --sidebar-foreground: oklch(0.38 0 0);
-  --sidebar-primary: oklch(0.12 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.12 0 0 / 0.06);
-  --sidebar-accent-foreground: oklch(0.12 0 0);
-  --sidebar-border: oklch(0.88 0 0);
-  --sidebar-ring: oklch(0.5 0 0);
+  /* Windows 2000 silver UI system */
+  --radius: 0px;
 
-  --shadow-card: 0 1px 3px oklch(0 0 0 / 0.05), 0 1px 1px oklch(0 0 0 / 0.03);
-  --shadow-float:
-    0 8px 24px -6px oklch(0 0 0 / 0.1), 0 2px 8px -2px oklch(0 0 0 / 0.04);
-  --shadow-composer: 0 1px 2px oklch(0 0 0 / 0.04);
-  --shadow-composer-focus:
-    0 0 0 1px oklch(0 0 0 / 0.06), 0 2px 8px -2px oklch(0 0 0 / 0.06);
-  --shadow-inset: inset 0 1px 1px oklch(0 0 0 / 0.03);
-  --shadow-glow: 0 0 20px oklch(0 0 0 / 0.08);
+  /* Win2K silver-gray desktop surface */
+  --background: #d4d0c8;
+  --foreground: #000000;
+
+  /* Window/panel chrome - classic silver */
+  --card: #ece9d8;
+  --card-foreground: #000000;
+  --popover: #ece9d8;
+  --popover-foreground: #000000;
+
+  /* Primary: Win2K navy/dark blue title accent */
+  --primary: #003a7a;
+  --primary-foreground: #ffffff;
+
+  /* Secondary: light gray button face */
+  --secondary: #d4d0c8;
+  --secondary-foreground: #000000;
+
+  /* Muted: slightly darker gray */
+  --muted: #c0bdb5;
+  --muted-foreground: #444444;
+
+  /* Accent: Windows XP Luna blue or teal */
+  --accent: #0a5fa3;
+  --accent-foreground: #ffffff;
+
+  /* Destructive */
+  --destructive: #cc0000;
+
+  /* Borders — Win2K beveled inset: light top/left, dark bottom/right */
+  --border: #808080;
+  --input: #ffffff;
+  --ring: #0a5fa3;
+
+  /* Charts */
+  --chart-1: #003a7a;
+  --chart-2: #0a5fa3;
+  --chart-3: #6b9cce;
+  --chart-4: #d4d0c8;
+  --chart-5: #808080;
+
+  /* Sidebar — Win2K raised panel, slightly lighter silver */
+  --sidebar: #d4d0c8;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #003a7a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #0a5fa3;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #808080;
+  --sidebar-ring: #0a5fa3;
+
+  /* Win2K raised-button bevel shadow */
+  --shadow-card: inset -1px -1px 0 #808080, inset 1px 1px 0 #ffffff, inset -2px -2px 0 #404040, inset 2px 2px 0 #dfdfdf;
+  --shadow-float: inset -1px -1px 0 #808080, inset 1px 1px 0 #ffffff, inset -2px -2px 0 #404040, inset 2px 2px 0 #dfdfdf;
+  --shadow-composer: inset 1px 1px 0 #808080, inset -1px -1px 0 #ffffff;
+  --shadow-composer-focus: inset 1px 1px 0 #404040, inset -1px -1px 0 #dfdfdf, 0 0 0 1px #0a5fa3;
+  --shadow-inset: inset 1px 1px 0 #808080, inset -1px -1px 0 #ffffff;
+  --shadow-glow: 0 0 0 1px #0a5fa3;
+
+  /* Win2K titlebar gradient colors */
+  --win2k-titlebar-start: #0a246a;
+  --win2k-titlebar-end: #a6caf0;
+  --win2k-titlebar-text: #ffffff;
 
   --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -95,62 +121,566 @@
 }
 
 .dark {
-  --background: oklch(0.195 0 0);
-  --foreground: oklch(0.94 0 0);
-  --card: oklch(0.225 0 0);
-  --card-foreground: oklch(0.94 0 0);
-  --popover: oklch(0.225 0 0);
-  --popover-foreground: oklch(0.94 0 0);
-  --primary: oklch(0.94 0 0);
-  --primary-foreground: oklch(0.195 0 0);
-  --secondary: oklch(0.26 0 0);
-  --secondary-foreground: oklch(0.75 0 0);
-  --muted: oklch(0.165 0 0);
-  --muted-foreground: oklch(0.6 0 0);
-  --accent: oklch(0.26 0 0);
-  --accent-foreground: oklch(0.94 0 0);
-  --destructive: oklch(0.7 0.15 25);
-  --border: oklch(0.27 0 0);
-  --input: oklch(0.27 0 0);
-  --ring: oklch(0.45 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.175 0 0);
-  --sidebar-foreground: oklch(0.78 0 0);
-  --sidebar-primary: oklch(0.94 0 0);
-  --sidebar-primary-foreground: oklch(0.195 0 0);
-  --sidebar-accent: oklch(0.94 0 0 / 0.06);
-  --sidebar-accent-foreground: oklch(0.94 0 0);
-  --sidebar-border: oklch(0.25 0 0);
-  --sidebar-ring: oklch(0.45 0 0);
+  /* Dark mode: Win2K "High Contrast" / Windows NT dark theme */
+  --background: #1a1a2e;
+  --foreground: #c0d0e8;
+  --card: #1e2a3a;
+  --card-foreground: #c0d0e8;
+  --popover: #1e2a3a;
+  --popover-foreground: #c0d0e8;
+  --primary: #6b9cce;
+  --primary-foreground: #000010;
+  --secondary: #2a3a4a;
+  --secondary-foreground: #9ab0c8;
+  --muted: #16222e;
+  --muted-foreground: #6880a0;
+  --accent: #4080c0;
+  --accent-foreground: #ffffff;
+  --destructive: #cc4444;
+  --border: #2a4060;
+  --input: #0a1020;
+  --ring: #4080c0;
+  --chart-1: #6b9cce;
+  --chart-2: #4080c0;
+  --chart-3: #2a5a9a;
+  --chart-4: #2a3a4a;
+  --chart-5: #2a4060;
+  --sidebar: #141e2e;
+  --sidebar-foreground: #9ab0c8;
+  --sidebar-primary: #6b9cce;
+  --sidebar-primary-foreground: #000010;
+  --sidebar-accent: #2a3a4a;
+  --sidebar-accent-foreground: #c0d0e8;
+  --sidebar-border: #2a4060;
+  --sidebar-ring: #4080c0;
 
-  --shadow-card:
-    inset 0 1px 0 oklch(1 0 0 / 0.04), 0 1px 2px oklch(0 0 0 / 0.2),
-    0 0.5px 1px oklch(0 0 0 / 0.15);
-  --shadow-float:
-    0 0 0 1px oklch(1 0 0 / 0.06), 0 16px 48px -6px oklch(0 0 0 / 0.35),
-    0 6px 12px -2px oklch(0 0 0 / 0.2);
-  --shadow-composer:
-    0 1px 3px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.03);
-  --shadow-composer-focus:
-    0 0 0 1px oklch(1 0 0 / 0.1), 0 4px 16px -4px oklch(0 0 0 / 0.3),
-    inset 0 1px 0 oklch(1 0 0 / 0.04);
+  --win2k-titlebar-start: #0a246a;
+  --win2k-titlebar-end: #a6caf0;
+  --win2k-titlebar-text: #ffffff;
+
+  --shadow-card: inset -1px -1px 0 #2a4060, inset 1px 1px 0 #3a5a80, inset -2px -2px 0 #0a1020, inset 2px 2px 0 #2a3a4a;
+  --shadow-float: inset -1px -1px 0 #2a4060, inset 1px 1px 0 #3a5a80, inset -2px -2px 0 #0a1020, inset 2px 2px 0 #2a3a4a;
+  --shadow-composer: inset 1px 1px 0 #0a1020, inset -1px -1px 0 #3a5a80;
+  --shadow-composer-focus: inset 1px 1px 0 #0a1020, inset -1px -1px 0 #4080c0, 0 0 0 1px #4080c0;
 }
 
 @layer base {
   * {
     @apply border-border ring-0;
+    border-radius: 0 !important;
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "ss01", "ss02", "cv01";
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
+    font-family: "Tahoma", "MS Sans Serif", "Arial", sans-serif;
+    font-size: 11px;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: auto;
+    text-rendering: auto;
   }
+  
+  /* Win2K desktop wallpaper teal for body background areas outside main window */
+  html {
+    background-color: #3a6ea5;
+  }
+}
+
+/* =====================================================
+   WINDOWS 2000 UI CHROME SYSTEM
+   ===================================================== */
+
+/* Win2K raised button bevel */
+.win2k-raised {
+  background-color: var(--secondary);
+  border: 1px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow: inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf;
+  cursor: default;
+}
+
+.win2k-raised:active,
+.win2k-raised[data-state="active"],
+.win2k-raised[aria-pressed="true"] {
+  border-color: #808080 #ffffff #ffffff #808080;
+  box-shadow: inset 1px 1px 0 #404040, inset -1px -1px 0 #dfdfdf;
+}
+
+/* Win2K sunken/inset field (text inputs, message area) */
+.win2k-sunken {
+  background-color: var(--input);
+  border: 1px solid;
+  border-color: #808080 #dfdfdf #dfdfdf #808080;
+  box-shadow: inset 1px 1px 0 #404040, inset -1px -1px 0 #ffffff;
+}
+
+/* Win2K window frame */
+.win2k-window {
+  background: var(--card);
+  border: 2px solid #0a246a;
+  box-shadow:
+    inset -1px -1px 0 #404040,
+    inset 1px 1px 0 #ffffff,
+    2px 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Win2K titlebar gradient */
+.win2k-titlebar {
+  background: linear-gradient(
+    to right,
+    var(--win2k-titlebar-start) 0%,
+    var(--win2k-titlebar-end) 100%
+  );
+  color: var(--win2k-titlebar-text);
+  font-family: var(--font-win2k), "Tahoma", sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 3px 4px 4px 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+  user-select: none;
+}
+
+/* Win2K titlebar buttons (close/min/max) */
+.win2k-titlebar-btn {
+  width: 16px;
+  height: 14px;
+  background: var(--secondary);
+  border: 1px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow: inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: bold;
+  color: #000000;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-family: "Marlett", "Wingdings", monospace;
+}
+
+.win2k-titlebar-btn:active {
+  border-color: #808080 #ffffff #ffffff #808080;
+  box-shadow: inset 1px 1px 0 #404040, inset -1px -1px 0 #dfdfdf;
+  padding-top: 1px;
+  padding-left: 1px;
+}
+
+/* Win2K menu bar */
+.win2k-menubar {
+  background: var(--secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 1px 2px;
+  gap: 0;
+  font-family: var(--font-win2k), "Tahoma", sans-serif;
+  font-size: 11px;
+}
+
+.win2k-menubar-item {
+  padding: 2px 6px;
+  cursor: default;
+  user-select: none;
+  color: var(--foreground);
+}
+
+.win2k-menubar-item:hover,
+.win2k-menubar-item[data-active="true"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+/* Win2K status bar */
+.win2k-statusbar {
+  background: var(--secondary);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 2px 4px;
+  font-family: var(--font-win2k), "Tahoma", sans-serif;
+  font-size: 11px;
+  gap: 2px;
+}
+
+.win2k-statusbar-panel {
+  border: 1px solid;
+  border-color: #808080 #dfdfdf #dfdfdf #808080;
+  box-shadow: inset 1px 1px 0 #404040;
+  padding: 1px 6px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Win2K scrollbar overrides */
+.win2k-panel *::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+.win2k-panel *::-webkit-scrollbar-track {
+  background: #d4d0c8;
+  border: 1px solid #808080;
+}
+
+.win2k-panel *::-webkit-scrollbar-thumb {
+  background: #d4d0c8;
+  border: 1px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow: inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf;
+  border-radius: 0;
+}
+
+.win2k-panel *::-webkit-scrollbar-button {
+  background: #d4d0c8;
+  border: 1px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow: inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf;
+  display: block;
+  height: 16px;
+  width: 16px;
+}
+
+.win2k-panel *::-webkit-scrollbar-corner {
+  background: #d4d0c8;
+}
+
+/* Win2K taskbar at bottom */
+.win2k-taskbar {
+  background: var(--secondary);
+  border-top: 2px solid #ffffff;
+  box-shadow: inset 0 1px 0 #dfdfdf;
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 2px 4px;
+  gap: 4px;
+  font-family: var(--font-win2k), "Tahoma", sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.win2k-start-btn {
+  background: var(--secondary);
+  border: 1px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow: inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: bold;
+  font-family: var(--font-win2k), "Tahoma", sans-serif;
+  cursor: pointer;
+  height: 22px;
+}
+
+.win2k-clock {
+  border: 1px solid;
+  border-color: #808080 #dfdfdf #dfdfdf #808080;
+  box-shadow: inset 1px 1px 0 #404040;
+  padding: 1px 6px;
+  font-size: 11px;
+  margin-left: auto;
+}
+
+/* Win2K text input styling */
+.win2k-input {
+  background: #ffffff;
+  border: 1px solid;
+  border-color: #808080 #dfdfdf #dfdfdf #808080;
+  box-shadow: inset 1px 1px 0 #404040;
+  color: #000000;
+  font-family: var(--font-win2k), "Tahoma", sans-serif;
+  font-size: 11px;
+  padding: 2px 3px;
+  outline: none;
+}
+
+.win2k-input:focus {
+  outline: none;
+}
+
+/* Win2K sidebar nav items */
+.win2k-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  cursor: default;
+  font-family: var(--font-win2k), "Tahoma", sans-serif;
+  font-size: 11px;
+  color: var(--sidebar-foreground);
+  user-select: none;
+}
+
+.win2k-nav-item:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.win2k-nav-item.active {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+/* Override pixel-chat styles for Win2K */
+.pixel-chat-root {
+  font-family: var(--font-win2k), "Tahoma", "MS Sans Serif", "Arial", sans-serif !important;
+  font-size: 11px !important;
+  letter-spacing: 0 !important;
+  line-height: 1.4 !important;
+  background: var(--background);
+}
+
+[data-chat-phase="invitation"],
+[data-chat-phase="session"] {
+  /* Reset all the spooky theming back to Win2K silver */
+  --background: #d4d0c8;
+  --foreground: #000000;
+  --card: #ece9d8;
+  --card-foreground: #000000;
+  --popover: #ece9d8;
+  --popover-foreground: #000000;
+  --primary: #003a7a;
+  --primary-foreground: #ffffff;
+  --secondary: #d4d0c8;
+  --secondary-foreground: #000000;
+  --muted: #c0bdb5;
+  --muted-foreground: #444444;
+  --accent: #0a5fa3;
+  --accent-foreground: #ffffff;
+  --border: #808080;
+  --input: #ffffff;
+  --ring: #0a5fa3;
+  --sidebar: #d4d0c8;
+  --sidebar-foreground: #000000;
+  --sidebar-border: #808080;
+  --chat-border-width: 1px;
+  --chat-candle-opacity: 0 !important;
+  --chat-grain-opacity: 0 !important;
+  --chat-vignette-opacity: 0 !important;
+  --chat-corner-radius: 0px;
+
+  --shadow-card: inset -1px -1px 0 #808080, inset 1px 1px 0 #ffffff, inset -2px -2px 0 #404040, inset 2px 2px 0 #dfdfdf;
+  --shadow-float: inset -1px -1px 0 #808080, inset 1px 1px 0 #ffffff, inset -2px -2px 0 #404040, inset 2px 2px 0 #dfdfdf;
+  --shadow-composer: inset 1px 1px 0 #808080, inset -1px -1px 0 #dfdfdf;
+  --shadow-composer-focus: inset 1px 1px 0 #404040, inset -1px -1px 0 #dfdfdf, 0 0 0 1px #0a5fa3;
+}
+
+.dark [data-chat-phase="invitation"],
+.dark [data-chat-phase="session"] {
+  --background: #1a1a2e;
+  --foreground: #c0d0e8;
+  --card: #1e2a3a;
+  --card-foreground: #c0d0e8;
+  --border: #2a4060;
+  --input: #0a1020;
+  --sidebar: #141e2e;
+  --sidebar-foreground: #9ab0c8;
+  --sidebar-border: #2a4060;
+  --muted-foreground: #6880a0;
+  --chat-candle-opacity: 0 !important;
+  --chat-grain-opacity: 0 !important;
+  --chat-vignette-opacity: 0 !important;
+}
+
+/* Completely kill the atmospheric effects */
+.pixel-chat-panel .chat-candlelight,
+.pixel-chat-panel .chat-grain,
+.pixel-chat-panel .chat-vignette,
+.pixel-chat-panel .chat-creepy-eyes,
+.pixel-chat-panel .chat-candle-decoration {
+  display: none !important;
+}
+
+/* Win2K chat panel override */
+.pixel-chat-panel {
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border: none !important;
+  background: var(--card) !important;
+}
+
+/* Win2K composer override */
+.pixel-chat-root .pixel-chat-composer > div {
+  border-radius: 0 !important;
+  background: #ffffff !important;
+  border: 1px solid !important;
+  border-color: #808080 #dfdfdf #dfdfdf #808080 !important;
+  box-shadow: inset 1px 1px 0 #404040, inset -1px -1px 0 #ffffff !important;
+}
+
+.pixel-chat-root .pixel-chat-composer > div:focus-within {
+  border-color: #808080 #dfdfdf #dfdfdf #808080 !important;
+  box-shadow: inset 1px 1px 0 #404040, inset -1px -1px 0 #ffffff, 0 0 0 1px #0a5fa3 !important;
+}
+
+.dark .pixel-chat-root .pixel-chat-composer > div {
+  background: #0a1020 !important;
+  border-color: #2a4060 #3a5a80 #3a5a80 #2a4060 !important;
+  box-shadow: inset 1px 1px 0 #0a1020, inset -1px -1px 0 #3a5a80 !important;
+}
+
+/* Suggestion pills Win2K style */
+.pixel-chat-root [data-suggestion-pill="true"] {
+  border-radius: 0 !important;
+  background: var(--secondary) !important;
+  border: 1px solid !important;
+  border-color: #ffffff #808080 #808080 #ffffff !important;
+  box-shadow: inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf !important;
+  color: var(--foreground) !important;
+  transition: none !important;
+  font-family: var(--font-win2k), "Tahoma", sans-serif !important;
+  font-size: 11px !important;
+}
+
+.pixel-chat-root [data-suggestion-pill="true"]:hover {
+  transform: none !important;
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+  border-color: #0a5fa3 #0a5fa3 #0a5fa3 #0a5fa3 !important;
+  box-shadow: none !important;
+}
+
+.dark .pixel-chat-root [data-suggestion-pill="true"] {
+  background: #1e2a3a !important;
+  border-color: #3a5a80 #2a4060 #2a4060 #3a5a80 !important;
+  box-shadow: inset -1px -1px 0 #0a1020, inset 1px 1px 0 #3a5a80 !important;
+  color: #c0d0e8 !important;
+}
+
+/* Submit button Win2K style */
+.pixel-chat-root .pixel-chat-submit {
+  border-radius: 0 !important;
+  background: var(--secondary) !important;
+  color: var(--foreground) !important;
+  border: 1px solid !important;
+  border-color: #ffffff #808080 #808080 #ffffff !important;
+  box-shadow: inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf !important;
+}
+
+.pixel-chat-root .pixel-chat-submit:not(:disabled):hover {
+  background: var(--secondary) !important;
+  filter: brightness(1.05);
+}
+
+.pixel-chat-root .pixel-chat-submit:not(:disabled):active {
+  border-color: #808080 #ffffff #ffffff #808080 !important;
+  box-shadow: inset 1px 1px 0 #404040, inset -1px -1px 0 #dfdfdf !important;
+  padding-top: 1px;
+  padding-left: 1px;
+}
+
+/* Heading/text resets for Win2K */
+.pixel-chat-root h1,
+.pixel-chat-root h2,
+.pixel-chat-root h3,
+.pixel-chat-root h4,
+.pixel-chat-root h5,
+.pixel-chat-root h6 {
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  font-family: var(--font-win2k), "Tahoma", sans-serif !important;
+  font-size: 11px !important;
+  font-weight: bold !important;
+  line-height: 1.4 !important;
+}
+
+[data-chat-phase="invitation"] h1,
+[data-chat-phase="invitation"] h2,
+[data-chat-phase="invitation"] h3 {
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+}
+
+[data-chat-phase="invitation"] p,
+[data-chat-phase="invitation"] span {
+  color: var(--foreground) !important;
+}
+
+/* Win2K textarea */
+.pixel-chat-textarea {
+  font-family: var(--font-win2k), "Tahoma", "MS Sans Serif", sans-serif !important;
+  font-size: 11px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  background: transparent !important;
+}
+
+/* Win2K button/control resets */
+.pixel-chat-root button,
+.pixel-chat-root [role="button"] {
+  font-size: 11px !important;
+  letter-spacing: 0 !important;
+  line-height: 1.4 !important;
+  text-transform: none !important;
+  border-radius: 0 !important;
+  font-family: var(--font-win2k), "Tahoma", sans-serif !important;
+}
+
+/* Disable worm animation for Win2K */
+[data-chat-phase="invitation"] + * .motion-div,
+.pixel-chat-root [data-testid="suggested-actions"] * {
+  animation: none !important;
+}
+
+/* Win2K scrollbar */
+.pixel-chat-root *::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+.pixel-chat-root *::-webkit-scrollbar-track {
+  background: #d4d0c8;
+  border: 1px solid #808080;
+}
+
+.pixel-chat-root *::-webkit-scrollbar-thumb {
+  background: #d4d0c8;
+  border: 1px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow: inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf;
+  border-radius: 0 !important;
+}
+
+.pixel-chat-root *::-webkit-scrollbar-button {
+  background: #d4d0c8;
+  border: 1px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow: inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf;
+  display: block;
+  height: 16px;
+  width: 16px;
+}
+
+.pixel-chat-root *::-webkit-scrollbar-corner {
+  background: #d4d0c8;
+}
+
+.dark .pixel-chat-root *::-webkit-scrollbar-track {
+  background: #1a1a2e;
+  border-color: #2a4060;
+}
+
+.dark .pixel-chat-root *::-webkit-scrollbar-thumb {
+  background: #2a3a4a;
+  border-color: #3a5a80 #2a4060 #2a4060 #3a5a80;
+  box-shadow: inset -1px -1px 0 #0a1020, inset 1px 1px 0 #3a5a80;
+}
+
+.dark .pixel-chat-root *::-webkit-scrollbar-button {
+  background: #2a3a4a;
+  border-color: #3a5a80 #2a4060 #2a4060 #3a5a80;
+  box-shadow: inset -1px -1px 0 #0a1020, inset 1px 1px 0 #3a5a80;
+}
+
+.dark .pixel-chat-root *::-webkit-scrollbar-corner {
+  background: #1a1a2e;
 }
 
 @layer base {

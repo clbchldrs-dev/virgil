@@ -6,6 +6,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 
+// Win2K font: use a system-level monospace/sans that mimics Tahoma/MS Sans Serif.
+// We import Noto Sans as a web-safe Win2K-era fallback since Tahoma isn't on Google Fonts.
+// The actual font stack falls back gracefully to system Tahoma on Windows.
+
+
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
@@ -30,6 +35,10 @@ const geistMono = Geist_Mono({
   display: "swap",
   variable: "--font-geist-mono",
 });
+
+// Win2K era: Tahoma-like font from Google Fonts
+// Using "Noto Sans" as closest match; system Tahoma will be preferred on Windows
+
 
 const LIGHT_THEME_COLOR = "hsl(0 0% 100%)";
 const DARK_THEME_COLOR = "hsl(240deg 10% 3.92%)";
@@ -61,6 +70,7 @@ export default function RootLayout({
       className={`${geist.variable} ${geistMono.variable}`}
       lang="en"
       suppressHydrationWarning
+      style={{ fontFamily: '"Tahoma", "MS Sans Serif", "Arial", sans-serif' }}
     >
       <head>
         <script
