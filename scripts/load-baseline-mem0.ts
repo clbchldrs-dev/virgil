@@ -1,9 +1,9 @@
 /**
- * One-shot loader: reads a baseline text file (default caleb-baseline.txt),
+ * One-shot loader: reads a baseline text file (default owner-baseline.local.txt),
  * splits by section, and adds each section to Mem0 with metadata tags.
  *
- * Optional: BASELINE_PATH=/absolute/or/relative/path/to/owner-baseline.local.txt
- * to keep sensitive baseline out of git (see docs/OWNER_PRODUCT_VISION.md).
+ * Default path is gitignored — see docs/OWNER_PRODUCT_VISION.md.
+ * Override with BASELINE_PATH=/absolute/or/relative/path/to/file.txt
  *
  * Usage:
  *   MEM0_API_KEY=m0-… USER_ID=<uuid> npx tsx scripts/load-baseline-mem0.ts
@@ -13,7 +13,7 @@
  *
  * Or pass --user-id <uuid> as a CLI arg.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { config } from "dotenv";
 
@@ -40,10 +40,7 @@ if (!USER_ID) {
 
 const userId: string = USER_ID;
 
-const baselinePath = process.env.BASELINE_PATH
-  ? resolve(process.cwd(), process.env.BASELINE_PATH)
-  : resolve(process.cwd(), "caleb-baseline.txt");
-const raw = readFileSync(baselinePath, "utf-8");
+const defaultBaselinePath = resolve(process.cwd(), "owner-baseline.local.txt");
 
 const SECTION_RE = /^===\s*(.+?)\s*===$/;
 
@@ -118,8 +115,22 @@ async function addToMem0(
 }
 
 async function main() {
+  const baselinePath = process.env.BASELINE_PATH
+    ? resolve(process.cwd(), process.env.BASELINE_PATH)
+    : defaultBaselinePath;
+
+  if (!existsSync(baselinePath)) {
+    console.error(
+      `Baseline file not found: ${baselinePath}\n` +
+        "Create owner-baseline.local.txt at the repo root (gitignored), or set BASELINE_PATH.\n" +
+        "See docs/OWNER_PRODUCT_VISION.md § Personal baseline file."
+    );
+    process.exit(1);
+  }
+
+  const raw = readFileSync(baselinePath, "utf-8");
   const sections = parseSections(raw);
-  console.log(`Parsed ${sections.length} sections from caleb-baseline.txt\n`);
+  console.log(`Parsed ${sections.length} sections from ${baselinePath}\n`);
   console.log(`User ID: ${userId}\n`);
 
   let ok = 0;

@@ -9,6 +9,10 @@ Normative intent for agents and maintainers:
 - **Single owner.** Features optimize for one person’s loop (fitness v1, then other personal domains using the same prioritization scaffold).
 - **No SaaS positioning here.** Do not preserve architectures “in case” of commercialization in this repo.
 
+## Business and front-desk code (legacy)
+
+Optional business/front-desk routes and tools remain in the tree until you explicitly prune them. Inventory and removal guidance: [docs/PRUNING_CANDIDATES.md](PRUNING_CANDIDATES.md). Default daily use assumes **no business profile**—companion prompts follow this document (fitness-first, variance feedback).
+
 ## V1 focus: fitness-first
 
 Priorities include:
@@ -53,8 +57,8 @@ Version informally by adding `_v` notes in memory or a `metricsSchemaVersion` fi
 
 ## Personal baseline file
 
-- A file such as `caleb-baseline.txt` can hold sensitive life and financial **targets**. Treat it as **private**.
-- **Options:** keep the repo strictly private; or move the canonical file to an **untracked** path (e.g. `owner-baseline.local.txt` at repo root—see `.gitignore`) and point loaders at it via `BASELINE_PATH` in `scripts/load-baseline-mem0.ts`.
+- Keep life and financial **targets** in a **gitignored** file at repo root: **`owner-baseline.local.txt`** (see `.gitignore`). Never commit real baseline content to a public repo.
+- Override path with **`BASELINE_PATH`** when running `scripts/load-baseline-mem0.ts` if you store the file elsewhere.
 - Do not commit credentials or session tokens into baseline text.
 
 ## Related code

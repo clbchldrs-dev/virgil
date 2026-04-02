@@ -24,6 +24,7 @@ docker-compose.override.yml
 
 # Owner-only personal baseline (see docs/OWNER_PRODUCT_VISION.md)
 owner-baseline.local.txt
+caleb-baseline.txt
 /test-results/
 /playwright-report/
 /blob-report/
