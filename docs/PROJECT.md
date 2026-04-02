@@ -26,6 +26,7 @@ This file is the **single entrypoint** for intent, documentation map, architectu
 | Archived Cursor prompts / pre-ship sketches | [archive/README.md](archive/README.md) |
 | Enhancement backlog (E1–E11, …) and acceptance criteria | [docs/ENHANCEMENTS.md](ENHANCEMENTS.md) |
 | v2 architecture plan (June 2026 target, not in development) | [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md) |
+| Hardware decisions (v2 host, inference tiers, retired gear) | [docs/HARDWARE.md](HARDWARE.md) |
 | v1 → v2 migration path and what carries forward | [docs/V2_MIGRATION.md](V2_MIGRATION.md) |
 | v2 evaluation data collection | [workspace/v2-eval/](../workspace/v2-eval/) |
 | Itemized work tickets (E2–E7, E8-follow, Phase 4) | [docs/tickets/README.md](tickets/README.md) |

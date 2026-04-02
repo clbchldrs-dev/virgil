@@ -692,11 +692,26 @@ If any answer is unfavorable, call it out explicitly instead of hand-waving it a
 
 ## v2 Plan
 
-A v2 architecture is planned for June 2026, pending new hardware. The v2 plan is
-documented in `docs/V2_ARCHITECTURE.md`. Migration path is in `docs/V2_MIGRATION.md`.
+A v2 architecture is planned for June 2026. Primary hardware (Mac Mini M4 Pro) is resolved.
+The v2 plan is documented in [`docs/V2_ARCHITECTURE.md`](docs/V2_ARCHITECTURE.md).
+Migration path is in [`docs/V2_MIGRATION.md`](docs/V2_MIGRATION.md).
+Hardware decisions are in [`docs/HARDWARE.md`](docs/HARDWARE.md).
 
 **v2 is not in development.** Do not build v2 features in this repo. The current
 focus is running v1 reliably and collecting evaluation data in `workspace/v2-eval/`.
+
+### Planned v2 Python backend (June 2026)
+
+Virgil's v2 backend is a headless Python service running on a **Mac Mini M4 Pro** (48GB unified memory, 2TB SSD). The Next.js frontend (this repo, deployed on Vercel) talks to the backend over Tailscale or Cloudflare Tunnel.
+
+**Inference model:** Local-first hybrid. Local Ollama handles 80-90% of inference at $0 cost. Gemini API is a paid escalation path for complex reasoning only.
+
+- **Local fast (14B):** Event classification, memory ops, nudge phrasing, tool selection, briefings, simple Q&A, night mode.
+- **Local heavy (32B):** Draft review, multi-factor classification, research summarization.
+- **Cloud heavy (Gemini 2.5 Pro):** Multi-step planning, novel problem solving, frontier reasoning. Budget-tracked (~$30/month soft cap).
+- **Night mode:** Runs entirely on local models. No API cost. Proactivity is free.
+
+**Key v2 rule:** Every Gemini call costs money. Local inference is free. Default to local. Escalate to Gemini only for tasks that demonstrably require frontier reasoning.
 
 Key v2 changes: Python backend, tool execution, night mode, skills system, split
 frontend/backend, local Apple Silicon inference. See the architecture doc for details.

@@ -1,6 +1,6 @@
 # Virgil v2.1 — Architecture Plan
 
-> Status: PLANNED — Not in development. Target: June 2026 (hardware-dependent).
+> Status: PLANNED — Not in development. Target: June 2026. Primary hardware (Mac Mini M4 Pro) is resolved.
 > This document is the single source of truth for v2 design decisions.
 > See docs/V2_MIGRATION.md for how v1 transitions to v2.
 
@@ -13,16 +13,17 @@
 Virgil is a proactive personal AI assistant built for a single user (Caleb). It ingests context from calendar, task management, and manual input, surfaces actionable nudges before the user asks, and can execute tasks autonomously. The personality is stoic, reserved, and direct — it does work quietly and presents results, not process. For **shipped v1** voice and product intent, prefer [OWNER_PRODUCT_VISION.md](OWNER_PRODUCT_VISION.md) and (when completed) [VIRGIL_PERSONA.md](VIRGIL_PERSONA.md) over this prompt’s shorthand.
 
 **Hardware reality:**
-- **Services host (now):** A 2012-era Ubuntu box (DDR3, GTX 1070 — irrelevant for inference). Runs the Python backend: event loop, API server, memory layer, ingestion workers, tool execution, night mode scheduler. No local inference.
+- **Primary host (now):** Mac Mini M4 Pro — 48GB unified memory, 2TB SSD, 12-core CPU, 16-core GPU, 273 GB/s memory bandwidth. Runs the Python backend (event loop, API server, memory layer, ingestion workers, tool execution, night mode scheduler) AND local inference via Ollama. Single box. Always-on. ~30W.
 - **Frontend (now):** Existing Next.js app deployed on Vercel (from the `clbchldrs-dev/virgil` repo). Chat UI with auth, shadcn/ui components, Vercel AI SDK. The Python backend is headless — the Next.js frontend is the user-facing interface.
-- **Inference (now through July 2026):** Gemini API via Google AI Studio. Two model tiers: `gemini-2.0-flash` for fast/cheap operations and `gemini-2.5-pro` for complex reasoning.
-- **Inference (August 2026+):** tiiny.ai Pocket Lab (80GB LPDDR5X, 190 TOPS NPU) takes over as local inference. Gemini becomes fallback. Phase 2.
+- **Inference — fast tier (now):** Local Ollama on Mac Mini. Default models: `qwen2.5:14b` (fast, ~30 tok/s) and `qwen2.5:32b` (heavier, ~15-20 tok/s). Handles 80-90% of all inference calls at $0 cost.
+- **Inference — heavy tier (now):** Gemini API via Google AI Studio. `gemini-2.5-pro` for complex reasoning. Reduced budget (~$25-30/month) since fast tier is local.
+- **Inference — Phase 2 (August 2026+):** tiiny.ai Pocket Lab (80GB LPDDR5X, 190 TOPS NPU) takes over heavy local tier. 70B+ models. Gemini becomes emergency-only fallback. Mac Mini continues as services host + fast tier.
 
-The Ubuntu box and Vercel frontend connect over Tailscale (or Cloudflare Tunnel). The Python backend exposes a REST/SSE API that the Next.js frontend consumes.
+The Mac Mini and Vercel frontend connect over Tailscale (or Cloudflare Tunnel). The Python backend exposes a REST/SSE API that the Next.js frontend consumes.
 
 ## What to Build
 
-A Python-based agentic backend that runs as a background service on the Ubuntu box. It:
+A Python-based agentic backend that runs as a background service on the Mac Mini. It:
 - Ingests context from calendar, Jira, filesystem, and manual input
 - Maintains a local memory layer with priority weighting
 - Runs a single orchestrator agent on a continuous event-driven cycle
@@ -55,10 +56,11 @@ virgil/
 │   │   └── night.py          # Night mode autonomous work controller
 │   ├── inference/
 │   │   ├── __init__.py
-│   │   ├── router.py         # Routes to fast or heavy model
-│   │   ├── gemini_client.py  # Gemini API client
+│   │   ├── router.py         # Routes to local-fast, local-heavy, or gemini-heavy
 │   │   ├── base.py           # Abstract inference client interface
-│   │   └── budget.py         # API cost tracking and rate limiting
+│   │   ├── local_client.py   # Ollama client (httpx → localhost:11434)
+│   │   ├── gemini_client.py  # Gemini API client
+│   │   └── budget.py         # API cost tracking (Gemini only — local is free)
 │   ├── memory/
 │   │   ├── __init__.py
 │   │   ├── manager.py        # Unified memory interface
@@ -139,21 +141,25 @@ Read this file before making changes. For architecture details, see docs/ARCHITE
 
 ## What This Is
 
-Virgil's Python backend. Headless agentic service running on a 2012 Ubuntu box.
+Virgil's Python backend. Headless agentic service running on a Mac Mini M4 Pro (48GB, 2TB).
 The Next.js frontend (separate repo) talks to this over Tailscale/Tunnel.
+Local inference via Ollama handles 80-90% of calls. Gemini API for complex reasoning only.
 
 ## North Star
 
-Make Virgil as useful as possible on a $75/month Gemini budget without becoming
-flattering, bloated, or noisy. Advisor + executor, not just a chatbot.
+Make Virgil as useful as possible using local inference (Ollama on Mac Mini) as the default,
+with Gemini as a paid escalation path for complex reasoning. Advisor + executor, not just a chatbot.
+Proactivity is free — don't ration it.
 
 ## Rules
 
-1. Every inference call costs money. If you can solve it in Python, do.
+1. Every GEMINI call costs money. Local inference is free. Default to local.
+   If you can solve it locally or in Python, do. Escalate to Gemini only for
+   tasks that demonstrably require frontier reasoning.
 2. Tools must be sandboxed. No unrestricted shell access. Allowlisted commands only.
 3. Night mode work must be idempotent — if it crashes at 3am, nothing is corrupted.
 4. Skills are isolated. A broken skill cannot crash the core loop.
-5. Log every decision, every tool invocation, every dollar spent.
+5. Log every decision, every tool invocation, every Gemini dollar spent.
 6. The persona is enforced on every response. No exceptions.
 7. Tests before features. Each implementation step must have a passing test.
 
@@ -177,10 +183,11 @@ Use Pydantic `BaseSettings` loading from `.env`:
 
 ```
 GEMINI_API_KEY=
-GEMINI_FAST_MODEL=gemini-2.0-flash
 GEMINI_HEAVY_MODEL=gemini-2.5-pro
-GEMINI_MONTHLY_BUDGET_USD=75.00
-GEMINI_NIGHT_BUDGET_USD=25.00
+GEMINI_MONTHLY_BUDGET_USD=30.00
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_FAST_MODEL=qwen2.5:14b
+OLLAMA_HEAVY_MODEL=qwen2.5:32b
 MEM0_API_KEY=
 MEM0_USER_ID=caleb
 GOOGLE_CALENDAR_CREDENTIALS_PATH=
@@ -188,8 +195,8 @@ JIRA_BASE_URL=
 JIRA_EMAIL=
 JIRA_API_TOKEN=
 JIRA_PROJECT_KEY=DAMC
-WATCH_DIRECTORIES=/home/caleb/virgil-drops
-SKILLS_DIRECTORIES=/home/caleb/virgil/skills
+WATCH_DIRECTORIES=/Users/caleb/virgil-drops
+SKILLS_DIRECTORIES=/Users/caleb/virgil/skills
 TAILSCALE_ENABLED=false
 BRIEFING_TIME=07:30
 NUDGE_INTERVAL_MINUTES=60
@@ -198,7 +205,7 @@ NIGHT_WINDOW_END=07:00
 NTFY_TOPIC=virgil-caleb
 NTFY_SERVER=https://ntfy.sh
 LOG_LEVEL=INFO
-INFERENCE_PROVIDER=gemini
+INFERENCE_PROVIDER=hybrid
 ALLOWED_SHELL_COMMANDS=git status,git log,ls,cat,wc,df,uptime
 ```
 
@@ -250,8 +257,15 @@ Single agent. Decision flow:
 6. **Log**: Record full decision trace including tool invocations and results.
 
 Model routing:
-- **Fast (flash):** Briefings, conflict detection, simple Q&A, nudge phrasing, memory classification, tool selection for routine actions.
-- **Heavy (pro):** Multi-step planning, nuanced drafts, novel problem solving, night mode self-evaluation.
+- **Local fast (Ollama, 14B):** Event classification, memory operations, nudge phrasing, tool selection, briefing generation, simple Q&A, night mode routine tasks. ~30 tok/s. $0.
+- **Local heavy (Ollama, 32B):** More nuanced reasoning that doesn't warrant a Gemini call. Draft review, multi-factor classification, research summarization. ~15-20 tok/s. $0.
+- **Cloud heavy (Gemini 2.5 Pro):** Multi-step planning, novel problem solving, tasks requiring frontier-model intelligence. Only when local models are insufficient. Budget-tracked.
+- **Cloud fast fallback (Gemini 2.0 Flash):** Fallback if Ollama is unresponsive. Not the default path.
+
+Routing decision: The orchestrator defaults to local. It escalates to Gemini only when:
+1. The task is explicitly tagged as complex (multi-step planning, novel problems)
+2. The local model's response fails a confidence/quality check
+3. The user explicitly requests it
 
 Tool invocation follows a ReAct-style loop: the LLM can request a tool call, the orchestrator executes it, and the result is fed back for the next reasoning step. Cap at 5 tool calls per event to prevent runaway loops.
 
@@ -330,12 +344,17 @@ class ToolRegistry:
 
 The autonomous work window. Configurable via `NIGHT_WINDOW_START` / `NIGHT_WINDOW_END`.
 
+Night mode runs entirely on local Ollama models. No API budget allocation needed.
+All night tasks (briefing pre-compute, self-evaluation, memory consolidation,
+stale project scan, research) use the local heavy model (32B).
+This means night mode can be as aggressive as needed — no cost constraint.
+
 ```python
 class NightController:
     """
     During the night window, Virgil shifts from reactive to proactive.
     Instead of waiting for events, it pulls from a task queue of deferred work.
-    Runs on a separate budget allocation (GEMINI_NIGHT_BUDGET_USD).
+    Runs entirely on local Ollama models — no API cost.
     """
     async def start(self, event_queue: asyncio.Queue):
         while True:
@@ -344,12 +363,9 @@ class NightController:
             await asyncio.sleep(60)  # Check every minute
 
     async def _run_night_cycle(self, event_queue: asyncio.Queue):
-        """Execute night tasks in priority order. Stop if budget exhausted."""
+        """Execute night tasks in priority order using local inference."""
         tasks = self._get_night_tasks()
         for task in tasks:
-            if not self.budget.can_afford_night():
-                logger.info("Night budget exhausted, stopping night cycle")
-                break
             event = VirgilEvent(
                 source="night",
                 event_type="night_task",
@@ -358,7 +374,7 @@ class NightController:
                 priority=task.priority,
             )
             event_queue.put_nowait(event)
-            await asyncio.sleep(5)  # Pace night work to avoid API rate limits
+            await asyncio.sleep(5)  # Pace night work to avoid hammering Ollama
 ```
 
 **Night task types (priority order):**
@@ -367,21 +383,21 @@ class NightController:
 
 2. **Self-evaluation.** Review the day's decision traces. Compute:
    - Nudge hit rate (nudges acted on / nudges generated)
-   - Inference routing accuracy (how often did flash suffice vs. how often was pro needed)
-   - Wasted API calls (calls that produced no user-visible output)
+   - Inference routing accuracy (how often did local suffice vs. how often was Gemini needed)
+   - Wasted Gemini calls (calls that produced no user-visible output or could have been handled locally)
    - Tool execution success rate
    Write a daily eval report to memory (category: "self_eval", weight: 0.6, decay: 0.02/day). Over time, this data feeds back into routing heuristics and nudge scoring.
 
 3. **Memory consolidation.** Run the decay function, then:
    - Identify memories accessed frequently but low-weighted → promote
    - Identify high-weighted memories never accessed → flag for demotion
-   - Identify duplicate/overlapping memories → merge candidates (use flash model to detect)
+   - Identify duplicate/overlapping memories → merge candidates (use local fast model to detect)
    - Prune memories below threshold weight
    Write a consolidation report to traces.
 
 4. **Stale project scan.** Check all `project` category memories for last activity date. If >7 days stale, generate a candidate nudge for morning delivery.
 
-5. **Research tasks.** Process any research requests queued during the day (e.g., "Virgil, look into X when you have time"). Use `web_fetch` tool + flash model to summarize findings. Store results in memory and queue a morning nudge with the summary.
+5. **Research tasks.** Process any research requests queued during the day (e.g., "Virgil, look into X when you have time"). Use `web_fetch` tool + local heavy model (32B) to summarize findings. Store results in memory and queue a morning nudge with the summary.
 
 6. **Skill health check.** Verify all loaded skills are functional (call their `health_check()` if implemented). Log failures.
 
@@ -444,14 +460,20 @@ The orchestrator checks skills *after* its own handling. If a skill matches, it 
 
 ### 7. Inference Router (`inference/router.py`)
 
-Same as previous version. Routes to flash or pro model within Gemini API. Budget tracker enforces $75/month with $25/month carved out for night mode.
+Routes to local-fast (Ollama 14B), local-heavy (Ollama 32B), or cloud-heavy (Gemini 2.5 Pro). Defaults to local. Escalates to Gemini only when local is insufficient or unavailable.
 
-Budget tracking now includes:
-- Daytime budget: `GEMINI_MONTHLY_BUDGET_USD - GEMINI_NIGHT_BUDGET_USD` = $50/month
-- Night budget: `GEMINI_NIGHT_BUDGET_USD` = $25/month
-- Daily soft limits: ~$1.67/day daytime, ~$0.83/day night
-- If daytime budget exhausted: degrade to flash-only, then quiet mode
-- If night budget exhausted: skip remaining night tasks, resume next night
+Budget tracking:
+- Local inference: unmetered, no tracking needed
+- Gemini monthly budget: $30/month soft target (most calls are local now)
+- Gemini night budget: $0 (night mode runs entirely on local models)
+- Daily Gemini soft limit: ~$1/day
+- If Gemini budget exhausted: no degradation — local models handle everything, heavy reasoning quality drops but Virgil never goes quiet
+- Budget tracker only counts Gemini API calls. Local inference is free and unlimited.
+
+Fallback behavior:
+- If Ollama is unresponsive: fast tier degrades to Gemini 2.0 Flash
+- If Gemini is down: heavy tier degrades to the best local model available (32B)
+- Virgil never goes fully silent
 
 ### 8. Memory Layer (`memory/`)
 
@@ -471,7 +493,7 @@ class MemoryManager:
         """Night mode memory maintenance."""
         promoted = await self._promote_underweighted()
         flagged = await self._flag_unused_high_weight()
-        merged = await self._merge_duplicates()   # Uses flash model
+        merged = await self._merge_duplicates()   # Uses local fast model
         pruned = await self._prune_below_threshold(threshold=0.1)
         return ConsolidationReport(promoted, flagged, merged, pruned)
 ```
@@ -526,13 +548,13 @@ Same as previous version. Decision traces now include tool invocations:
   "timestamp": "2026-04-02T02:30:00Z",
   "trigger": {"source": "night", "type": "night_task"},
   "task_type": "self_evaluation",
-  "model": "gemini-2.0-flash",
-  "tier": "fast",
+  "model": "qwen2.5:14b",
+  "tier": "local-fast",
   "tokens_used": 1247,
-  "estimated_cost_usd": 0.0005,
+  "estimated_cost_usd": 0.0,
   "tools_invoked": [],
   "action": "memory_write",
-  "output_summary": "Daily eval: 3/5 nudges acted on, 0 wasted calls, flash sufficient 94% of time",
+  "output_summary": "Daily eval: 3/5 nudges acted on, 0 wasted Gemini calls, local sufficient 94% of time",
   "latency_ms": 1840
 }
 ```
@@ -545,21 +567,21 @@ Night mode produces a structured daily report accessible via `/night/report`.
 
 Build and test in this exact order. Each step should be a working, testable increment. **Run the AGENTS.md handoff checklist at the start of every Cursor session.**
 
-1. **Config + project scaffold + AGENTS.md.** `pyproject.toml`, `.env.example`, `AGENTS.md` at root. Verify Python 3.11+ on Ubuntu box.
-2. **Gemini client + inference router.** Verify flash and pro calls work. Budget tracker stub.
+1. **Config + project scaffold + AGENTS.md.** `pyproject.toml`, `.env.example`, `AGENTS.md` at root. Verify Python 3.11+ on Mac Mini.
+2. **Inference clients + router.** Implement `local_client.py` (Ollama via httpx to localhost:11434) and `gemini_client.py`. Router defaults to local, escalates to Gemini for complex tasks. Verify both fast and heavy local models respond. Verify Gemini fallback works when Ollama is stopped. Budget tracker for Gemini calls only.
 3. **Memory layer.** SQLite schema, L1/L2, FTS5 search. Mem0 stub. Tests.
 4. **Persona.** `persona.md` + `mask.py`. Verify persona prepended to all calls.
 5. **API server.** FastAPI with `/chat` endpoint. Minimal fallback HTML UI for testing (the real UI is the Next.js app). CORS configured for frontend origin.
 6. **Event loop + orchestrator.** Event queue wired up. Orchestrator handles `user_message` events. Decision traces logged.
-7. **Budget tracking.** Full `budget.py`. Daytime and night budget split. Exposed via `/budget`.
+7. **Budget tracking.** Full `budget.py`. Gemini-only cost tracking (local is unmetered). Exposed via `/budget`.
 8. **Tool framework.** `base.py`, `registry.py`. Register a single test tool (`notify` — send a push via ntfy.sh). Verify orchestrator can invoke tools via ReAct loop.
 9. **Core tools.** `jira_comment`, `file_write`, `web_fetch`, `shell` (sandboxed). Tests for each. Permission model enforced.
 10. **Scheduler.** Briefing and nudge scheduling. Placeholder output initially.
 11. **Ingestion: filesystem watcher.** Drop `.md`, see it ingested.
 12. **Ingestion: Jira.** Poll, ingest tickets. Verify in briefing.
 13. **Ingestion: Google Calendar.** Poll or webhook. Verify in briefing.
-14. **Briefing action.** Real context, flash model, < $0.01/briefing.
-15. **Nudge action.** Pure Python detection, Gemini phrasing. Tool-enhanced: nudge can include a "suggested action" that Virgil executes on approval.
+14. **Briefing action.** Real context, local fast model. $0/briefing.
+15. **Nudge action.** Pure Python detection, local model phrasing. Tool-enhanced: nudge can include a "suggested action" that Virgil executes on approval.
 16. **Skills framework.** `loader.py`, `base.py`, skill directory structure. Load and run a test skill. Verify isolation (broken skill doesn't crash core).
 17. **Night mode.** `night.py` with configurable window. Implement tasks in order: pre-compute briefing → self-evaluation → memory consolidation → stale project scan → research queue.
 18. **Observability.** Full traces, metrics, `/status`, `/night/report`. Nudge feedback in UI.
@@ -579,7 +601,7 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
-    "httpx>=0.27",
+    "httpx>=0.27",                # Also used for Ollama REST API client
     "aiosqlite>=0.20",
     "pydantic-settings>=2.5",
     "watchdog>=4.0",
@@ -601,25 +623,24 @@ dev = ["pytest", "pytest-asyncio", "ruff"]
 ## Key Constraints
 
 - **No swarm, no sub-agents, no parallelism in Phase 1.** One agent, one loop.
-- **Cloud-dependent inference with local resilience.** If Gemini is down, Virgil continues ingesting and updating memory. Queues pending actions for when API returns.
-- **Gemini budget: $75/month hard cap.** $50 daytime, $25 night. Budget tracker enforces. Degrade to flash → quiet mode when exhausted.
+- **Local-first inference with cloud escalation.** Default to local Ollama. Escalate to Gemini only when the task requires frontier reasoning. When in doubt, use local.
+- **Gemini budget: $30/month soft cap.** Night mode is fully local. Budget tracker enforces. If Gemini budget exhausted, local models handle everything — heavy reasoning quality drops but Virgil never goes quiet.
 - **Mem0 budget: 800 API calls/week max.** Local cache first. Write-through. Read-on-miss.
-- **Minimize inference calls.** Detection logic in Python. Gemini only for phrasing and reasoning.
+- **Minimize Gemini calls.** Detection logic in Python. Local models for phrasing and classification. Gemini only for complex reasoning.
 - **Tools are sandboxed.** No unrestricted shell. Allowlisted commands. Restricted file paths. Approval gates on destructive actions.
-- **Night mode is idempotent.** Crash-safe. Re-runnable. No corruption risk.
+- **Night mode is idempotent.** Crash-safe. Re-runnable. No corruption risk. Runs entirely on local models — no cost constraint.
 - **Skills are isolated.** A broken skill cannot crash the core loop. Errors are caught and logged.
 - **Persona is sacred.** Every response passes through the mask.
-- **Log everything.** Every decision, tool call, dollar spent, memory access.
+- **Log everything.** Every decision, tool call, Gemini dollar spent, memory access.
 - **AGENTS.md is the handoff.** Every new Cursor session starts by reading it.
 
 ---
 
 ## What Phase 2 Looks Like (Do Not Build Yet)
 
-- **tiiny.ai migration (August 2026):** `local_client.py` implementing `InferenceClient`. Router prefers local for fast tier. Budget drops toward $0/month.
+- **tiiny.ai migration (August 2026+):** `tiiny_client.py` implementing `InferenceClient`. Router shifts heavy-local tier from Mac Mini Ollama (32B) to Pocket Lab (70B+). Mac Mini continues as always-on services host and fast tier (14B). Gemini drops to emergency-only fallback. Monthly API spend approaches $0. Two-device architecture: Mac Mini (services + fast inference) <-> Pocket Lab (heavy inference). Devices communicate over Tailscale mesh or local network.
 - **Sub-agents:** Each action type becomes an independent agent.
 - **Parallel execution:** Task queue (Celery/BullMQ) for concurrent agent work.
 - **Tool approval UI:** Interactive tool approval in the Next.js chat interface.
 - **Mobile push refinement:** Rich notifications with action buttons (approve/reject tool calls from phone).
 - **Self-modifying skills:** Virgil can create new skills during night mode based on patterns it detects in usage. Human review required before activation.
-- **Heavy local inference:** 70B+ models on tiiny.ai for the heavy tier. Gemini becomes emergency-only.

@@ -11,7 +11,7 @@
 
 ## What gets replaced
 
-- **Inference layer** — Ollama on GTX 1070 → local Apple Silicon inference (MLX/Ollama) on new hardware.
+- **Inference layer** — v1 Ollama/gateway mix → v2 Python backend on Mac Mini M4 Pro with local-first Ollama (14B/32B) + Gemini API escalation. Phase 2: tiiny.ai Pocket Lab for heavy local tier (70B+).
 - **Database** — Postgres/Drizzle → SQLite + Mem0 (simpler, no server dependency).
 - **Backend runtime** — Next.js API routes → Python FastAPI (headless).
 - **Memory** — Redis + Postgres → Three-tier SQLite/Mem0 with priority weighting.
@@ -33,7 +33,7 @@ See `workspace/v2-eval/README.md` for what v1 is collecting to inform v2 develop
 
 ## Migration steps (execute in June 2026)
 
-1. Stand up Python backend on new hardware
+1. Stand up Python backend on Mac Mini M4 Pro (Ollama + Python 3.11+)
 2. Port persona from companion-prompt.ts → persona.md
 3. Wire Next.js frontend to Python backend API
 4. Migrate relevant Postgres data to SQLite memory layer

@@ -70,6 +70,22 @@ Virgil is a personal assistant by default.
 
 If you complete onboarding, it can also act as a business front desk with intake, escalation, and opportunity capture. Those business-specific tools stay out of the default personal path unless you opt in.
 
+## V2 Python backend (planned)
+
+A v2 architecture targeting June 2026 replaces the Node.js backend with a headless Python service on a **Mac Mini M4 Pro** (48GB unified memory, 2TB SSD). The Next.js frontend stays on Vercel.
+
+Inference is local-first: Ollama on the Mac Mini handles 80-90% of calls at $0 cost, with Gemini API as a paid escalation path for complex reasoning.
+
+Setup for v2 development (when the time comes):
+
+```bash
+brew install python@3.11 ollama
+ollama pull qwen2.5:14b
+ollama pull qwen2.5:32b
+```
+
+Postgres and Redis via Docker (OrbStack or Docker Desktop) if v2 needs them. Full architecture: [docs/V2_ARCHITECTURE.md](docs/V2_ARCHITECTURE.md). Hardware decisions: [docs/HARDWARE.md](docs/HARDWARE.md).
+
 ## Docs
 
 **SSOT map:** [docs/PROJECT.md](docs/PROJECT.md) lists where each topic lives (same structure as this section—read PROJECT first for intent and links).
@@ -78,6 +94,7 @@ If you complete onboarding, it can also act as a business front desk with intake
 - [AGENTS.md](AGENTS.md): **setup and deployment detail** (env, Docker, LAN, cron, Vercel, env var table) plus coding rules and checklists
 - [SETUP.md](SETUP.md), [DEPLOY.md](DEPLOY.md): thin link hubs → AGENTS.md (no duplicate tables)
 - [docs/beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md): LAN / Ubuntu home server — bundled Ollama in Compose, systemd, warmup, local vs remote access
+- [docs/HARDWARE.md](docs/HARDWARE.md): hardware decisions (v2 host, inference tiers, retired gear)
 - [docs/DECISIONS.md](docs/DECISIONS.md): architecture decision records
 - [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md): enhancement backlog and review process
 - [docs/github-product-opportunity.md](docs/github-product-opportunity.md): optional GitHub Issues inbox for product feedback (gateway models)
