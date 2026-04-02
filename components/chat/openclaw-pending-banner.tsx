@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 type PendingIntentRow = {
   id: string;
   skill: string | null;
+  status: string;
   intent: Record<string, unknown>;
   createdAt: string;
   requiresConfirmation: boolean;
@@ -55,10 +56,22 @@ export function OpenClawPendingBanner() {
   const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const url = `${base}/api/openclaw/pending`;
 
+  const [idle, setIdle] = useState(false);
+
   const { data, error, mutate } = useSWR(url, fetcher, {
-    refreshInterval: 15_000,
-    revalidateOnFocus: true,
+    refreshInterval: idle ? 0 : 15_000,
+    revalidateOnFocus: !idle,
   });
+
+  if (
+    !idle &&
+    data &&
+    !data.configured &&
+    data.queuedBacklog === 0 &&
+    data.pendingConfirmations.length === 0
+  ) {
+    setIdle(true);
+  }
 
   const [actingId, setActingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
@@ -172,9 +185,12 @@ export function OpenClawPendingBanner() {
                       Reject
                     </Button>
                     <Button
-                      disabled={actingId === row.id}
+                      disabled={actingId === row.id || !data.openClawOnline}
                       onClick={() => patchIntent(row.id, "approve")}
                       size="sm"
+                      title={
+                        data.openClawOnline ? undefined : "OpenClaw is offline"
+                      }
                       type="button"
                       variant="secondary"
                     >

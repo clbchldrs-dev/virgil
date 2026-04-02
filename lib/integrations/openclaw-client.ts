@@ -7,6 +7,14 @@ import {
 import type { ClawIntent, ClawResult } from "@/lib/integrations/openclaw-types";
 
 const FETCH_TIMEOUT_MS = 8000;
+const MAX_ERROR_LENGTH = 500;
+
+function truncateError(msg: string): string {
+  const stripped = msg.replace(/<[^>]*>/g, "");
+  return stripped.length > MAX_ERROR_LENGTH
+    ? `${stripped.slice(0, MAX_ERROR_LENGTH)}…`
+    : stripped;
+}
 
 function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
   return fetch(url, {
@@ -125,7 +133,7 @@ export async function sendOpenClawIntent(
     if (!res.ok) {
       return {
         success: false,
-        error: output ?? `HTTP ${String(res.status)}`,
+        error: truncateError(output ?? `HTTP ${String(res.status)}`),
         skill: intent.skill,
         executedAt,
       };

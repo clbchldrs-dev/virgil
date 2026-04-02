@@ -73,24 +73,16 @@ export function getPendingConfirmationsForUser(userId: string) {
       and(
         eq(pendingIntent.userId, userId),
         eq(pendingIntent.requiresConfirmation, true),
-        eq(pendingIntent.status, "pending")
+        or(
+          eq(pendingIntent.status, "pending"),
+          and(
+            eq(pendingIntent.status, "confirmed"),
+            isNull(pendingIntent.sentAt)
+          )
+        )
       )
     )
     .orderBy(desc(pendingIntent.createdAt));
-}
-
-export async function countQueuedPendingWithoutSend(userId: string) {
-  const rows = await db
-    .select({ id: pendingIntent.id })
-    .from(pendingIntent)
-    .where(
-      and(
-        eq(pendingIntent.userId, userId),
-        eq(pendingIntent.status, "pending"),
-        isNull(pendingIntent.sentAt)
-      )
-    );
-  return rows.length;
 }
 
 export async function confirmPendingIntent({
@@ -113,6 +105,28 @@ export async function confirmPendingIntent({
     )
     .returning();
   return updated ?? null;
+}
+
+export async function isAlreadyConfirmedUnsent({
+  id,
+  userId,
+}: {
+  id: string;
+  userId: string;
+}): Promise<boolean> {
+  const [row] = await db
+    .select({ id: pendingIntent.id })
+    .from(pendingIntent)
+    .where(
+      and(
+        eq(pendingIntent.id, id),
+        eq(pendingIntent.userId, userId),
+        eq(pendingIntent.status, "confirmed"),
+        isNull(pendingIntent.sentAt)
+      )
+    )
+    .limit(1);
+  return Boolean(row);
 }
 
 export async function rejectPendingIntent({
@@ -145,6 +159,7 @@ export async function rejectPendingIntent({
   return updated ?? null;
 }
 
+// TODO: wire to retry cron — query for intents stuck in "sent" >5 min
 export function getRetryableOpenClawIntents() {
   return db
     .select()
@@ -157,6 +172,22 @@ export function getRetryableOpenClawIntents() {
         lt(pendingIntent.sentAt, sql<string>`(now() - interval '5 minutes')`)
       )
     );
+}
+
+// TODO: wire to future intent detail view
+export async function getPendingIntentByIdForUser({
+  id,
+  userId,
+}: {
+  id: string;
+  userId: string;
+}) {
+  const [row] = await db
+    .select()
+    .from(pendingIntent)
+    .where(and(eq(pendingIntent.id, id), eq(pendingIntent.userId, userId)))
+    .limit(1);
+  return row ?? null;
 }
 
 export async function trySendPendingIntentById({
@@ -212,21 +243,6 @@ export async function trySendPendingIntentById({
     .where(eq(pendingIntent.id, id));
 
   return { skipped: false as const, result };
-}
-
-export async function getPendingIntentByIdForUser({
-  id,
-  userId,
-}: {
-  id: string;
-  userId: string;
-}) {
-  const [row] = await db
-    .select()
-    .from(pendingIntent)
-    .where(and(eq(pendingIntent.id, id), eq(pendingIntent.userId, userId)))
-    .limit(1);
-  return row ?? null;
 }
 
 /** OpenClaw offline: pending rows that never left the queue (for owner messaging). */

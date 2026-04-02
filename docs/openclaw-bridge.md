@@ -30,6 +30,25 @@ Adapt paths to match your OpenClaw gateway’s real routes.
 - Intents are scoped by **`userId`**; API routes require session auth.
 - Destructive or outbound phrasing sets **`requiresConfirmation`** until the owner approves.
 
+## Known limitations and operator notes
+
+- **HTTP REST only.** `OPENCLAW_URL` accepts a `ws://` value but it is converted to HTTP; no live WebSocket connection is made. Set `OPENCLAW_HTTP_URL` directly if this is confusing.
+- **Personal assistant mode only.** Tools are registered when `!isBusinessMode && isOpenClawConfigured()`. Business/front-desk mode does not expose delegation.
+- **Execute/skills/health paths are assumptions.** Default paths (`/api/execute`, `/api/skills`, `/health`) may not match your OpenClaw release; override with `OPENCLAW_*_PATH` env vars.
+- **No retry worker.** `getRetryableOpenClawIntents` (query for intents stuck in "sent" > 5 min) exists but has no cron/poller wired yet. Recovery is manual re-delegation.
+- **Approve button disabled when offline.** If OpenClaw is unreachable, the UI prevents approval. Rejection is still allowed.
+- **`production` build requires `POSTGRES_URL`.** This is an existing app constraint, not OpenClaw-specific.
+- **Event-bus dispatcher is a stub.** `dispatchVirgilEventToOpenClaw` and the action mapping in `openclaw-actions.ts` will be active when E11 pivot event streams ship. The `delegationNeedsConfirmation` safety net runs on all event-built intents even when the mapping sets `requiresConfirmation: false`.
+
+### Deferred (P2, acceptable for single-owner v1)
+
+- No CSRF token on PATCH (mitigated by `SameSite=Lax` cookies).
+- No per-endpoint rate limiting beyond session auth.
+- No DB-level `CHECK` constraint on `status` column (enforced in TypeScript/Drizzle).
+- No pagination on `GET /api/openclaw/pending` (backlog expected to stay small).
+- Skills cache is process-global (not per-user); appropriate for single-owner.
+- `matchSkillFromDescription` breaks ties by array order (deterministic but arbitrary).
+
 ## Related
 
 - ADR: [docs/DECISIONS.md](DECISIONS.md) (OpenClaw execution layer).

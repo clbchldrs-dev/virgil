@@ -4,6 +4,7 @@ import {
   confirmPendingIntent,
   countOpenClawBacklogForUser,
   getPendingConfirmationsForUser,
+  isAlreadyConfirmedUnsent,
   rejectPendingIntent,
   trySendPendingIntentById,
 } from "@/lib/db/queries";
@@ -18,16 +19,15 @@ const patchBodySchema = z.object({
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  const userId = session.user.id;
   const configured = isOpenClawConfigured();
-  const pendingConfirmations = await getPendingConfirmationsForUser(
-    session.user.id
-  );
+  const pendingConfirmations = await getPendingConfirmationsForUser(userId);
   const online = configured ? await pingOpenClaw() : false;
-  const queuedBacklog = await countOpenClawBacklogForUser(session.user.id);
+  const queuedBacklog = await countOpenClawBacklogForUser(userId);
 
   return Response.json({
     configured,
@@ -43,9 +43,11 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
+
+  const userId = session.user.id;
 
   let body: unknown;
   try {
@@ -62,44 +64,43 @@ export async function PATCH(request: Request) {
   const { id, action, reason } = parsed.data;
 
   if (action === "reject") {
-    const row = await rejectPendingIntent({
-      id,
-      userId: session.user.id,
-      reason,
-    });
+    const row = await rejectPendingIntent({ id, userId, reason });
     if (!row) {
       return Response.json({ error: "not found" }, { status: 404 });
     }
     return Response.json({ ok: true, intent: row });
   }
 
-  const confirmed = await confirmPendingIntent({
-    id,
-    userId: session.user.id,
-  });
+  const confirmed = await confirmPendingIntent({ id, userId });
+
   if (!confirmed) {
-    return Response.json(
-      { error: "not found or not awaiting approval" },
-      {
-        status: 404,
-      }
-    );
+    const alreadyConfirmed = await isAlreadyConfirmedUnsent({ id, userId });
+    if (!alreadyConfirmed) {
+      return Response.json(
+        { error: "not found or not awaiting approval" },
+        { status: 404 }
+      );
+    }
   }
 
-  const sendResult = await trySendPendingIntentById({
-    id,
-    userId: session.user.id,
-  });
+  try {
+    const sendResult = await trySendPendingIntentById({ id, userId });
 
-  if (sendResult.skipped) {
+    if (sendResult.skipped) {
+      return Response.json(
+        { error: "intent could not be sent", detail: sendResult.reason },
+        { status: 409 }
+      );
+    }
+
+    return Response.json({
+      ok: sendResult.result.success,
+      result: sendResult.result,
+    });
+  } catch {
     return Response.json(
-      { error: "intent could not be sent", detail: sendResult.reason },
-      { status: 409 }
+      { error: "failed to send intent after approval" },
+      { status: 500 }
     );
   }
-
-  return Response.json({
-    ok: sendResult.result.success,
-    result: sendResult.result,
-  });
 }

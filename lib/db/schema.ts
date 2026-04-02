@@ -5,6 +5,7 @@ import {
   foreignKey,
   integer,
   json,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -342,7 +343,7 @@ export const pendingIntent = pgTable("PendingIntent", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   chatId: uuid("chatId").references(() => chat.id, { onDelete: "set null" }),
-  intent: json("intent").$type<Record<string, unknown>>().notNull(),
+  intent: jsonb("intent").$type<Record<string, unknown>>().notNull(),
   skill: text("skill"),
   status: varchar("status", {
     enum: ["pending", "confirmed", "sent", "completed", "failed", "rejected"],
@@ -354,7 +355,7 @@ export const pendingIntent = pgTable("PendingIntent", {
     .default(false),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   sentAt: timestamp("sentAt"),
-  result: json("result").$type<Record<string, unknown>>(),
+  result: jsonb("result").$type<Record<string, unknown>>(),
   rejectionReason: text("rejectionReason"),
 });
 

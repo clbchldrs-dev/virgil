@@ -1,3 +1,4 @@
+import { delegationNeedsConfirmation } from "@/lib/integrations/openclaw-match";
 import type {
   ClawIntent,
   VirgilBridgeEvent,
@@ -46,5 +47,15 @@ export function buildOpenClawIntentFromVirgilEvent(
   if (!builder) {
     return null;
   }
-  return builder(event);
+  const intent = builder(event);
+  if (!intent) {
+    return null;
+  }
+  if (
+    !intent.requiresConfirmation &&
+    delegationNeedsConfirmation(JSON.stringify(intent.params), intent.skill)
+  ) {
+    intent.requiresConfirmation = true;
+  }
+  return intent;
 }
