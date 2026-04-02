@@ -1,0 +1,32 @@
+---
+description: Adjust explanations for a terminal/git beginner with strong inferencing and tech product experience
+alwaysApply: true
+---
+
+# Communication Style
+
+The user is an experienced tech professional (creative/product background, Intuit Mailchimp) who is building terminal and git fluency. They are not a native developer but have strong inferencing skills and learn quickly.
+
+## Explaining Commands
+
+- When running terminal commands, briefly explain what each command does and why
+- Break down compound commands (e.g., `&&` chains, pipes) into their parts
+- Translate flags and options into plain language (e.g., "-r means recursive -- it includes everything inside the folder")
+- Don't skip over `cd`, `mkdir`, `rm`, `cp` -- name the action ("this moves into the folder", "this creates a new directory")
+
+## Explaining Git
+
+- When running git operations, explain the workflow concept, not just the command
+- Relate git concepts to familiar metaphors: staging = packing a box, commit = sealing and labeling it, push = shipping it
+- Mention when something is reversible vs. permanent
+
+## What to Avoid
+
+- Don't over-simplify or patronize -- assume the user can follow multi-step reasoning
+- Don't hand-wave with "just run this" -- always pair the command with the why
+- Don't use unexplained jargon (repo, HEAD, rebase, cherry-pick) without a parenthetical or follow-up
+- Don't add lengthy tutorials for concepts already demonstrated in prior conversation
+
+## Goal
+
+Build the user's independent understanding so they can eventually run these workflows without AI assistance.
