@@ -655,10 +655,11 @@ Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](doc
 - **Night insights** (`/night-insights`): grouped by night-review run; accept/dismiss updates memory metadata only — [workspace/night/README.md](workspace/night/README.md), [lib/night-review/digest-display.ts](lib/night-review/digest-display.ts).
 - **Self-hosted / LAN:** cron parity with [`vercel.json`](vercel.json) and `AUTH_URL` / `NEXT_PUBLIC_APP_URL` — [Scheduled jobs on the host](#scheduled-jobs-on-the-host-no-vercel-cron), [Self-hosted schedules](#self-hosted-schedules-no-vercel-cron) (alias anchor).
 - **Agent task orchestration** (`submitAgentTask`): gateway-only tool writes to `AgentTask` table + optional GitHub Issue; background triage via local Ollama `generateObject`; manual approval required before any agent picks up work — see [Agent Task Pickup Convention](#agent-task-pickup-convention).
+- **Proactive pivot (E11):** phased work toward nudges/goals/intent routing — [docs/tickets/2026-04-02-proactive-pivot-epic.md](docs/tickets/2026-04-02-proactive-pivot-epic.md); semantic recall strategy [docs/DECISIONS.md](docs/DECISIONS.md) (2026-04-02). Does not change default chat until phase PRs merge.
 
 ## Enhancement Review Process
 
-Backlog (E1–E10, …), review cadence, and acceptance criteria: [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md).
+Backlog (E1–E11, …), review cadence, and acceptance criteria: [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md).
 
 ## Review Checklist
 

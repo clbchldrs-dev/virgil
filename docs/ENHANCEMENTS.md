@@ -2,7 +2,7 @@
 
 Project entrypoint and SSOT map: [docs/PROJECT.md](PROJECT.md). Phased Linux 24/7 roadmap: [docs/VIRGIL_ROADMAP_LINUX_24_7.md](VIRGIL_ROADMAP_LINUX_24_7.md). **Tracked implementation tickets:** [docs/tickets/README.md](tickets/README.md). **Phase Four (host cron / LAN env):** [AGENTS.md](../AGENTS.md#scheduled-jobs-on-the-host-no-vercel-cron), [AGENTS.md § self-hosted schedules](../AGENTS.md#self-hosted-schedules-no-vercel-cron).
 
-Ideas worth evaluating for Virgil. The numbered items (E1–E8, etc.) are a living backlog; add new rows when you discover high-leverage work.
+Ideas worth evaluating for Virgil. The numbered items (E1–E11, …) are a living backlog; add new rows when you discover high-leverage work.
 
 ## Backlog
 
@@ -18,6 +18,7 @@ Ideas worth evaluating for Virgil. The numbered items (E1–E8, etc.) are a livi
 | E8 | lan-ops | Shorter **time-to-ready** after cold boot on LAN / Docker (Ubuntu-first) | Less waiting when the home server restarts | **Shipped:** health-gated `postgres`/`redis`/`ollama` → `virgil-app` in [`docker-compose.yml`](../docker-compose.yml); [`lib/ai/warmup-ollama.ts`](../lib/ai/warmup-ollama.ts) + `pnpm warmup:ollama`; [`docs/beta-lan-gaming-pc.md`](../docs/beta-lan-gaming-pc.md) systemd + timing checklist |
 | E9 | agent-swarm | Agent task orchestration: submit improvements via chat, triage with local Ollama, Cursor/agent pickup | Virgil works on itself; 24/7 improvement cycle using local models during downtime | **Shipped (MVP):** `submitAgentTask` tool (gateway-only), `AgentTask` table, GitHub Issue mirroring, background triage worker (`lib/agent-tasks/`), API routes, Cursor pickup convention in [AGENTS.md](../AGENTS.md#agent-task-pickup-convention). Future: auto-implement, UI for task management, GitHub Actions integration |
 | E10 | v2-bridge | Groundwork so v1 iteration feeds June 2026 v2 split (Python backend, traces, budgets, persona SSOT) | De-risks migration; produces contracts + telemetry without building v2 in this repo | **Tickets:** [docs/tickets/2026-04-01-v2-groundwork-overview.md](tickets/2026-04-01-v2-groundwork-overview.md) (T1–T8). Docs-only + opt-in JSONL; persona SSOT blocked on human workbook |
+| E11 | proactive-pivot | Reactive chat → proactive agent (vector recall, goals, events/nudges, intent prompts, model cascade, summarization) per owner pivot prompt | Stronger goal awareness and nudges without abandoning local-first | **Epic:** [docs/tickets/2026-04-02-proactive-pivot-epic.md](tickets/2026-04-02-proactive-pivot-epic.md). ADR: [DECISIONS.md](DECISIONS.md) (2026-04-02 semantic recall). Events: [PIVOT_EVENTS_AND_NUDGES.md](PIVOT_EVENTS_AND_NUDGES.md). Goals: [pivot-goals-layer-design.md](tickets/2026-04-02-pivot-goals-layer-design.md). **Not started** — planning SSOT only until phase branches land |
 
 ## Review cadence
 

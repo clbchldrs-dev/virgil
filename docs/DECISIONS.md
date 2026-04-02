@@ -22,6 +22,22 @@ Use when adding a decision:
 
 ---
 
+## 2026-04-02 — Proactive pivot: semantic recall strategy (FTS, Mem0, pgvector) — Accepted
+
+**Context:** An external “proactive agent pivot” proposes pgvector + local embeddings as **primary** recall. The repo already has the **2026-01-15** decision in this file — Postgres FTS for memory recall (“do not add a vector database casually”) — and optional **Mem0** semantic search with FTS fallback in application code.
+
+**Decision:**
+
+- **Until pivot Phase 1 is implemented:** The **primary on-Postgres** recall path remains **FTS** as in the 2026-01-15 ADR. **Mem0** remains the optional **hosted semantic** layer when `MEM0_API_KEY` is configured; behavior stays as shipped.
+- **Program direction (hybrid):** When pivot Phase 1 is undertaken, prefer **pgvector inside the same Postgres** (e.g. Neon) plus **Ollama embeddings**, with **FTS retained as fallback** and for merge/dedup—**not** a separate managed vector database. Making vector search **rank before** FTS for recall requires a **follow-up ADR** at merge time (explicitly refining “primary” vs “fallback” ordering and migration).
+- **Rejected for now:** Mem0-only as the sole semantic path for local-first posture (local Ollama users would not gain on-box semantic recall); pgvector-only without FTS fallback (regresses resilience).
+
+**Consequences:** Pivot work documents this stack in the epic ticket; v2 memory blueprint ticket ([T4](tickets/2026-04-01-v2-t4-memory-migration-blueprint.md)) must be updated if `memory_embeddings` or related tables ship.
+
+**Links:** [docs/tickets/2026-04-02-proactive-pivot-epic.md](tickets/2026-04-02-proactive-pivot-epic.md)
+
+---
+
 ## 2026-04-01 — v1 groundwork ticket program for v2 split — Accepted
 
 **Context:** v2 (planned, hardware-dependent) assumes a Next.js UI plus a Python backend with explicit API, tool registry, night work, budgets, and traces. v1 remains the live system until migration; work should **produce migration artifacts** (docs, opt-in JSONL) without pretending v2 is in scope for implementation here.
