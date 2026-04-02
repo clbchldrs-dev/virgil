@@ -50,7 +50,7 @@ export function saveMemory({
         kind: input.kind,
         chatId,
         ...(input.metadata ?? {}),
-      }).catch(() => {});
+      }).catch(() => undefined);
 
       return {
         success: true,

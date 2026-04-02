@@ -334,3 +334,28 @@ export const agentTask = pgTable("AgentTask", {
 });
 
 export type AgentTask = InferSelectModel<typeof agentTask>;
+
+/** Queued execution handoff to OpenClaw (optional LAN integration). */
+export const pendingIntent = pgTable("PendingIntent", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  chatId: uuid("chatId").references(() => chat.id, { onDelete: "set null" }),
+  intent: json("intent").$type<Record<string, unknown>>().notNull(),
+  skill: text("skill"),
+  status: varchar("status", {
+    enum: ["pending", "confirmed", "sent", "completed", "failed", "rejected"],
+  })
+    .notNull()
+    .default("pending"),
+  requiresConfirmation: boolean("requiresConfirmation")
+    .notNull()
+    .default(false),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  sentAt: timestamp("sentAt"),
+  result: json("result").$type<Record<string, unknown>>(),
+  rejectionReason: text("rejectionReason"),
+});
+
+export type PendingIntent = InferSelectModel<typeof pendingIntent>;

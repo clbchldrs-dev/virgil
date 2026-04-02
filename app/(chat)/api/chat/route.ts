@@ -38,11 +38,13 @@ import {
   buildSlimCompanionPrompt,
   buildSlimFrontDeskPrompt,
 } from "@/lib/ai/slim-prompt";
+import { approveOpenClawIntent } from "@/lib/ai/tools/approve-openclaw-intent";
 import {
   getCompanionToolNames,
   getCompanionTools,
 } from "@/lib/ai/tools/companion";
 import { createDocument } from "@/lib/ai/tools/create-document";
+import { delegateTaskToOpenClaw } from "@/lib/ai/tools/delegate-to-openclaw";
 import { editDocument } from "@/lib/ai/tools/edit-document";
 import { escalateToHuman } from "@/lib/ai/tools/escalate-to-human";
 import { getWeather } from "@/lib/ai/tools/get-weather";
@@ -72,6 +74,7 @@ import {
 import type { DBMessage } from "@/lib/db/schema";
 import { VirgilError } from "@/lib/errors";
 import { isProductOpportunityConfigured } from "@/lib/github/product-opportunity-issue";
+import { isOpenClawConfigured } from "@/lib/integrations/openclaw-config";
 import { checkIpRateLimit } from "@/lib/ratelimit";
 import type { ChatMessage } from "@/lib/types";
 import {
@@ -418,6 +421,25 @@ export async function POST(request: Request) {
           allowed: agentTaskEnabled,
         });
 
+        const openClawPersonalEnabled =
+          !isBusinessMode && isOpenClawConfigured();
+
+        const openClawToolsBlock = openClawPersonalEnabled
+          ? {
+              delegateTask: delegateTaskToOpenClaw({
+                userId: session.user.id,
+                chatId: id,
+              }),
+              approveOpenClawIntent: approveOpenClawIntent({
+                userId: session.user.id,
+              }),
+            }
+          : undefined;
+
+        const openClawToolNames = openClawPersonalEnabled
+          ? (["delegateTask", "approveOpenClawIntent"] as const)
+          : [];
+
         const gatewayExtraTools = {
           ...(productOpportunityEnabled
             ? { submitProductOpportunity: productOpportunityTool }
@@ -433,7 +455,17 @@ export async function POST(request: Request) {
         ];
 
         const result = isOllamaLocal
-          ? streamText(localCommonStreamArgs)
+          ? streamText({
+              ...localCommonStreamArgs,
+              ...(openClawToolsBlock
+                ? {
+                    tools: openClawToolsBlock,
+                    experimental_activeTools: noActiveTools
+                      ? []
+                      : [...openClawToolNames],
+                  }
+                : {}),
+            })
           : isBusinessMode
             ? streamText({
                 ...gatewayCommonStreamArgs,
@@ -469,6 +501,7 @@ export async function POST(request: Request) {
                   ...baseTools,
                   ...companionTools,
                   ...gatewayExtraTools,
+                  ...(openClawToolsBlock ?? {}),
                 },
                 experimental_activeTools: noActiveTools
                   ? []
@@ -476,6 +509,7 @@ export async function POST(request: Request) {
                       ...baseToolNames,
                       ...companionToolNames,
                       ...gatewayExtraToolNames,
+                      ...openClawToolNames,
                     ],
               });
 
@@ -556,7 +590,7 @@ export async function POST(request: Request) {
 
             if (mem0Messages.length > 0) {
               mem0Add(mem0Messages, session.user.id, { chatId: id }).catch(
-                () => {}
+                () => undefined
               );
             }
           } catch {

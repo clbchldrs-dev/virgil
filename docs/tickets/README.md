@@ -2,6 +2,8 @@
 
 Tickets itemize **future work** from the [Linux 24/7 roadmap](../VIRGIL_ROADMAP_LINUX_24_7.md) and [ENHANCEMENTS.md](../ENHANCEMENTS.md). Each file has acceptance criteria, file pointers, and delegation notes.
 
+**Archived pre-implementation prompts:** [docs/archive/](../archive/) (not SSOT).
+
 **v1 → v2 groundwork (two-sprint bridge):** [2026-04-01-v2-groundwork-overview.md](2026-04-01-v2-groundwork-overview.md) — T1–T8 tickets for API contract, tool map, eval instrumentation, memory blueprint, night parity, traces, cost telemetry, persona SSOT.
 
 **Proactive agent pivot (E11):** [2026-04-02-proactive-pivot-epic.md](2026-04-02-proactive-pivot-epic.md) — phased vector/goals/events/intent/router/summarization; [PIVOT_EVENTS_AND_NUDGES.md](../PIVOT_EVENTS_AND_NUDGES.md); [2026-04-02-pivot-goals-layer-design.md](2026-04-02-pivot-goals-layer-design.md).

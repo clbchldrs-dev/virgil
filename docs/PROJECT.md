@@ -20,6 +20,10 @@ This file is the **single entrypoint** for intent, documentation map, architectu
 | Traceable architecture decisions | [docs/DECISIONS.md](DECISIONS.md) |
 | Security tool inventory + cron/QStash auth matrix | [docs/security/tool-inventory.md](security/tool-inventory.md) |
 | Security hardening backlog (Phases A–D) | [docs/superpowers/plans/2026-03-29-security-hardening-agents.md](superpowers/plans/2026-03-29-security-hardening-agents.md) |
+| Exploratory long-form plans and specs | [docs/superpowers/](superpowers/) — drafts; not SSOT for shipped app behavior unless promoted elsewhere |
+| Voice / persona SSOT (v1; filled at T8) | [docs/VIRGIL_PERSONA.md](VIRGIL_PERSONA.md); worksheet [personality/Virgil_personality_synthesis.md](personality/Virgil_personality_synthesis.md); DOCX [scripts/README-personality-docx.md](../scripts/README-personality-docx.md) |
+| Optional OpenClaw LAN execution | [openclaw-bridge.md](openclaw-bridge.md) |
+| Archived Cursor prompts / pre-ship sketches | [archive/README.md](archive/README.md) |
 | Enhancement backlog (E1–E11, …) and acceptance criteria | [docs/ENHANCEMENTS.md](ENHANCEMENTS.md) |
 | v2 architecture plan (June 2026 target, not in development) | [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md) |
 | v1 → v2 migration path and what carries forward | [docs/V2_MIGRATION.md](V2_MIGRATION.md) |

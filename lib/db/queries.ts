@@ -7,4 +7,5 @@ export * from "./query-modules/goal-guidance";
 export * from "./query-modules/memory";
 export * from "./query-modules/messages-and-votes";
 export * from "./query-modules/night-review";
+export * from "./query-modules/pending-intents";
 export * from "./query-modules/users";

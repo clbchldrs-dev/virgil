@@ -13,9 +13,7 @@ export const listCalendarEvents = tool({
       .default(1)
       .describe("Number of days ahead to look"),
   }),
-  execute: async () => {
-    return {
-      error: "Calendar integration not yet configured. Needs OAuth setup.",
-    };
-  },
+  execute: () => ({
+    error: "Calendar integration not yet configured. Needs OAuth setup.",
+  }),
 });

@@ -27,6 +27,7 @@ import { DataStreamHandler } from "./data-stream-handler";
 import { submitEditedMessage } from "./message-editor";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
+import { OpenClawPendingBanner } from "./openclaw-pending-banner";
 
 export function ChatShell() {
   const {
@@ -118,6 +119,7 @@ export function ChatShell() {
                   </div>
                 </div>
               )}
+              <OpenClawPendingBanner />
               <Messages
                 addToolApprovalResponse={addToolApprovalResponse}
                 chatId={chatId}

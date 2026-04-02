@@ -26,7 +26,6 @@ Add **`docs/V2_TOOL_MAP.md`**: a table (or machine-readable appendix JSON) listi
 ## Scope
 
 - Cover tools registered for **personal companion** path (include artifacts if they are tools in v1).
-- Optional: one paragraph on **front-desk-only** tools (“out of scope for v2 personal MVP” or same table with mode column).
 - Link to v2 tool list in [V2_ARCHITECTURE.md](../V2_ARCHITECTURE.md) § Tool Execution Layer for naming alignment.
 
 ## Non-goals

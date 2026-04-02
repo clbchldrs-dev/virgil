@@ -22,6 +22,22 @@ Use when adding a decision:
 
 ---
 
+## 2026-04-02 — OpenClaw as optional execution layer — Accepted
+
+**Context:** Virgil can own goal state, memory, and proactive logic while **multi-channel execution** (messengers, shell, files) stays in a dedicated agent stack such as OpenClaw on the LAN.
+
+**Decision:**
+
+- Virgil **delegates** concrete execution via a thin bridge (`lib/integrations/openclaw-client.ts`, `PendingIntent` queue, `delegateTask` tool) rather than reimplementing OpenClaw’s skill ecosystem in this repo.
+- The bridge is **optional**: unset `OPENCLAW_URL` / `OPENCLAW_HTTP_URL` → tools are not registered; chat and memory behave as before.
+- **Suggest-only** posture for risky actions: `requiresConfirmation` gates outbound/destructive intents until owner approval (UI or `approveOpenClawIntent`).
+
+**Consequences:** Operators configure HTTP paths to match their OpenClaw gateway. Event-bus processors can call `dispatchVirgilEventToOpenClaw` when pivot Phase 3 streams exist.
+
+**Links:** [docs/openclaw-bridge.md](openclaw-bridge.md)
+
+---
+
 ## 2026-04-02 — Proactive pivot: semantic recall strategy (FTS, Mem0, pgvector) — Accepted
 
 **Context:** An external “proactive agent pivot” proposes pgvector + local embeddings as **primary** recall. The repo already has the **2026-01-15** decision in this file — Postgres FTS for memory recall (“do not add a vector database casually”) — and optional **Mem0** semantic search with FTS fallback in application code.
