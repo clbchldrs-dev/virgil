@@ -2,6 +2,8 @@
 
 Tickets itemize **future work** from the [Linux 24/7 roadmap](../VIRGIL_ROADMAP_LINUX_24_7.md) and [ENHANCEMENTS.md](../ENHANCEMENTS.md). Each file has acceptance criteria, file pointers, and delegation notes.
 
+**v1 → v2 groundwork (two-sprint bridge):** [2026-04-01-v2-groundwork-overview.md](2026-04-01-v2-groundwork-overview.md) — T1–T8 tickets for API contract, tool map, eval instrumentation, memory blueprint, night parity, traces, cost telemetry, persona SSOT.
+
 | ID | Ticket file | Enhancement / theme |
 |----|-------------|---------------------|
 | E2 | [2026-03-29-virg-e2-per-model-prompt-variants.md](2026-03-29-virg-e2-per-model-prompt-variants.md) | Per-model prompt variants (3B vs 7B) — **partially shipped** (`LocalModelClass` + slim/compact) |

@@ -658,7 +658,7 @@ Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](doc
 
 ## Enhancement Review Process
 
-Backlog (E1–E7), review cadence, and acceptance criteria: [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md).
+Backlog (E1–E10, …), review cadence, and acceptance criteria: [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md).
 
 ## Review Checklist
 
@@ -682,3 +682,20 @@ Before ending a session, answer these:
 5. Did it preserve Virgil's honest, non-sycophantic voice?
 
 If any answer is unfavorable, call it out explicitly instead of hand-waving it away.
+
+## v2 Plan
+
+A v2 architecture is planned for June 2026, pending new hardware. The v2 plan is
+documented in `docs/V2_ARCHITECTURE.md`. Migration path is in `docs/V2_MIGRATION.md`.
+
+**v2 is not in development.** Do not build v2 features in this repo. The current
+focus is running v1 reliably and collecting evaluation data in `workspace/v2-eval/`.
+
+Key v2 changes: Python backend, tool execution, night mode, skills system, split
+frontend/backend, local Apple Silicon inference. See the architecture doc for details.
+
+Optional: set `V2_EVAL_LOGGING=true` to append chat interaction summaries to
+`workspace/v2-eval/interactions.jsonl` (gitignored). See `lib/v2-eval/interaction-log.ts`.
+
+**v1 groundwork for migration:** ticketed two-sprint bridge (docs, opt-in telemetry)—
+[docs/tickets/2026-04-01-v2-groundwork-overview.md](docs/tickets/2026-04-01-v2-groundwork-overview.md). ADR: [docs/DECISIONS.md](docs/DECISIONS.md) (2026-04-01).

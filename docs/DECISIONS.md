@@ -22,6 +22,18 @@ Use when adding a decision:
 
 ---
 
+## 2026-04-01 — v1 groundwork ticket program for v2 split — Accepted
+
+**Context:** v2 (planned, hardware-dependent) assumes a Next.js UI plus a Python backend with explicit API, tool registry, night work, budgets, and traces. v1 remains the live system until migration; work should **produce migration artifacts** (docs, opt-in JSONL) without pretending v2 is in scope for implementation here.
+
+**Decision:** Track **E10** and tickets **T1–T8** under [docs/tickets/2026-04-01-v2-groundwork-overview.md](tickets/2026-04-01-v2-groundwork-overview.md). Prefer documentation and **opt-in** logging (`V2_*` env flags) over behavior changes to default chat. Persona consolidation flows through `docs/VIRGIL_PERSONA.md` after the human completes the personality workbook.
+
+**Consequences:** Agents pick tickets from the overview; new SSOT docs (`V2_API_CONTRACT.md`, etc.) appear as tickets complete. Gitignore covers `workspace/v2-eval/*.jsonl` interaction/trace/cost logs.
+
+**Links:** [docs/V2_MIGRATION.md](V2_MIGRATION.md), [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md)
+
+---
+
 ## 2026-03-31 — Bespoke single-owner scope — fitness v1 — Accepted
 
 **Context:** The assistant is intentionally **one owner’s** personal system, not a multi-tenant SaaS foundation. Fitness is the first domain to stress-test prioritization (recovery, training, mobility, nutrition). Financial safety requires **descriptive** status only—no banking API credentials or plaintext finance tokens in app scope.

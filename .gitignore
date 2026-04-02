@@ -33,3 +33,8 @@ tsconfig.tsbuildinfo
 
 # Local pnpm store (should not be committed)
 .pnpm-store/
+
+# v2 eval data (local only, contains interaction logs)
+workspace/v2-eval/interactions.jsonl
+workspace/v2-eval/traces.jsonl
+workspace/v2-eval/costs.jsonl

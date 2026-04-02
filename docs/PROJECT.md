@@ -20,8 +20,12 @@ This file is the **single entrypoint** for intent, documentation map, architectu
 | Traceable architecture decisions | [docs/DECISIONS.md](DECISIONS.md) |
 | Security tool inventory + cron/QStash auth matrix | [docs/security/tool-inventory.md](security/tool-inventory.md) |
 | Security hardening backlog (Phases A–D) | [docs/superpowers/plans/2026-03-29-security-hardening-agents.md](superpowers/plans/2026-03-29-security-hardening-agents.md) |
-| Enhancement backlog (E1–E8, …) and acceptance criteria | [docs/ENHANCEMENTS.md](ENHANCEMENTS.md) |
+| Enhancement backlog (E1–E10, …) and acceptance criteria | [docs/ENHANCEMENTS.md](ENHANCEMENTS.md) |
+| v2 architecture plan (June 2026 target, not in development) | [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md) |
+| v1 → v2 migration path and what carries forward | [docs/V2_MIGRATION.md](V2_MIGRATION.md) |
+| v2 evaluation data collection | [workspace/v2-eval/](../workspace/v2-eval/) |
 | Itemized work tickets (E2–E7, E8-follow, Phase 4) | [docs/tickets/README.md](tickets/README.md) |
+| v1 → v2 groundwork (T1–T8, two-sprint bridge) | [docs/tickets/2026-04-01-v2-groundwork-overview.md](tickets/2026-04-01-v2-groundwork-overview.md) |
 | Future monetization (issue caps, gateway limits — not personal-use phase) | [docs/tickets/future-monetization-product-opportunity-limits.md](tickets/future-monetization-product-opportunity-limits.md) |
 | GitHub Issues for gateway “product opportunity” tool | [docs/github-product-opportunity.md](github-product-opportunity.md) |
 | Local setup / Docker / Ollama / LAN (procedures, env table) | [AGENTS.md](../AGENTS.md) — [Setup checklist](../AGENTS.md#setup-checklist), [Deployment (production)](../AGENTS.md#deployment-production) |
