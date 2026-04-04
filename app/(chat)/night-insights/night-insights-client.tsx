@@ -34,15 +34,13 @@ export function NightInsightsClient({ initialMemories }: Props) {
     [showDismissed]
   );
 
-  const { data, error, mutate } = useSWR<{ memories: Memory[] }>(
-    listUrl,
-    (url) => fetch(url).then((r) => r.json()),
-    {
-      fallbackData: showDismissed ? undefined : { memories: initialMemories },
-      keepPreviousData: true,
-      revalidateOnFocus: true,
-    }
-  );
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{
+    memories: Memory[];
+  }>(listUrl, (url) => fetch(url).then((r) => r.json()), {
+    fallbackData: showDismissed ? undefined : { memories: initialMemories },
+    keepPreviousData: true,
+    revalidateOnFocus: true,
+  });
 
   const rawMemories = data?.memories ?? [];
   const groups = useMemo(
@@ -133,10 +131,17 @@ export function NightInsightsClient({ initialMemories }: Props) {
 
   const listHeader = (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-muted-foreground text-sm">
-        Grouped by night-review run. Accept or dismiss suggestions; nothing
-        applies to prompts until you accept memories elsewhere in the app.
-      </p>
+      <div className="space-y-1">
+        <p className="text-muted-foreground text-sm">
+          Grouped by night-review run. Accept or dismiss suggestions; nothing
+          applies to prompts until you accept memories elsewhere in the app.
+        </p>
+        {isValidating && !isLoading ? (
+          <p aria-live="polite" className="text-muted-foreground text-xs">
+            Refreshing…
+          </p>
+        ) : null}
+      </div>
       <div className="flex shrink-0 items-center gap-2">
         <input
           checked={showDismissed}
@@ -200,6 +205,10 @@ export function NightInsightsClient({ initialMemories }: Props) {
             return d !== "accepted" && d !== "dismissed";
           });
           const pendingIds = pendingInRun.map((m) => m.id);
+          const batchKey = `batch:${group.runId}`;
+          const batchBusyThisRun = pending === batchKey;
+          const itemBusyThisRun = group.items.some((m) => pending === m.id);
+          const runActionsDisabled = batchBusyThisRun || itemBusyThisRun;
           const runLabel =
             group.windowKey ||
             (group.runId.length > 8
@@ -208,12 +217,16 @@ export function NightInsightsClient({ initialMemories }: Props) {
 
           return (
             <section
+              aria-labelledby={`night-run-${group.runId}`}
               className="rounded-xl border border-border/50 bg-card/50 p-4 shadow-[var(--shadow-float)] sm:p-5"
               key={group.runId}
             >
               <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="font-medium text-sm tracking-tight">
+                  <h2
+                    className="font-medium text-sm tracking-tight"
+                    id={`night-run-${group.runId}`}
+                  >
                     Run · {runLabel}
                   </h2>
                   <p className="text-muted-foreground text-xs">
@@ -225,22 +238,24 @@ export function NightInsightsClient({ initialMemories }: Props) {
                   <div className="flex flex-wrap gap-2">
                     <Button
                       className="h-9 min-h-11 text-xs sm:min-h-9"
-                      disabled={pending?.startsWith("batch")}
+                      disabled={runActionsDisabled}
                       onClick={() =>
                         actBatch(group.runId, pendingIds, "accepted")
                       }
                       size="sm"
+                      type="button"
                       variant="secondary"
                     >
                       Accept all ({pendingIds.length})
                     </Button>
                     <Button
                       className="h-9 min-h-11 text-xs sm:min-h-9"
-                      disabled={pending?.startsWith("batch")}
+                      disabled={runActionsDisabled}
                       onClick={() =>
                         actBatch(group.runId, pendingIds, "dismissed")
                       }
                       size="sm"
+                      type="button"
                       variant="outline"
                     >
                       Dismiss all ({pendingIds.length})
@@ -284,11 +299,12 @@ export function NightInsightsClient({ initialMemories }: Props) {
                           className="h-9 min-h-11 text-xs sm:min-h-8"
                           disabled={
                             pending === m.id ||
-                            pending?.startsWith("batch") ||
+                            pending === batchKey ||
                             decision === "accepted"
                           }
                           onClick={() => act(m.id, "accepted")}
                           size="sm"
+                          type="button"
                           variant="secondary"
                         >
                           Accept
@@ -299,11 +315,10 @@ export function NightInsightsClient({ initialMemories }: Props) {
                             decision === "dismissed" &&
                               "invisible pointer-events-none"
                           )}
-                          disabled={
-                            pending === m.id || pending?.startsWith("batch")
-                          }
+                          disabled={pending === m.id || pending === batchKey}
                           onClick={() => act(m.id, "dismissed")}
                           size="sm"
+                          type="button"
                           variant="outline"
                         >
                           Dismiss
