@@ -4,6 +4,23 @@ Significant, stable choices for Virgil. New entries go at the **top** (reverse c
 
 ---
 
+## 2026-04-02 — Target architecture: Virgil brain + Agent Zero executor (scoped, not shipped) — Accepted
+
+**Context:** Owner hardware (Mac mini with 48 GB unified memory) and product intent (capable local agent, delegated computer use, skills, bounded self-improvement) were discussed outside committed docs. The shipped codebase remains TypeScript-only for tools; OpenClaw was referenced only as inspiration for workspace/night patterns, which caused confusion about the real target stack.
+
+**Decision:**
+
+1. **Document** the target split in [`docs/TARGET_ARCHITECTURE.md`](TARGET_ARCHITECTURE.md): **Virgil (this repo)** = brain (UI, auth, Postgres, routing, in-repo tools, night review, agent-task queue). **Agent Zero** (Python, external) = preferred **headless executor** for rich skills/shell/plugins on the home machine—not OpenClaw as a bundled runtime.
+2. **Hardware:** Treat a **Mac mini with ~48 GB unified memory** as the **primary** deployment profile for that home stack (Ollama + optional executor + Docker services).
+3. **Bridge:** A future **authenticated** Virgil → executor bridge is **planned**; until implemented, no claim that Agent Zero is integrated.
+4. **Self-fix / learn skills:** “Fix itself” means **task queues + human/Cursor review**, not silent production edits. “Skills” means **versioned artifacts + executor**, distinct from conversational memory—see TARGET_ARCHITECTURE for policy table.
+
+**Consequences:** Contributors read TARGET_ARCHITECTURE for **intent**; AGENTS/PROJECT remain **how to run and change** what exists today. New bridge work should add ADRs and security review.
+
+**Links:** [`docs/TARGET_ARCHITECTURE.md`](TARGET_ARCHITECTURE.md)
+
+---
+
 ## Template
 
 Use when adding a decision:

@@ -591,9 +591,9 @@ Monitor these free-tier limits:
 - **Vercel Cron (Hobby)**: 2 cron jobs (digest + night-review enqueue — at the Hobby limit)
 - **Vercel Blob**: 1 GB on Hobby
 
-At ~3 active business-mode clients with moderate traffic, expect to need
+At ~3 active deployments with moderate traffic, expect to need
 **Vercel Pro ($20/mo)** and possibly **Neon Launch ($15/mo)**. Factor
-~$7/client/mo infrastructure into pricing before LLM costs.
+infrastructure cost per seat before LLM costs.
 
 ### Self-hosted schedules (no Vercel Cron)
 
@@ -652,6 +652,7 @@ When `AGENT_TASK_TRIAGE_ENABLED=1`, a cron job (`GET /api/agent-tasks/enqueue`, 
 Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](docs/DECISIONS.md)**.
 
 - **Bespoke single-owner** product intent: [docs/OWNER_PRODUCT_VISION.md](docs/OWNER_PRODUCT_VISION.md) (2026-03-31 ADR). Commercial multi-tenant SaaS is not a design goal for this repo. Personal-assistant-only surface (business/front-desk paths removed 2026-04). Local models default; gateway optional. Optional gateway multi-agent orchestration via env (see `lib/ai/orchestration/`).
+- **Target architecture (owner intent):** Virgil as **brain** (this repo); **Agent Zero** as preferred external **executor** on a home **Mac mini (~48 GB unified memory)**; bridge **not shipped** — see [docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md) and [docs/DECISIONS.md](docs/DECISIONS.md).
 - Postgres FTS for recall (no casual vector DB). QStash for reminders. Docker Compose defaults include **bundled Ollama** + health-gated **`virgil-app`** (see `docker-compose.yml`); host-Ollama layout in `docker-compose.host-ollama.yml`.
 - Night review optional ([workspace/night/README.md](workspace/night/README.md)). HTTP auth cookies via `shouldUseSecureAuthCookie()` where applicable.
 - Voice: clarity over flattery; slim prompts stay minimal. Local **slim/compact** copy branches on `LocalModelClass` (`3b` vs `7b`, tag-inferred when unset) — see [docs/DECISIONS.md](docs/DECISIONS.md).

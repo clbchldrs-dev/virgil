@@ -99,12 +99,7 @@ export async function runPlannerOutline({
   const { text } = await generateText({
     model,
     system: buildPlannerSystemPrompt(),
-    messages: [
-      {
-        role: "user",
-        content: userSnippet,
-      },
-    ] as ModelMessage[],
+    messages: [{ role: "user", content: userSnippet }],
     maxOutputTokens: PLANNER_MAX_OUTPUT_TOKENS,
     experimental_telemetry: {
       isEnabled: isProductionEnvironment,

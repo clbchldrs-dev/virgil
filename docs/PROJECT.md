@@ -9,6 +9,10 @@ This file is the **single entrypoint** for intent, documentation map, architectu
 - **Iterable:** Small, focused changes; preserve existing abstractions unless they hurt the local path; verify with `pnpm check`, tests, and AGENTS checklists.
 - **Self-improvement:** The **product** (Virgil) improves via a backlog ([docs/ENHANCEMENTS.md](ENHANCEMENTS.md)), measured changes, and reviews—not unbounded autonomous edits to prompts or production behavior. The **repo** improves via the same loop plus human or agent review in Cursor.
 
+## Target architecture (owner intent — beyond shipped v1)
+
+Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md)**: **Virgil** (this repo) as the **brain** (UI, memory, routing, in-repo tools), a **Mac mini (~48 GB unified memory)** as the **primary home host** for Ollama and sidecars, and **[Agent Zero](https://github.com/agent0ai/agent-zero)** as the **preferred external “hands”** runtime (Python, headless)—connected later via a **planned bridge**, not shipped yet. OpenClaw remains **inspiration only** for workspace-style files (e.g. night review), not a bundled executor.
+
 ## Personal v1 scope, memory across models, and a three-device topology
 
 **v1 product slice (personal):** Virgil is aimed at a **persistent, signed-in companion** experience for the **primary owner**—chats and optional structured memory tied to that account. This is the main “you and Virgil” loop the prompts and tools optimize for first.
@@ -25,7 +29,8 @@ This file is the **single entrypoint** for intent, documentation map, architectu
 |-------|------------------------------|
 | Project intent and this handoff | **This file** (`docs/PROJECT.md`) |
 | Bespoke single-owner product intent (fitness v1, data tiers, voice) | [docs/OWNER_PRODUCT_VISION.md](OWNER_PRODUCT_VISION.md) |
-| Optional pruning inventory (business/demo paths) | [docs/PRUNING_CANDIDATES.md](PRUNING_CANDIDATES.md) |
+| Optional pruning inventory (historical; major business paths removed 2026-04) | [docs/PRUNING_CANDIDATES.md](PRUNING_CANDIDATES.md) |
+| Target architecture (brain vs executor, hardware, Agent Zero — **scoped intent**) | [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) |
 | Coding rules, file pointers, local-first rules, review checklists | [AGENTS.md](../AGENTS.md) |
 | Traceable architecture decisions | [docs/DECISIONS.md](DECISIONS.md) |
 | Security tool inventory + cron/QStash auth matrix | [docs/security/tool-inventory.md](security/tool-inventory.md) |
@@ -99,9 +104,10 @@ Details and file-level pointers: [AGENTS.md § Architecture Notes](../AGENTS.md#
 **Read order**
 
 1. This file (`docs/PROJECT.md`) — intent and map.
-2. [AGENTS.md](../AGENTS.md) — how to change code safely.
-3. As needed: [AGENTS.md](../AGENTS.md#setup-checklist) (env / setup / deploy detail), [docs/DECISIONS.md](DECISIONS.md) (why past choices), [docs/ENHANCEMENTS.md](ENHANCEMENTS.md) (planned work).
-4. Optional: [.cursor/rules](../.cursor/rules/) for editor-specific automation.
+2. [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) — **if** changing runtime topology, executor integration, or owner hardware assumptions.
+3. [AGENTS.md](../AGENTS.md) — how to change code safely.
+4. As needed: [AGENTS.md](../AGENTS.md#setup-checklist) (env / setup / deploy detail), [docs/DECISIONS.md](DECISIONS.md) (why past choices), [docs/ENHANCEMENTS.md](ENHANCEMENTS.md) (planned work).
+5. Optional: [.cursor/rules](../.cursor/rules/) for editor-specific automation.
 
 **Capture at session start (from prior chat or human)**
 

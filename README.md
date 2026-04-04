@@ -85,6 +85,7 @@ Postgres and Redis via Docker (OrbStack or Docker Desktop) if v2 needs them. Ful
 **SSOT map:** [docs/PROJECT.md](docs/PROJECT.md) lists where each topic lives (same structure as this section—read PROJECT first for intent and links).
 
 - [docs/PROJECT.md](docs/PROJECT.md): **start here** — intent, documentation map, architecture overview, agent handoff (new Cursor chat)
+- [docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md): **target stack** — Virgil vs Agent Zero, Mac mini hardware profile, bridge (planned), self-improvement gates
 - [AGENTS.md](AGENTS.md): **setup and deployment detail** (env, Docker, LAN, cron, Vercel, env var table) plus coding rules and checklists
 - [SETUP.md](SETUP.md), [DEPLOY.md](DEPLOY.md): thin link hubs → AGENTS.md (no duplicate tables)
 - [docs/beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md): LAN / Ubuntu home server — bundled Ollama in Compose, systemd, warmup, local vs remote access
