@@ -13,6 +13,13 @@ This file is the **single entrypoint** for intent, documentation map, architectu
 
 Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md)**: **Virgil** (this repo) as the **brain** (UI, memory, routing, in-repo tools), a **Mac mini (~48 GB unified memory)** as the **primary home host** for Ollama and sidecars, and **[Agent Zero](https://github.com/agent0ai/agent-zero)** as the **preferred external “hands”** runtime (Python, headless)—connected later via a **planned bridge**, not shipped yet. OpenClaw remains **inspiration only** for workspace-style files (e.g. night review), not a bundled executor.
 
+## Deployment tracks (v1 vs v2)
+
+- **v1 (shipped):** The default **hosted** stack for this repo is **Vercel** (Next.js app) plus **Neon** Postgres, **Upstash** Redis and QStash, **Resend**, and **Vercel Blob**—aligned with free/hobby tiers and documented in [AGENTS.md](../AGENTS.md) (setup checklist and deployment table) and [docs/vercel-env-setup.md](vercel-env-setup.md). Env vars are **not** duplicated here.
+- **v2 (planned):** **Mac mini** (or equivalent home host) as the primary place for **local Ollama** and the **headless Python backend** described in [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md), with the **Next.js UI** still able to live on Vercel and talk to that backend over a secure tunnel (see migration doc). This path **leverages hardware and open-source inference** rather than maximizing managed free tiers for the runtime.
+- **v2 data layer (two valid tracks):** Operators may run **Postgres on the Mac mini (or LAN)** to preserve schema parity when migrating from v1, **or** follow the **greenfield** blueprint of **SQLite + Mem0** in [docs/V2_MIGRATION.md](V2_MIGRATION.md). The choice is an environment decision, not a single locked stack.
+- **Risks that slow v2 work** are summarized in [docs/V1_V2_RISK_AUDIT.md](V1_V2_RISK_AUDIT.md); groundwork tickets **T1–T8** ([overview](tickets/2026-04-01-v2-groundwork-overview.md)) reduce reverse-engineering.
+
 ## Personal v1 scope, memory across models, and a three-device topology
 
 **v1 product slice (personal):** Virgil is aimed at a **persistent, signed-in companion** experience for the **primary owner**—chats and optional structured memory tied to that account. This is the main “you and Virgil” loop the prompts and tools optimize for first.
@@ -33,7 +40,7 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 | Target architecture (brain vs executor, hardware, Agent Zero — **scoped intent**) | [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) |
 | Coding rules, file pointers, local-first rules, review checklists | [AGENTS.md](../AGENTS.md) |
 | Traceable architecture decisions | [docs/DECISIONS.md](DECISIONS.md) |
-| Stability track (verification phases, `pnpm stable:check`) | [docs/STABILITY_TRACK.md](STABILITY_TRACK.md); resume notes [docs/STABLE_STOP_HANDOFF.md](STABLE_STOP_HANDOFF.md) |
+| Stability track (verification phases, `pnpm stable:check`) | [docs/STABILITY_TRACK.md](STABILITY_TRACK.md) — **Vercel + Neon** ordered checklist under Phase B runbook; resume [docs/STABLE_STOP_HANDOFF.md](STABLE_STOP_HANDOFF.md) |
 | Security tool inventory + cron/QStash auth matrix | [docs/security/tool-inventory.md](security/tool-inventory.md) |
 | Security hardening backlog (Phases A–D) | [docs/superpowers/plans/2026-03-29-security-hardening-agents.md](superpowers/plans/2026-03-29-security-hardening-agents.md) |
 | Exploratory long-form plans and specs | [docs/superpowers/](superpowers/) — drafts; not SSOT for shipped app behavior unless promoted elsewhere |
@@ -44,6 +51,7 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 | v2 architecture plan (June 2026 target, not in development) | [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md) |
 | Hardware decisions (v2 host, inference tiers, retired gear) | [docs/HARDWARE.md](HARDWARE.md) |
 | v1 → v2 migration path and what carries forward | [docs/V2_MIGRATION.md](V2_MIGRATION.md) |
+| v1 → v2 risks (what in v1 complicates v2) | [docs/V1_V2_RISK_AUDIT.md](V1_V2_RISK_AUDIT.md) |
 | v2 evaluation data collection | [workspace/v2-eval/](../workspace/v2-eval/) |
 | Itemized work tickets (E2–E7, E8-follow, Phase 4) | [docs/tickets/README.md](tickets/README.md) |
 | v1 → v2 groundwork (T1–T8, two-sprint bridge) | [docs/tickets/2026-04-01-v2-groundwork-overview.md](tickets/2026-04-01-v2-groundwork-overview.md) |

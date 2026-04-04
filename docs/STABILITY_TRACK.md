@@ -80,6 +80,18 @@ Runs `stable:check`, then `pnpm build`.
 | **Vercel + Neon** | [docs/vercel-env-setup.md](vercel-env-setup.md) |
 | **Docker / LAN / self-host** | [AGENTS.md](../AGENTS.md#deployment-production), [docs/beta-lan-gaming-pc.md](beta-lan-gaming-pc.md) if applicable |
 
+#### Vercel + Neon — ordered checklist
+
+**Search:** Vercel, Neon, production, deploy. Authoritative copy order: [vercel-env-setup.md](vercel-env-setup.md).
+
+1. **Import** the GitHub repo in the Vercel dashboard (or `vercel link` from the repo root).
+2. **Production env vars** — Set variables for **Production** using [vercel-env-setup.md § Required](vercel-env-setup.md#required-for-a-working-production-app): `AUTH_SECRET`, `POSTGRES_URL`, `REDIS_URL`, `BLOB_READ_WRITE_TOKEN`, QStash keys, `RESEND_API_KEY`, `CRON_SECRET`, `AUTH_URL`, `NEXT_PUBLIC_APP_URL`. The last two must match the **exact** origin users open (including `https`).
+3. **AI Gateway** — Usually **omit** `AI_GATEWAY_API_KEY` on Vercel when OIDC applies; keep it in `.env.local` for local dev ([AGENTS.md](../AGENTS.md#environment-variable-summary)).
+4. **Deploy** — Push to `main` or deploy from the dashboard. **Redeploy** after any change to `NEXT_PUBLIC_APP_URL` so the client bundle updates.
+5. **Migrate production Postgres** — From a trusted machine: `POSTGRES_URL='…' pnpm db:migrate` with Neon’s **production** connection string (same as step 2; see §3 below).
+6. **Vercel Cron** — Set `CRON_SECRET` so cron routes in [vercel.json](../vercel.json) receive the expected Bearer token ([vercel-env-setup.md § After first deploy](vercel-env-setup.md#after-first-deploy)).
+7. **Smoke** — Open `AUTH_URL`, sign in, confirm chat persists on a phone using the same origin if you test mobile.
+
 ### 2. Env parity
 
 Set required vars on **Production** (or your live host). Minimum: `AUTH_SECRET`, `POSTGRES_URL`, `REDIS_URL`, `BLOB_READ_WRITE_TOKEN`, QStash keys, `RESEND_API_KEY`, `CRON_SECRET`, `AUTH_URL`, `NEXT_PUBLIC_APP_URL` — full table in [AGENTS.md](../AGENTS.md#environment-variable-summary) and Vercel-focused notes in [vercel-env-setup.md](vercel-env-setup.md#required-for-a-working-production-app).
