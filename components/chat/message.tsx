@@ -1,6 +1,8 @@
 "use client";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { isToolUIPart } from "ai";
+import type { ReactNode } from "react";
+import { useState } from "react";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { cn, sanitizeText } from "@/lib/utils";
@@ -21,6 +23,34 @@ import { MessageActions } from "./message-actions";
 import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
+
+/** Keeps tool body open while approval is pending so the header cannot collapse Allow/Deny. */
+function MessageToolCollapsible({
+  lockOpen,
+  className,
+  children,
+}: {
+  lockOpen: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(true);
+
+  return (
+    <Tool
+      className={className}
+      onOpenChange={(next) => {
+        if (lockOpen) {
+          return;
+        }
+        setOpen(next);
+      }}
+      open={lockOpen ? true : open}
+    >
+      {children}
+    </Tool>
+  );
+}
 
 const PurePreviewMessage = ({
   addToolApprovalResponse,
@@ -177,7 +207,10 @@ const PurePreviewMessage = ({
 
       return (
         <div className={widthClass} key={toolCallId}>
-          <Tool className="w-full" defaultOpen={true}>
+          <MessageToolCollapsible
+            className="w-full"
+            lockOpen={state === "approval-requested"}
+          >
             <ToolHeader state={state} type="tool-getWeather" />
             <ToolContent>
               {(state === "input-available" ||
@@ -214,7 +247,7 @@ const PurePreviewMessage = ({
                 </div>
               )}
             </ToolContent>
-          </Tool>
+          </MessageToolCollapsible>
         </div>
       );
     }
@@ -389,7 +422,10 @@ const PurePreviewMessage = ({
 
       return (
         <div className={widthClass} key={toolCallId}>
-          <Tool className="w-full" defaultOpen={true}>
+          <MessageToolCollapsible
+            className="w-full"
+            lockOpen={state === "approval-requested"}
+          >
             {header}
             <ToolContent>
               {(state === "input-available" ||
@@ -427,7 +463,7 @@ const PurePreviewMessage = ({
                 </div>
               )}
             </ToolContent>
-          </Tool>
+          </MessageToolCollapsible>
         </div>
       );
     }

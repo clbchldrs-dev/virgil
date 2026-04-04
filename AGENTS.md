@@ -563,6 +563,8 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `MEM0_MONTHLY_SEARCH_LIMIT` | No | No | Monthly cap on mem0 search API calls; falls back to Postgres FTS when exhausted (default `1000`) |
 | `MEM0_MONTHLY_ADD_LIMIT` | No | No | Optional monthly cap on mem0 **add** (write) calls when `REDIS_URL` is set; when exhausted, mem0 writes are skipped (omit env for unlimited) |
 | `MEM0_DISABLE_LOCAL_SYNC` | No | No | Set to `1` to skip post-turn Mem0 batch ingest for **local Ollama** chats only (cloud path unchanged) |
+| `MEMORY_PROMPT_WINDOW_DAYS` | No | No | Days of `Memory` history considered for the chat system prompt (default `30`; max `365`) |
+| `MEMORY_PROMPT_FETCH_LIMIT` | No | No | Max `Memory` rows loaded into the prompt pipeline per request (default `80`; max `200`) |
 | `VIRGIL_CALENDAR_INTEGRATION` | No | No | Reserved: set to `1` when read-only calendar sync is implemented |
 | `VIRGIL_GIT_SIGNALS` | No | No | Reserved: set to `1` when Git/Vercel commit signals for study momentum are implemented |
 | `VIRGIL_JOURNAL_FILE_PARSE` | No | No | Reserved: set to `1` when optional journaling file parse is implemented |

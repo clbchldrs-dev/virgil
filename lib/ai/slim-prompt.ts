@@ -1,7 +1,8 @@
 import type { LocalModelClass } from "@/lib/ai/models";
 import type { Memory } from "@/lib/db/schema";
 
-const MAX_SLIM_MEMORIES = 5;
+/** How many memories the slim/local prompts may surface (subset of rows loaded for chat). */
+const MAX_SLIM_MEMORIES = 10;
 
 type SlimMemory = Pick<Memory, "content" | "kind">;
 
@@ -47,7 +48,7 @@ export function buildCompactCompanionPrompt({
   localModelClass?: LocalModelClass;
 }) {
   const name = ownerName ?? "there";
-  const selectedMemories = selectSlimMemories(memories, 3);
+  const selectedMemories = selectSlimMemories(memories, 6);
   const memoryBlock =
     selectedMemories.length > 0
       ? ` Context: ${selectedMemories.map((m) => m.content).join(" | ")}`

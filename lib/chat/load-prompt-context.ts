@@ -2,6 +2,10 @@ import {
   getCapabilitiesForModel,
   type ModelCapabilities,
 } from "@/lib/ai/models";
+import {
+  getMemoryPromptFetchLimit,
+  getMemoryPromptSince,
+} from "@/lib/chat/memory-prompt-config";
 import { getRecentMemories } from "@/lib/db/queries";
 import type { Memory } from "@/lib/db/schema";
 
@@ -24,8 +28,8 @@ export async function loadChatPromptContext({
     getCapabilitiesForModel(chatModel),
     getRecentMemories({
       userId,
-      since: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      limit: 15,
+      since: getMemoryPromptSince(),
+      limit: getMemoryPromptFetchLimit(),
     }),
   ]);
 
