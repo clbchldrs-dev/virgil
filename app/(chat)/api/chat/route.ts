@@ -76,14 +76,14 @@ import {
 import type { DBMessage } from "@/lib/db/schema";
 import { VirgilError } from "@/lib/errors";
 import { isProductOpportunityConfigured } from "@/lib/github/product-opportunity-issue";
-import {
-  handleBotIdForChatPost,
-  isBotIdEnforceEnabled,
-  type BotIdVerification,
-} from "@/lib/security/botid-chat";
-import { logChatApiException } from "@/lib/security/log-safe-error";
 import { isOpenClawConfigured } from "@/lib/integrations/openclaw-config";
 import { checkIpRateLimit } from "@/lib/ratelimit";
+import {
+  type BotIdVerification,
+  handleBotIdForChatPost,
+  isBotIdEnforceEnabled,
+} from "@/lib/security/botid-chat";
+import { logChatApiException } from "@/lib/security/log-safe-error";
 import type { ChatMessage } from "@/lib/types";
 import {
   convertToUIMessages,

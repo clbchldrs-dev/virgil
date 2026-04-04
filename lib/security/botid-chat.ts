@@ -12,7 +12,9 @@ export type BotIdVerification = {
  * Chat should not be driven by unverified bots. Verified bots (e.g. monitors) are allowed.
  * Dev / bypassed checks always pass this gate.
  */
-export function isUnverifiedBotChatClient(bot: BotIdVerification | null): boolean {
+export function isUnverifiedBotChatClient(
+  bot: BotIdVerification | null
+): boolean {
   if (!bot || bot.bypassed) {
     return false;
   }
