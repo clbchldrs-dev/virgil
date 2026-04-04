@@ -50,9 +50,6 @@ importers:
       '@upstash/qstash':
         specifier: ^2.10.1
         version: 2.10.1
-      '@vercel/analytics':
-        specifier: ^1.3.1
-        version: 1.5.0(next@16.2.0(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.0.1(react@19.0.1))(react@19.0.1))(react@19.0.1)
       '@vercel/blob':
         specifier: ^0.24.1
         version: 0.24.1
@@ -131,9 +128,6 @@ importers:
       next-themes:
         specifier: ^0.3.0
         version: 0.3.0(react-dom@19.0.1(react@19.0.1))(react@19.0.1)
-      ollama-ai-provider:
-        specifier: ^1.2.0
-        version: 1.2.0(zod@3.25.76)
       orderedmap:
         specifier: ^2.1.1
         version: 2.1.1
@@ -231,18 +225,12 @@ importers:
       '@tailwindcss/typography':
         specifier: ^0.5.15
         version: 0.5.16(tailwindcss@4.1.16)
-      '@types/d3-scale':
-        specifier: ^4.0.8
-        version: 4.0.9
       '@types/node':
         specifier: ^22.8.6
         version: 22.13.10
       '@types/papaparse':
         specifier: ^5.3.15
         version: 5.3.15
-      '@types/pdf-parse':
-        specifier: ^1.1.4
-        version: 1.1.4
       '@types/react':
         specifier: ^18
         version: 18.3.18
@@ -279,12 +267,6 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider-utils@2.2.8':
-    resolution: {integrity: sha512-fqhG+4sCVv8x7nFzYnFo19ryhAa3w096Kmc3hWxMQfW/TubPOmt3A6tYZhl4mUfQWWQMsuSkLrtjlWuXBVSGQA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.23.8
-
   '@ai-sdk/provider-utils@4.0.19':
     resolution: {integrity: sha512-3eG55CrSWCu2SXlqq2QCsFjo3+E7+Gmg7i/oRVoSZzIodTuDSfLb3MRje67xE9RFea73Zao7Lm4mADIfUETKGg==}
     engines: {node: '>=18'}
@@ -296,10 +278,6 @@ packages:
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/provider@1.1.3':
-    resolution: {integrity: sha512-qZMxYJ0qqX/RfnuIaab+zp8UAeJn/ygXXAffR5I4N0n1IrvA6qBsjc8hXLmBiMV2zoXlifkacF7sEFnYnjBcqg==}
-    engines: {node: '>=18'}
 
   '@ai-sdk/provider@3.0.3':
     resolution: {integrity: sha512-qGPYdoAuECaUXPrrz0BPX1SacZQuJ6zky0aakxpW89QW1hrY0eF4gcFm/3L9Pk8C5Fwe+RvBf2z7ZjDhaPjnlg==}
@@ -2439,9 +2417,6 @@ packages:
   '@types/papaparse@5.3.15':
     resolution: {integrity: sha512-JHe6vF6x/8Z85nCX4yFdDslN11d+1pr12E526X8WAfhadOeaOTx5AuIkvDKIBopfvlzpzkdMx4YyvSKCM9oqtw==}
 
-  '@types/pdf-parse@1.1.4':
-    resolution: {integrity: sha512-+gbBHbNCVGGYw1S9lAIIvrHW47UYOhMIFUsJcMkMrzy1Jf0vulBN3XQIjPgnoOXveMuHnF3b57fXROnY/Or7eg==}
-
   '@types/pg@8.11.0':
     resolution: {integrity: sha512-sDAlRiBNthGjNFfvt0k6mtotoVYVQ63pA8R4EMWka7crawSR60waVYR0HAgmPRs/e2YaeJTD/43OoZ3PFw80pw==}
 
@@ -2498,32 +2473,6 @@ packages:
 
   '@upstash/qstash@2.10.1':
     resolution: {integrity: sha512-LsTAPxPk0dFvhlEnRqwObRS94b8mmDHYaBlF3IaONUL+Scq6i9cZraA6936KSUVe+Vq3eNQle3CjOZkStPUFTw==}
-
-  '@vercel/analytics@1.5.0':
-    resolution: {integrity: sha512-MYsBzfPki4gthY5HnYN7jgInhAZ7Ac1cYDoRWFomwGHWEX7odTEzbtg9kf/QSo7XEsEAqlQugA6gJ2WS2DEa3g==}
-    peerDependencies:
-      '@remix-run/react': ^2
-      '@sveltejs/kit': ^1 || ^2
-      next: '>= 13'
-      react: ^18 || ^19 || ^19.0.0-rc
-      svelte: '>= 4'
-      vue: ^3
-      vue-router: ^4
-    peerDependenciesMeta:
-      '@remix-run/react':
-        optional: true
-      '@sveltejs/kit':
-        optional: true
-      next:
-        optional: true
-      react:
-        optional: true
-      svelte:
-        optional: true
-      vue:
-        optional: true
-      vue-router:
-        optional: true
 
   '@vercel/blob@0.24.1':
     resolution: {integrity: sha512-wHzgKzvAuF4tRDoXk3wGBYzQZ9z2fLr4oftiR1hOclPEdA1aj2/0mizvO2l5w91eZlTAaFth0S1DlqrrXqpntg==}
@@ -4230,15 +4179,6 @@ packages:
   obuf@1.1.2:
     resolution: {integrity: sha512-PX1wu0AmAdPqOL1mWhqmlOd8kOIZQwGZw6rh7uby9fTc5lhaOWFLX3I6R1hrF9k3zUY40e6igsLGkDXK92LJNg==}
 
-  ollama-ai-provider@1.2.0:
-    resolution: {integrity: sha512-jTNFruwe3O/ruJeppI/quoOUxG7NA6blG3ZyQj3lei4+NnJo7bi3eIRWqlVpRlu/mbzbFXeJSBuYQWF6pzGKww==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.0.0
-    peerDependenciesMeta:
-      zod:
-        optional: true
-
   ollama@0.6.3:
     resolution: {integrity: sha512-KEWEhIqE5wtfzEIZbDCLH51VFZ6Z3ZSa6sIOg/E/tBV8S51flyqBOXi+bRxlOYKDf8i327zG9eSTb8IJxvm3Zg==}
 
@@ -4303,9 +4243,6 @@ packages:
 
   parseley@0.12.1:
     resolution: {integrity: sha512-e6qHKe3a9HWr0oMRVDTRhKce+bRO8VGQR3NyVwcjwrbhMmFCX9KszEV35+rn4AdilFAq9VPxP/Fe1wC9Qjd2lw==}
-
-  partial-json@0.1.7:
-    resolution: {integrity: sha512-Njv/59hHaokb/hRUjce3Hdv12wd60MtM9Z5Olmn+nehe0QDAsRtRbJPvJ0Z91TusF0SuZRIvnM+S4l6EIP8leA==}
 
   path-data-parser@0.1.0:
     resolution: {integrity: sha512-NOnmBpt5Y2RWbuv0LMzsayp3lVylAHLPUTut412ZA3l+C4uw4ZVkQbjShYCQ8TCpUMdPapr4YjUqLYD6v68j+w==}
@@ -4722,9 +4659,6 @@ packages:
   scheduler@0.25.0:
     resolution: {integrity: sha512-xFVuu11jh+xcO7JOAGJNOXld8/TcEHK/4CituBUeUb5hqxJLj9YuemAEuvm9gQ/+pgXYfbQuqAkiYu+u7YEsNA==}
 
-  secure-json-parse@2.7.0:
-    resolution: {integrity: sha512-6aU+Rwsezw7VR8/nyvKTx8QpWH9FrcYiXXlqC4z5d5XQBDRqtbfsRjnwGyqbi3gddNtWHuEk9OANUotL26qKUw==}
-
   selderee@0.11.0:
     resolution: {integrity: sha512-5TF+l7p4+OsnP8BCCvSyZiSPc4x4//p5uPwK8TCnVPJYRmU2aYKMpOXvw8zM5a5JvuuCGN1jmsMwuU2W02ukfA==}
 
@@ -5099,18 +5033,6 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
-  ws@8.18.1:
-    resolution: {integrity: sha512-RKW2aJZMXeMxVpnZ6bck+RswznaxmzdULiBr6KY7XkTnW8uvt0iT9H5DkHUChXrc+uurzwa0rVI16n/Xzjdz1w==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   ws@8.20.0:
     resolution: {integrity: sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA==}
     engines: {node: '>=10.0.0'}
@@ -5154,13 +5076,6 @@ snapshots:
       '@vercel/oidc': 3.1.0
       zod: 3.25.76
 
-  '@ai-sdk/provider-utils@2.2.8(zod@3.25.76)':
-    dependencies:
-      '@ai-sdk/provider': 1.1.3
-      nanoid: 3.3.11
-      secure-json-parse: 2.7.0
-      zod: 3.25.76
-
   '@ai-sdk/provider-utils@4.0.19(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
@@ -5174,10 +5089,6 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.6
       zod: 3.25.76
-
-  '@ai-sdk/provider@1.1.3':
-    dependencies:
-      json-schema: 0.4.0
 
   '@ai-sdk/provider@3.0.3':
     dependencies:
@@ -5729,7 +5640,7 @@ snapshots:
       google-auth-library: 10.6.2
       p-retry: 4.6.2
       protobufjs: 7.5.4
-      ws: 8.18.1(bufferutil@4.0.9)
+      ws: 8.20.0(bufferutil@4.0.9)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -5931,7 +5842,7 @@ snapshots:
 
   '@mistralai/mistralai@1.15.1(bufferutil@4.0.9)':
     dependencies:
-      ws: 8.18.1(bufferutil@4.0.9)
+      ws: 8.20.0(bufferutil@4.0.9)
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
     transitivePeerDependencies:
@@ -7221,8 +7132,6 @@ snapshots:
     dependencies:
       '@types/node': 22.13.10
 
-  '@types/pdf-parse@1.1.4': {}
-
   '@types/pg@8.11.0':
     dependencies:
       '@types/node': 22.13.10
@@ -7287,11 +7196,6 @@ snapshots:
       crypto-js: 4.2.0
       jose: 5.10.0
       neverthrow: 7.2.0
-
-  '@vercel/analytics@1.5.0(next@16.2.0(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.0.1(react@19.0.1))(react@19.0.1))(react@19.0.1)':
-    optionalDependencies:
-      next: 16.2.0(@opentelemetry/api@1.9.0)(@playwright/test@1.51.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.0.1(react@19.0.1))(react@19.0.1)
-      react: 19.0.1
 
   '@vercel/blob@0.24.1':
     dependencies:
@@ -9259,14 +9163,6 @@ snapshots:
 
   obuf@1.1.2: {}
 
-  ollama-ai-provider@1.2.0(zod@3.25.76):
-    dependencies:
-      '@ai-sdk/provider': 1.1.3
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.76)
-      partial-json: 0.1.7
-    optionalDependencies:
-      zod: 3.25.76
-
   ollama@0.6.3:
     dependencies:
       whatwg-fetch: 3.6.20
@@ -9347,8 +9243,6 @@ snapshots:
     dependencies:
       leac: 0.6.0
       peberminta: 0.9.0
-
-  partial-json@0.1.7: {}
 
   path-data-parser@0.1.0: {}
 
@@ -9917,8 +9811,6 @@ snapshots:
 
   scheduler@0.25.0: {}
 
-  secure-json-parse@2.7.0: {}
-
   selderee@0.11.0:
     dependencies:
       parseley: 0.12.1
@@ -10299,10 +10191,6 @@ snapshots:
       webidl-conversions: 3.0.1
 
   wrappy@1.0.2: {}
-
-  ws@8.18.1(bufferutil@4.0.9):
-    optionalDependencies:
-      bufferutil: 4.0.9
 
   ws@8.20.0(bufferutil@4.0.9):
     optionalDependencies:
