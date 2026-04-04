@@ -50,8 +50,9 @@ Runs `stable:check`, then `pnpm build`.
 
 ### Phase B — Deploy path
 
-- [ ] Document or verify production env parity ([docs/vercel-env-setup.md](vercel-env-setup.md) if on Vercel).
-- [ ] One successful `pnpm db:migrate` against the environment you ship to.
+- [x] **Runbook** — [Phase B runbook](#phase-b-runbook-deploy-path) below; Vercel copy order in [docs/vercel-env-setup.md](vercel-env-setup.md).
+- [ ] **Production env** — Variables on the host you ship to match [AGENTS.md](../AGENTS.md#deployment-production) / [vercel-env-setup.md](vercel-env-setup.md) (including `AUTH_URL` + `NEXT_PUBLIC_APP_URL` same origin).
+- [ ] **Production migrate** — One successful `POSTGRES_URL='…' pnpm db:migrate` against the **live** Postgres (not only dev). See runbook §3.
 
 ### Phase C — Security and abuse (ongoing)
 
@@ -65,6 +66,47 @@ Runs `stable:check`, then `pnpm build`.
 ### Phase E — Product feedback (non-blocking)
 
 - [ ] Use [workspace/v2-eval/README.md](../workspace/v2-eval/README.md) to capture misses/noise; optional `V2_EVAL_LOGGING` when instrumented.
+
+---
+
+## Phase B runbook (deploy path)
+
+**Goal:** Schema on the database you ship to matches `lib/db/migrations/`, and auth/origin URLs match how users open the app.
+
+### 1. Pick your deployment doc
+
+| Where you ship | Start here |
+|----------------|------------|
+| **Vercel + Neon** | [docs/vercel-env-setup.md](vercel-env-setup.md) |
+| **Docker / LAN / self-host** | [AGENTS.md](../AGENTS.md#deployment-production), [docs/beta-lan-gaming-pc.md](beta-lan-gaming-pc.md) if applicable |
+
+### 2. Env parity
+
+Set required vars on **Production** (or your live host). Minimum: `AUTH_SECRET`, `POSTGRES_URL`, `REDIS_URL`, `BLOB_READ_WRITE_TOKEN`, QStash keys, `RESEND_API_KEY`, `CRON_SECRET`, `AUTH_URL`, `NEXT_PUBLIC_APP_URL` — full table in [AGENTS.md](../AGENTS.md#environment-variable-summary) and Vercel-focused notes in [vercel-env-setup.md](vercel-env-setup.md#required-for-a-working-production-app).
+
+`AUTH_URL` and `NEXT_PUBLIC_APP_URL` must be the **exact** origin users type in the address bar. After changing `NEXT_PUBLIC_APP_URL`, **redeploy** so the client bundle picks it up.
+
+### 3. Migrations on production Postgres
+
+From a **trusted machine** (avoid logging the URL in shared terminals):
+
+```bash
+cd /path/to/virgil
+POSTGRES_URL='postgresql://…' pnpm db:migrate
+```
+
+Use the connection string for the **Neon (or other) database that production uses**, not your dev branch unless they are the same.
+
+**Dev-only check:** `pnpm db:migrate` with `.env.local` confirms the migration runner works; it does **not** replace production migrate.
+
+### 4. Smoke after deploy
+
+- Open `AUTH_URL`, sign in, confirm chat persists.
+- If using [Vercel Cron](../vercel.json): `CRON_SECRET` must match the Bearer token; see [vercel-env-setup.md § After first deploy](vercel-env-setup.md#after-first-deploy).
+
+### 5. Close Phase B
+
+Check **Production env** and **Production migrate** under [Phase B](#phase-b--deploy-path) when steps 2–4 are true for your live stack.
 
 ---
 
