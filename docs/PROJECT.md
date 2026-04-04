@@ -40,7 +40,7 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 | Target architecture (brain vs executor, hardware, Agent Zero — **scoped intent**) | [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) |
 | Coding rules, file pointers, local-first rules, review checklists | [AGENTS.md](../AGENTS.md) |
 | Traceable architecture decisions | [docs/DECISIONS.md](DECISIONS.md) |
-| Stability track (verification phases, `pnpm stable:check`) | [docs/STABILITY_TRACK.md](STABILITY_TRACK.md) — **Vercel + Neon** ordered checklist under Phase B runbook; resume [docs/STABLE_STOP_HANDOFF.md](STABLE_STOP_HANDOFF.md) |
+| Stability track (verification phases, `pnpm stable:check`) | [docs/STABILITY_TRACK.md](STABILITY_TRACK.md) — Phase B (Vercel), C (security), D (cron/QStash) runbooks; resume [docs/STABLE_STOP_HANDOFF.md](STABLE_STOP_HANDOFF.md) |
 | Security tool inventory + cron/QStash auth matrix | [docs/security/tool-inventory.md](security/tool-inventory.md) |
 | Security hardening backlog (Phases A–D) | [docs/superpowers/plans/2026-03-29-security-hardening-agents.md](superpowers/plans/2026-03-29-security-hardening-agents.md) |
 | Exploratory long-form plans and specs | [docs/superpowers/](superpowers/) — drafts; not SSOT for shipped app behavior unless promoted elsewhere |

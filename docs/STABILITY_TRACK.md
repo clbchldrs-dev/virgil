@@ -56,12 +56,13 @@ Runs `stable:check`, then `pnpm build`.
 
 ### Phase C — Security and abuse (ongoing)
 
-- [ ] Skim [docs/security/tool-inventory.md](security/tool-inventory.md) and open items in [security hardening plan](superpowers/plans/2026-03-29-security-hardening-agents.md) that match your threat model (LAN vs public, BotId, rate limits).
+- [x] **Runbook** — [Phase C runbook](#phase-c-runbook-security--ongoing) below.
+- [ ] **Triage** — Skim [docs/security/tool-inventory.md](security/tool-inventory.md) and [security hardening plan](superpowers/plans/2026-03-29-security-hardening-agents.md); enable **`BOTID_ENFORCE=1`** on public Vercel if bots are a concern; run `pnpm audit` periodically (plan D1).
 
 ### Phase D — Background and schedules
 
-- [ ] Night review / digest / cron: auth header and `NEXT_PUBLIC_APP_URL` / `AUTH_URL` consistent ([AGENTS.md](../AGENTS.md#scheduled-jobs-on-the-host-no-vercel-cron)).
-- [ ] Self-hosted: systemd or crontab entries tested once.
+- [x] **Runbook** — [Phase D runbook](#phase-d-runbook-background--schedules) below.
+- [ ] **Verified** — Cron / QStash reach your app with correct `CRON_SECRET` and origin env (`AUTH_URL`, `NEXT_PUBLIC_APP_URL`); self-host: curl or systemd tested once ([AGENTS.md](../AGENTS.md#scheduled-jobs-on-the-host-no-vercel-cron)).
 
 ### Phase E — Product feedback (non-blocking)
 
@@ -119,6 +120,52 @@ Use the connection string for the **Neon (or other) database that production use
 ### 5. Close Phase B
 
 Check **Production env** and **Production migrate** under [Phase B](#phase-b--deploy-path) when steps 2–4 are true for your live stack.
+
+---
+
+## Phase C runbook (security — ongoing)
+
+**Goal:** You know what LLM tools and API routes can do, and you have triaged optional hardening for **your** exposure (LAN-only vs public internet).
+
+### 1. Read the inventory (≈15 min)
+
+- [docs/security/tool-inventory.md](security/tool-inventory.md) — tool risk table, **background auth matrix** (cron vs QStash), file uploads, **IDOR** patterns and `lib/security/idor.ts`.
+
+### 2. Hardening plan status
+
+- [docs/superpowers/plans/2026-03-29-security-hardening-agents.md](superpowers/plans/2026-03-29-security-hardening-agents.md) — Phases A–D; many items are **done** in-repo; open items (e.g. D1 `pnpm audit`) are periodic.
+
+### 3. Public chat surface (Vercel / internet)
+
+- Optional **`BOTID_ENFORCE=1`** — blocks suspicious BotId results on `POST /api/chat` ([`lib/security/botid-chat.ts`](../lib/security/botid-chat.ts), env in [AGENTS.md](../AGENTS.md)).
+- Rate limits: [`lib/ratelimit.ts`](../lib/ratelimit.ts); optional stricter guest caps stay policy-only unless you change code.
+
+### 4. Close Phase C
+
+Check **Triage** under [Phase C](#phase-c--security-and-abuse-ongoing) when you have skimmed the inventory and noted anything you will schedule (or explicitly accept as-is).
+
+---
+
+## Phase D runbook (background & schedules)
+
+**Goal:** Scheduled jobs can authenticate to your app and use the **same origin** users use in the browser.
+
+### 1. Vercel
+
+- **`CRON_SECRET`** — Must match the Bearer token Vercel Cron sends to `/api/digest` and `/api/night-review/enqueue` ([vercel.json](../vercel.json), [vercel-env-setup.md](vercel-env-setup.md)).
+- **`NEXT_PUBLIC_APP_URL` / `AUTH_URL`** — QStash and enqueue use your deployed base URL; wrong values break night-review and reminders ([AGENTS.md](../AGENTS.md#step-1--fill-credentials-in-envlocal) deployment notes).
+
+### 2. Self-hosted (no Vercel Cron)
+
+- Use the **curl** or **systemd** examples in [AGENTS.md § Scheduled jobs on the host](AGENTS.md#scheduled-jobs-on-the-host-no-vercel-cron) with the same `CRON_SECRET` and **`APP_URL`** your users open.
+
+### 3. QStash-signed routes
+
+- `/api/night-review/run`, `/api/reminders` — signature verification, not Bearer cron secret; matrix in [tool-inventory.md § Background routes](security/tool-inventory.md#background-routes--authentication-matrix).
+
+### 4. Close Phase D
+
+Check **Verified** under [Phase D](#phase-d--background-and-schedules) after one successful cron or manual curl to digest/enqueue (or documented equivalent on your host).
 
 ---
 
