@@ -16,7 +16,7 @@ Explore agents were run **read-only** against the Virgil repo (e.g. `/Users/cale
 
 ## VIRG-E3 — Smart context compression
 
-**Status (2026-03-29):** Partially shipped — `TOKENS_PER_MESSAGE_OVERHEAD` in message totals; `compressLongMessage` for **user + assistant** long turns (replaces assistant-only compression). Route unchanged. Optional follow-ups: middle-phase role preference, tool JSON preservation.
+**Status (2026-04):** Shipped — `TOKENS_PER_MESSAGE_OVERHEAD`, long user/assistant compression, plus `shrinkMiddleTrialToBudget` (removable assistant before removable user; structural tool parts protected until last resort) and no long-message compression for tool-bearing messages.
 
 **Behavior:** `lib/ai/trim-context.ts` — char/3.5 token heuristic + overhead per message; local-only trim in `route.ts`. Long history: keep `first`, greedy middle from newest, tail cap 4 or 6; trim marker `[earlier conversation trimmed]`. Long turns >200 est. tokens compressed to ~150.
 

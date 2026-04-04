@@ -4,6 +4,21 @@ Significant, stable choices for Virgil. New entries go at the **top** (reverse c
 
 ---
 
+## 2026-04-04 — Local trim-context: middle-phase drops + tool structural preservation — Accepted
+
+**Context:** Under fixed `maxContextTokens`, long threads keep `first`, a greedy middle segment, and a recent tail. Middle reduction could drop user turns before plain assistant turns, or strip tool-call/tool-result structure when compressing messages.
+
+**Decision:**
+
+1. **`shrinkMiddleTrialToBudget`** removes **removable** assistant messages before **removable** user messages; messages with AI SDK **structural tool parts** (`role: tool`, or `tool-call` / `tool-result` / tool-approval parts in array content) are **not** removable until **last resort** (drop oldest in the trial slice).
+2. **`compressLongMessage` / `truncateMessageToBudget`** skip rewriting content for structural tool messages so array parts are not flattened or truncated.
+
+**Consequences:** Local Ollama chats retain tool continuity slightly better under pressure; extreme budgets may still drop structural messages from the oldest end of a middle trial.
+
+**Links:** [lib/ai/trim-context.ts](../lib/ai/trim-context.ts), [docs/tickets/2026-03-29-virg-e3-smart-context-compression.md](tickets/2026-03-29-virg-e3-smart-context-compression.md)
+
+---
+
 ## 2026-04-03 — v1 hosted stack vs v2 home stack; v2 Postgres vs SQLite (documentation) — Accepted
 
 **Context:** v1 production is commonly described as **Vercel + Neon + Upstash (Redis + QStash) + Resend + Vercel Blob** (managed free/hobby posture). v2 intent is **Mac mini + local Ollama + Python backend**, leveraging **hardware and open-source** inference. The migration doc historically emphasized **SQLite + Mem0** for greenfield v2, while **migrating from v1** may favor **Postgres on the home host** for schema parity.

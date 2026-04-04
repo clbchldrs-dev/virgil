@@ -2,7 +2,7 @@
 
 **Enhancement ID:** E3 ([ENHANCEMENTS.md](../ENHANCEMENTS.md))  
 **Roadmap:** [Phase Two](../VIRGIL_ROADMAP_LINUX_24_7.md#phase-two-intelligence-refinement-and-context-discipline-e2-e3)  
-**Status:** Partially shipped (2026-03-29) — overhead + unified long-message compression; further middle heuristics optional
+**Status:** Shipped (2026-04) — overhead + long-message compression + middle shrink prefers removable assistant over removable user; preserves AI SDK tool-call/tool-result/approval parts until last resort
 
 ## Problem
 
@@ -18,7 +18,8 @@ Evolve **`lib/ai/trim-context.ts`** (and call sites in the chat route) to preser
 - [x] **Tiered:** per-message overhead; **compressLongMessage** for user + assistant over threshold (was assistant-only).
 - [x] **Local vs gateway:** unchanged — trim only in `route.ts` for Ollama local.
 - [x] Tests: `tests/unit/trim-context.test.ts` + existing `local-context` trim tests.
-- [ ] Optional: middle-phase preference (e.g. drop assistant middle before user middle), tool-part preservation — not implemented.
+- [x] Middle-phase preference: `shrinkMiddleTrialToBudget` drops removable **assistant** turns before removable **user** turns; skips messages with tool structural parts (`role: tool` or `tool-call` / `tool-result` / approval parts) until last resort (oldest drop).
+- [x] Tool-part preservation: `isToolStructuralMessage` + skip `compressLongMessage` / `truncateMessageToBudget` for structural messages.
 
 ## Non-goals
 

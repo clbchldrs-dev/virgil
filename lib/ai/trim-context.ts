@@ -3,6 +3,14 @@ type LocalContextMessage = {
   content: unknown;
 };
 
+/** AI SDK model message parts that must not be dropped or flattened during middle trim. */
+const STRUCTURAL_TOOL_PART_TYPES = new Set([
+  "tool-call",
+  "tool-result",
+  "tool-approval-request",
+  "tool-approval-response",
+]);
+
 type TrimArgs<T extends LocalContextMessage> = {
   messages: T[];
   systemTokenCount: number;
@@ -93,31 +101,14 @@ export function trimMessagesForBudget<T extends LocalContextMessage>({
     }
 
     const before = keptMiddle;
-    let trial: T[] = [candidate, ...keptMiddle];
-
-    while (true) {
-      const totalTokens = estimateFirstTailMiddleTokens({
-        firstMessage,
-        middleLength: middle.length,
-        middleIndex: index,
-        trial,
-        tail,
-      });
-      if (totalTokens <= budget) {
-        break;
-      }
-      if (trial.length === 0) {
-        break;
-      }
-
-      const assistantIndex = trial.findIndex((m) => m.role === "assistant");
-      if (assistantIndex >= 0) {
-        trial = trial.filter((_, j) => j !== assistantIndex);
-      } else {
-        trial = trial.slice(1);
-        break;
-      }
-    }
+    const trial = shrinkMiddleTrialToBudget({
+      trial: [candidate, ...keptMiddle],
+      firstMessage,
+      middleLength: middle.length,
+      middleIndex: index,
+      tail,
+      budget,
+    });
 
     if (trial.length === 0) {
       const tokensIfEmptyMiddle = estimateFirstTailMiddleTokens({
@@ -166,8 +157,32 @@ export function trimMessagesForBudget<T extends LocalContextMessage>({
   return dedupeAdjacent([firstMessage, ...tail.slice(-2)]);
 }
 
+function isToolStructuralMessage(message: LocalContextMessage): boolean {
+  if (message.role === "tool") {
+    return true;
+  }
+  const { content } = message;
+  if (!Array.isArray(content)) {
+    return false;
+  }
+  for (const part of content) {
+    if (
+      part &&
+      typeof part === "object" &&
+      "type" in part &&
+      STRUCTURAL_TOOL_PART_TYPES.has(String((part as { type: unknown }).type))
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** Caps very long **user or assistant** turns so the first/middle segments do not starve the tail. */
 function compressLongMessage<T extends LocalContextMessage>(message: T): T {
+  if (isToolStructuralMessage(message)) {
+    return message;
+  }
   if (estimateTokens(message.content) <= LONG_MESSAGE_TRIM_THRESHOLD_TOKENS) {
     return message;
   }
@@ -190,6 +205,9 @@ function truncateMessageToBudget<T extends LocalContextMessage>(
   message: T,
   budget: number
 ): T {
+  if (isToolStructuralMessage(message)) {
+    return message;
+  }
   const fullText = stringifyContent(message.content);
   if (!fullText || estimateTokens(fullText) <= budget) {
     return message;
@@ -255,6 +273,61 @@ function estimateFirstTailMiddleTokens<T extends LocalContextMessage>({
     ? [firstMessage, buildTrimMarker<T>(), ...trial, ...tail]
     : [firstMessage, ...trial, ...tail];
   return estimateMessages(seq);
+}
+
+function shrinkMiddleTrialToBudget<T extends LocalContextMessage>({
+  trial: initialTrial,
+  firstMessage,
+  middleLength,
+  middleIndex,
+  tail,
+  budget,
+}: {
+  trial: T[];
+  firstMessage: T;
+  middleLength: number;
+  middleIndex: number;
+  tail: T[];
+  budget: number;
+}): T[] {
+  let working = initialTrial;
+  while (true) {
+    const totalTokens = estimateFirstTailMiddleTokens({
+      firstMessage,
+      middleLength,
+      middleIndex,
+      trial: working,
+      tail,
+    });
+    if (totalTokens <= budget) {
+      return working;
+    }
+    if (working.length === 0) {
+      return working;
+    }
+
+    const removableAssistantIndex = working.findIndex(
+      (m) => m.role === "assistant" && isRemovableMiddleMessage(m)
+    );
+    if (removableAssistantIndex >= 0) {
+      working = working.filter((_, j) => j !== removableAssistantIndex);
+      continue;
+    }
+
+    const removableUserIndex = working.findIndex(
+      (m) => m.role === "user" && isRemovableMiddleMessage(m)
+    );
+    if (removableUserIndex >= 0) {
+      working = working.filter((_, j) => j !== removableUserIndex);
+      continue;
+    }
+
+    working = working.slice(0, -1);
+  }
+}
+
+function isRemovableMiddleMessage(message: LocalContextMessage): boolean {
+  return !isToolStructuralMessage(message);
 }
 
 function stringifyContent(value: unknown): string {

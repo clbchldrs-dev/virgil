@@ -56,6 +56,48 @@ test("middle trim drops assistant turns before user turns when budget is tight",
   assert.ok(!joined.includes(fatBlock));
 });
 
+test("middle trim drops plain assistant before assistant with tool-call parts", () => {
+  const filler = "x".repeat(500);
+  const toolCallAssistant = {
+    role: "assistant",
+    content: [
+      {
+        type: "tool-call",
+        toolCallId: "tc1",
+        toolName: "getWeather",
+        input: { location: "NYC" },
+      },
+    ],
+  };
+  const messages = [
+    { role: "user", content: "first" },
+    { role: "assistant", content: filler },
+    toolCallAssistant,
+    { role: "user", content: "u1" },
+    { role: "assistant", content: "a1" },
+    { role: "user", content: "u2" },
+    { role: "assistant", content: "a2" },
+    { role: "user", content: "u3" },
+    { role: "assistant", content: "a3" },
+    { role: "user", content: "u4" },
+    { role: "assistant", content: "a4" },
+    { role: "user", content: "u5" },
+    { role: "assistant", content: "a5" },
+    { role: "user", content: "u6" },
+  ];
+
+  const trimmed = trimMessagesForBudget({
+    messages,
+    systemTokenCount: 0,
+    maxContextTokens: 90,
+  });
+
+  const serialized = JSON.stringify(trimmed);
+  assert.ok(serialized.includes("tool-call"));
+  assert.ok(serialized.includes("getWeather"));
+  assert.ok(!serialized.includes(filler));
+});
+
 test("oversized first user turn is compressed so recent tail can remain", () => {
   const hugeFirst = "U".repeat(1200);
   const trimmed = trimMessagesForBudget({
