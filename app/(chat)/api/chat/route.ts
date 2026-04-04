@@ -1,4 +1,4 @@
-import { geolocation, ipAddress } from "@vercel/functions";
+import { geolocation } from "@vercel/functions";
 import {
   convertToModelMessages,
   createUIMessageStream,
@@ -10,10 +10,9 @@ import {
 import { checkBotId } from "botid/server";
 import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
-import { auth, type UserType } from "@/app/(auth)/auth";
+import { auth } from "@/app/(auth)/auth";
 import { createModelMetricsStreamHooks } from "@/lib/ai/chat-stream-metrics";
 import { buildCompanionSystemPrompt } from "@/lib/ai/companion-prompt";
-import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import { buildLocalChatTitleFromUserMessage } from "@/lib/ai/local-title";
 import { isMem0Configured, mem0Add } from "@/lib/ai/mem0-client";
 import {
@@ -66,7 +65,6 @@ import {
   createStreamId,
   deleteChatById,
   getChatById,
-  getMessageCountByUserId,
   getMessagesByChatId,
   saveChat,
   saveMessages,
@@ -77,7 +75,6 @@ import type { DBMessage } from "@/lib/db/schema";
 import { VirgilError } from "@/lib/errors";
 import { isProductOpportunityConfigured } from "@/lib/github/product-opportunity-issue";
 import { isOpenClawConfigured } from "@/lib/integrations/openclaw-config";
-import { checkIpRateLimit } from "@/lib/ratelimit";
 import {
   type BotIdVerification,
   handleBotIdForChatPost,
@@ -150,25 +147,6 @@ export async function POST(request: Request) {
       ? selectedChatModel
       : DEFAULT_CHAT_MODEL;
     isOllamaRequest = isLocalModel(chatModel);
-
-    await checkIpRateLimit(ipAddress(request));
-
-    const userType: UserType = session.user.type;
-
-    const skipHourlyMessageCap =
-      isLocalModel(chatModel) ||
-      process.env.SKIP_CHAT_MESSAGE_RATE_LIMIT === "true";
-
-    if (!skipHourlyMessageCap) {
-      const messageCount = await getMessageCountByUserId({
-        id: session.user.id,
-        differenceInHours: 1,
-      });
-
-      if (messageCount > entitlementsByUserType[userType].maxMessagesPerHour) {
-        return new VirgilError("rate_limit:chat").toResponse();
-      }
-    }
 
     const isToolApprovalFlow = Boolean(messages);
     const isOllamaLocal = isOllamaRequest;
