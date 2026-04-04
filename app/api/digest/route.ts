@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 import {
+  countPendingProposalsForUser,
+  getProposalMemoriesForUser,
   getRecentMemories,
   getUsersEligibleForCompanionBackgroundJobs,
 } from "@/lib/db/queries";
@@ -16,6 +18,10 @@ export async function GET(request: Request) {
 
   const owners = await getUsersEligibleForCompanionBackgroundJobs();
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const sinceProposals = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  const appOrigin =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
+    "http://localhost:3000";
 
   for (const owner of owners) {
     if (owner.email.startsWith("guest-")) {
@@ -23,13 +29,19 @@ export async function GET(request: Request) {
     }
 
     try {
-      const memories = await getRecentMemories({
-        userId: owner.id,
-        since,
-        limit: 20,
-      });
+      const [memories, pendingProposalCount] = await Promise.all([
+        getRecentMemories({
+          userId: owner.id,
+          since,
+          limit: 20,
+        }),
+        countPendingProposalsForUser({
+          userId: owner.id,
+          since: sinceProposals,
+        }),
+      ]);
 
-      if (memories.length === 0) {
+      if (memories.length === 0 && pendingProposalCount === 0) {
         continue;
       }
 
@@ -41,6 +53,22 @@ export async function GET(request: Request) {
       };
 
       const sections: string[] = [];
+
+      if (pendingProposalCount > 0) {
+        const preview = await getProposalMemoriesForUser({
+          userId: owner.id,
+          since: sinceProposals,
+          limit: 5,
+        });
+        const lines = preview.map((m) => {
+          const line = m.content.replace(/\s+/g, " ").trim();
+          const short = line.length > 220 ? `${line.slice(0, 220)}…` : line;
+          return `  - ${short}`;
+        });
+        sections.push(
+          `Pending proposals (${pendingProposalCount} in the last 90 days — review in app):\n${lines.join("\n")}\n\nOpen proposals: ${appOrigin}/proposals`
+        );
+      }
 
       if (grouped.goals.length > 0) {
         sections.push(
@@ -65,7 +93,11 @@ export async function GET(request: Request) {
         );
       }
 
-      const body = `Here's what we covered in the last 24 hours:\n\n${sections.join("\n\n")}\n\nHave a good day.`;
+      const intro =
+        memories.length > 0
+          ? "Here's what we covered in the last 24 hours:"
+          : "Daily check-in from Virgil:";
+      const body = `${intro}\n\n${sections.join("\n\n")}\n\nHave a good day.`;
 
       await getResend().emails.send({
         from: "Assistant <onboarding@resend.dev>",
