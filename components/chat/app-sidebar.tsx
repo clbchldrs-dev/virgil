@@ -9,6 +9,7 @@ import {
   PenSquareIcon,
   Settings2Icon,
   TrashIcon,
+  WrenchIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -163,6 +164,21 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     >
                       <MoonIcon className="size-4" />
                       <span>Night insights</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {user && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                      onClick={() => {
+                        setOpenMobile(false);
+                        router.push("/agent-tasks");
+                      }}
+                      tooltip="Agent tasks"
+                    >
+                      <WrenchIcon className="size-4" />
+                      <span>Agent tasks</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}

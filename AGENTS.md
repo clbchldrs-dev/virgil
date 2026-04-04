@@ -632,7 +632,7 @@ When changing local-model behavior, favor focused regression tests around:
 
 ## Agent Task Pickup Convention
 
-Virgil can accept self-improvement tasks via chat (`submitAgentTask` tool, gateway-only). Tasks are stored in the `AgentTask` Postgres table and optionally mirrored as GitHub Issues with `agent-task` + type labels.
+Virgil can accept self-improvement tasks via chat (`submitAgentTask` tool, gateway-only). Tasks are stored in the `AgentTask` Postgres table and optionally mirrored as GitHub Issues with `agent-task` + type labels. The owner can manage tasks in-app at **`/agent-tasks`** (list, filter, approve/reject/done).
 
 ### For Cursor agents (or other automated agents)
 
@@ -667,7 +667,7 @@ Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](doc
 - **Product opportunity** (`submitProductOpportunity`): gateway-only; GitHub errors sanitized for tool results — [docs/github-product-opportunity.md](docs/github-product-opportunity.md), [docs/DECISIONS.md](docs/DECISIONS.md).
 - **Night insights** (`/night-insights`): grouped by night-review run; accept/dismiss updates memory metadata only — [workspace/night/README.md](workspace/night/README.md), [lib/night-review/digest-display.ts](lib/night-review/digest-display.ts).
 - **Self-hosted / LAN:** cron parity with [`vercel.json`](vercel.json) and `AUTH_URL` / `NEXT_PUBLIC_APP_URL` — [Scheduled jobs on the host](#scheduled-jobs-on-the-host-no-vercel-cron), [Self-hosted schedules](#self-hosted-schedules-no-vercel-cron) (alias anchor).
-- **Agent task orchestration** (`submitAgentTask`): gateway-only tool writes to `AgentTask` table + optional GitHub Issue; background triage via local Ollama `generateObject`; manual approval required before any agent picks up work — see [Agent Task Pickup Convention](#agent-task-pickup-convention).
+- **Agent task orchestration** (`submitAgentTask`): gateway-only tool writes to `AgentTask` table + optional GitHub Issue; background triage via local Ollama `generateObject`; manual approval required before any agent picks up work; owner UI at `/agent-tasks` — see [Agent Task Pickup Convention](#agent-task-pickup-convention).
 - **Proactive pivot (E11):** phased work toward nudges/goals/intent routing — [docs/tickets/2026-04-02-proactive-pivot-epic.md](docs/tickets/2026-04-02-proactive-pivot-epic.md); semantic recall strategy [docs/DECISIONS.md](docs/DECISIONS.md) (2026-04-02). Does not change default chat until phase PRs merge.
 - **OpenClaw bridge** (optional): `delegateTask` / `approveOpenClawIntent`, `PendingIntent` queue, `GET/PATCH /api/openclaw/pending` — [docs/openclaw-bridge.md](docs/openclaw-bridge.md), [docs/DECISIONS.md](docs/DECISIONS.md).
 
