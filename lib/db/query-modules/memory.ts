@@ -1,9 +1,11 @@
 import "server-only";
 
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import { VirgilError } from "@/lib/errors";
 import { client, db } from "../client";
 import { type Memory, memory } from "../schema";
+
+const proposalNotDismissedClause = sql`(coalesce((${memory.metadata}->>'reviewDecision'), 'pending') <> 'dismissed')`;
 
 // --- Memory (companion assistant) ---
 
@@ -138,6 +140,33 @@ export async function getMemoriesBySourceJobId({
   }
 }
 
+export async function listMemoriesForUser({
+  userId,
+  kind,
+  limit = 60,
+}: {
+  userId: string;
+  kind?: "note" | "fact" | "goal" | "opportunity";
+  limit?: number;
+}): Promise<Memory[]> {
+  try {
+    const whereClause = kind
+      ? and(eq(memory.userId, userId), eq(memory.kind, kind))
+      : eq(memory.userId, userId);
+    return await db
+      .select()
+      .from(memory)
+      .where(whereClause)
+      .orderBy(desc(memory.createdAt))
+      .limit(Math.min(limit, 200));
+  } catch (_error) {
+    throw new VirgilError(
+      "bad_request:database",
+      "Failed to list memories for user"
+    );
+  }
+}
+
 export async function getRecentMemories({
   userId,
   since,
@@ -158,6 +187,143 @@ export async function getRecentMemories({
     throw new VirgilError(
       "bad_request:database",
       "Failed to get recent memories"
+    );
+  }
+}
+
+/** Tier-2 proposal memories (ADR-002); distinct from night-review source filter. */
+export async function getProposalMemoriesForUser({
+  userId,
+  since,
+  limit = 60,
+  includeDismissed = false,
+}: {
+  userId: string;
+  since: Date;
+  limit?: number;
+  includeDismissed?: boolean;
+}): Promise<Memory[]> {
+  try {
+    return await db
+      .select()
+      .from(memory)
+      .where(
+        and(
+          eq(memory.userId, userId),
+          eq(memory.tier, "propose"),
+          gte(memory.createdAt, since),
+          ...(includeDismissed ? [] : [proposalNotDismissedClause])
+        )
+      )
+      .orderBy(desc(memory.createdAt))
+      .limit(Math.min(limit ?? 60, 200));
+  } catch (_error) {
+    throw new VirgilError(
+      "bad_request:database",
+      "Failed to get proposal memories"
+    );
+  }
+}
+
+/**
+ * Proposals still awaiting accept/dismiss (tier propose, not dismissed, not approved).
+ */
+export async function countPendingProposalsForUser({
+  userId,
+  since,
+}: {
+  userId: string;
+  since: Date;
+}): Promise<number> {
+  try {
+    const [row] = await db
+      .select({ c: count() })
+      .from(memory)
+      .where(
+        and(
+          eq(memory.userId, userId),
+          eq(memory.tier, "propose"),
+          gte(memory.createdAt, since),
+          proposalNotDismissedClause,
+          isNull(memory.approvedAt)
+        )
+      );
+    return Number(row?.c ?? 0);
+  } catch (_error) {
+    throw new VirgilError(
+      "bad_request:database",
+      "Failed to count pending proposals"
+    );
+  }
+}
+
+export async function setProposalMemoryDecision({
+  userId,
+  memoryId,
+  decision,
+}: {
+  userId: string;
+  memoryId: string;
+  decision: "accepted" | "dismissed";
+}): Promise<Memory> {
+  try {
+    const [row] = await db
+      .select()
+      .from(memory)
+      .where(and(eq(memory.id, memoryId), eq(memory.userId, userId)))
+      .limit(1);
+
+    if (!row) {
+      throw new VirgilError("not_found:memory");
+    }
+    if (row.tier !== "propose") {
+      throw new VirgilError("forbidden:memory");
+    }
+
+    const meta = row.metadata as Record<string, unknown>;
+    const now = new Date();
+    const nextMetadata = {
+      ...meta,
+      reviewDecision: decision,
+      reviewedAt: now.toISOString(),
+    };
+
+    if (decision === "accepted") {
+      const [updated] = await db
+        .update(memory)
+        .set({
+          approvedAt: now,
+          metadata: nextMetadata,
+          updatedAt: now,
+        })
+        .where(eq(memory.id, memoryId))
+        .returning();
+      if (!updated) {
+        throw new VirgilError("bad_request:database", "Failed to update memory");
+      }
+      return updated;
+    }
+
+    const [updated] = await db
+      .update(memory)
+      .set({
+        metadata: nextMetadata,
+        updatedAt: now,
+      })
+      .where(eq(memory.id, memoryId))
+      .returning();
+
+    if (!updated) {
+      throw new VirgilError("bad_request:database", "Failed to update memory");
+    }
+    return updated;
+  } catch (error) {
+    if (error instanceof VirgilError) {
+      throw error;
+    }
+    throw new VirgilError(
+      "bad_request:database",
+      "Failed to set proposal memory decision"
     );
   }
 }
