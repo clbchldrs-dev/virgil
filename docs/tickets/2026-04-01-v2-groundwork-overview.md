@@ -31,10 +31,12 @@ flowchart LR
 
 **Sprint 1 (foundation):** contracts and inventories so v2 API and memory design are concrete.
 
+**Artifacts (done):** [V2_API_CONTRACT.md](../V2_API_CONTRACT.md), [V2_TOOL_MAP.md](../V2_TOOL_MAP.md).
+
 | Ticket | File | Outcome |
 |--------|------|---------|
-| T1 | [2026-04-01-v2-t1-api-contract-for-python-backend.md](2026-04-01-v2-t1-api-contract-for-python-backend.md) | `docs/V2_API_CONTRACT.md` — chat/SSE/auth/errors vs current Next behavior |
-| T2 | [2026-04-01-v2-t2-tool-inventory-and-v2-mapping.md](2026-04-01-v2-t2-tool-inventory-and-v2-mapping.md) | `docs/V2_TOOL_MAP.md` — every v1 tool → v2 registry fields (approval, local/gateway) |
+| T1 | [2026-04-01-v2-t1-api-contract-for-python-backend.md](2026-04-01-v2-t1-api-contract-for-python-backend.md) | `docs/V2_API_CONTRACT.md` — chat/SSE/auth/errors vs current Next behavior (**done**) |
+| T2 | [2026-04-01-v2-t2-tool-inventory-and-v2-mapping.md](2026-04-01-v2-t2-tool-inventory-and-v2-mapping.md) | `docs/V2_TOOL_MAP.md` — every v1 tool → v2 registry fields (approval, local/gateway) (**done**) |
 | T3 | [2026-04-01-v2-t3-v2-eval-chat-instrumentation.md](2026-04-01-v2-t3-v2-eval-chat-instrumentation.md) | Wire + extend `logInteraction`; stable JSONL for routing/tool analysis |
 | T4 | [2026-04-01-v2-t4-memory-migration-blueprint.md](2026-04-01-v2-t4-memory-migration-blueprint.md) | `docs/V2_MEMORY_MIGRATION.md` — schema, kinds, metadata, export strategy |
 

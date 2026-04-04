@@ -6,7 +6,7 @@ This document answers **what in shipped v1 makes a Python v2 backend and migrati
 
 | Issue | Evidence | Why it hurts v2 |
 |-------|----------|-------------------|
-| **No published API / tool / memory contracts** | Deliverables **T1–T4** (`V2_API_CONTRACT.md`, `V2_TOOL_MAP.md`, memory blueprint) are not yet guaranteed to exist under `docs/` until those tickets land. | A FastAPI service must guess parity with `route.ts` behavior, SSE shape, and errors. |
+| **No published API / tool / memory contracts** | **T1:** [V2_API_CONTRACT.md](V2_API_CONTRACT.md). **T2:** [V2_TOOL_MAP.md](V2_TOOL_MAP.md). **T3–T4** (eval JSONL, memory blueprint) still pending until those tickets land. | Without T3–T4, a FastAPI service still risks drift on memory and telemetry; chat/tools have written baselines. |
 | **Chat route is a single integration surface** | `app/(chat)/api/chat/route.ts` — auth, rate limits, `streamText`, tools, Mem0, optional planner, title gen, resumable streams. | No labeled seam for “replace this with HTTP to Python”; highest migration cost file. |
 | **DB + tools are co-located in-process** | Many `app/**/api` routes and `lib/ai/tools` import `@/lib/db/queries` directly; Drizzle schema is Postgres-specific (`lib/db/schema.ts`). | v2 cannot swap the backend without mapping tables and tool side effects; ETL becomes bespoke. |
 

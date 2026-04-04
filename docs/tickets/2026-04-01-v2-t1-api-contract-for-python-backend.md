@@ -1,7 +1,7 @@
 # V2-T1 — API contract for Python backend (chat / SSE / auth)
 
 **Track:** V2 groundwork — [overview](2026-04-01-v2-groundwork-overview.md)  
-**Status:** Not started
+**Status:** Done — [docs/V2_API_CONTRACT.md](../V2_API_CONTRACT.md) landed; [V2_MIGRATION.md](../V2_MIGRATION.md) step 3 links it.
 
 ## Problem
 

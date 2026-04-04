@@ -1,7 +1,7 @@
 # V2-T2 — Tool inventory and v2 registry mapping
 
 **Track:** V2 groundwork — [overview](2026-04-01-v2-groundwork-overview.md)  
-**Status:** Not started
+**Status:** Done — [docs/V2_TOOL_MAP.md](../V2_TOOL_MAP.md); [groundwork overview](2026-04-01-v2-groundwork-overview.md) links artifacts.
 
 ## Problem
 

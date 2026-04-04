@@ -52,6 +52,8 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 | v2 architecture plan (June 2026 target, not in development) | [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md) |
 | Hardware decisions (v2 host, inference tiers, retired gear) | [docs/HARDWARE.md](HARDWARE.md) |
 | v1 → v2 migration path and what carries forward | [docs/V2_MIGRATION.md](V2_MIGRATION.md) |
+| v2 chat / SSE / auth API contract (v1 vs Python adapter) | [docs/V2_API_CONTRACT.md](V2_API_CONTRACT.md) |
+| v2 tool inventory (v1 → registry / approval / night) | [docs/V2_TOOL_MAP.md](V2_TOOL_MAP.md) |
 | v1 → v2 risks (what in v1 complicates v2) | [docs/V1_V2_RISK_AUDIT.md](V1_V2_RISK_AUDIT.md) |
 | v2 evaluation data collection | [workspace/v2-eval/](../workspace/v2-eval/) |
 | Itemized work tickets (E2–E7, E8-follow, Phase 4) | [docs/tickets/README.md](tickets/README.md) |

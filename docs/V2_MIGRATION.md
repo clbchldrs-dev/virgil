@@ -44,7 +44,7 @@ See `workspace/v2-eval/README.md` for what v1 is collecting to inform v2 develop
 
 1. Stand up Python backend on Mac Mini M4 Pro (Ollama + Python 3.11+)
 2. Port persona from companion-prompt.ts → persona.md
-3. Wire Next.js frontend to Python backend API
+3. Wire Next.js frontend to Python backend API — **contract SSOT:** [docs/V2_API_CONTRACT.md](V2_API_CONTRACT.md) (v1 `POST /api/chat` behavior, target `POST /chat` + Bearer, stream and error shapes, security and gap list).
 4. Migrate relevant Postgres data to SQLite memory layer
-5. Validate tool execution, night mode, and skills framework
+5. Validate tool execution, night mode, and skills framework — map v1 tools with [docs/V2_TOOL_MAP.md](V2_TOOL_MAP.md) and v2 `tools/` registry in [V2_ARCHITECTURE.md](V2_ARCHITECTURE.md).
 6. Decommission v1 backend (keep frontend)
