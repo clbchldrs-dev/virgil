@@ -44,8 +44,8 @@ Runs `stable:check`, then `pnpm build`.
 
 ### Phase A — Baseline (this week)
 
-- [ ] Run `pnpm stable:check` on a clean tree; fix anything that fails.
-- [ ] Run `pnpm stable:check:full` against a dev database; note any Turbopack/NFT warnings from [STABLE_STOP_HANDOFF.md](STABLE_STOP_HANDOFF.md).
+- [x] Run `pnpm stable:check` on a clean tree; fix anything that fails.
+- [x] Run `pnpm stable:check:full` against a dev database; note any Turbopack/NFT warnings from [STABLE_STOP_HANDOFF.md](STABLE_STOP_HANDOFF.md).
 - [ ] Confirm `.env.local` matches [AGENTS.md](../AGENTS.md#setup-checklist) for features you use (auth, DB, Redis, optional Ollama URL).
 
 ### Phase B — Deploy path

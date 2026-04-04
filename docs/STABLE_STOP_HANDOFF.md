@@ -8,6 +8,8 @@ Last verified with:
 - `pnpm build` — pass (includes `tsx lib/db/migrate && next build`; needs DB reachable if migrations run)
 - Or in one step: `pnpm stable:check:full` (runs `stable:check` then `pnpm build`)
 
+**Latest run:** both `pnpm stable:check` and `pnpm stable:check:full` succeeded on a dev machine with Postgres reachable; Turbopack NFT warning unchanged (see below).
+
 ## Resume commands (copy order)
 
 ```bash
