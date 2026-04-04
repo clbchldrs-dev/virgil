@@ -18,7 +18,7 @@ Extend **`lib/ai/models.ts`** and **`app/(chat)/api/chat/route.ts`** (and relate
 - [x] Defaults remain **personal / non-business** unless business mode is on; gateway path unchanged.
 - [x] No new env vars; data in `models.ts` + `ollama-discovery` for discovered tags.
 - [x] Unit tests: `tests/unit/local-model-class.test.ts`, extended `local-context.test.ts`.
-- [ ] Optional follow-up: per-model tweaks beyond 3B/7B buckets, or `full`-variant class splits.
+- [x] Optional follow-up: `full`-variant class splits (`buildCompanionSystemPrompt` + route when local Ollama is not slim/compact). Per-model tweaks beyond 3B/7B buckets remain TBD.
 
 ## Non-goals
 

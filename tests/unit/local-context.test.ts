@@ -206,6 +206,48 @@ test("slim companion prompt tightens length guidance for 3B-class models", async
   assert.match(slim3b, /one sub-question at a time/i);
 });
 
+test("full companion prompt applies local class splits when localModelClass is set", async () => {
+  const companion = await import("../../lib/ai/companion-prompt").catch(
+    () => null
+  );
+  assert.ok(companion, "expected companion-prompt module");
+
+  const baseHints = {
+    latitude: undefined,
+    longitude: undefined,
+    city: undefined,
+    country: undefined,
+  };
+
+  const gatewayFull = companion.buildCompanionSystemPrompt({
+    ownerName: "Caleb",
+    memories: [],
+    requestHints: baseHints,
+    supportsTools: true,
+  });
+  const localFull3b = companion.buildCompanionSystemPrompt({
+    ownerName: "Caleb",
+    memories: [],
+    requestHints: baseHints,
+    supportsTools: false,
+    localModelClass: "3b",
+  });
+  const localFull7b = companion.buildCompanionSystemPrompt({
+    ownerName: "Caleb",
+    memories: [],
+    requestHints: baseHints,
+    supportsTools: false,
+    localModelClass: "7b",
+  });
+
+  assert.doesNotMatch(gatewayFull, /Local model capability/i);
+  assert.match(localFull3b, /Local model capability \(3B-class\)/i);
+  assert.match(localFull3b, /1-2 sentences/i);
+  assert.match(localFull3b, /one sub-question at a time/i);
+  assert.match(localFull7b, /Local model capability \(7B-class\)/i);
+  assert.match(localFull7b, /usually 2-3 sentences/i);
+});
+
 test("trimMessagesForBudget keeps thread edges and inserts a trim marker", async () => {
   const mod = await import("../../lib/ai/trim-context").catch(() => null);
   assert.ok(mod, "expected trim-context module");

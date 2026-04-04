@@ -38,7 +38,7 @@ See [`docs/security/tool-inventory.md`](../../security/tool-inventory.md).
 
 ### B1 — IDOR sweep
 
-- [ ] Checklist: mutating routes under `app/**/api/**` — owner vs `session.user.id`; add 403 tests for highest-risk routes.
+- [x] Checklist + query patterns: [`tool-inventory.md` § IDOR](../../security/tool-inventory.md#idor-prevention-mutating--sensitive-reads). Centralized guards in [`lib/security/idor.ts`](../../../lib/security/idor.ts); tests [`tests/unit/idor.test.ts`](../../../tests/unit/idor.test.ts). `document` POST unauthenticated → `unauthorized:document` (was mis-typed `not_found`).
 
 ### B2 — Rate limits
 

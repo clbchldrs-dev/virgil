@@ -1,6 +1,7 @@
 import { auth } from "@/app/(auth)/auth";
 import { getSuggestionsByDocumentId } from "@/lib/db/queries";
 import { VirgilError } from "@/lib/errors";
+import { suggestionWrongOwnerVirgilError } from "@/lib/security/idor";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -29,8 +30,9 @@ export async function GET(request: Request) {
     return Response.json([], { status: 200 });
   }
 
-  if (suggestion.userId !== session.user.id) {
-    return new VirgilError("forbidden:api").toResponse();
+  const rowErr = suggestionWrongOwnerVirgilError(suggestion, session.user.id);
+  if (rowErr) {
+    return rowErr.toResponse();
   }
 
   return Response.json(suggestions, { status: 200 });

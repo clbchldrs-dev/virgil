@@ -8,6 +8,7 @@ import {
   updateDocumentContent,
 } from "@/lib/db/queries";
 import { VirgilError } from "@/lib/errors";
+import { documentRowAccessVirgilError } from "@/lib/security/idor";
 
 const documentSchema = z.object({
   content: z.string(),
@@ -37,12 +38,12 @@ export async function GET(request: Request) {
 
   const [document] = documents;
 
-  if (!document) {
-    return new VirgilError("not_found:document").toResponse();
-  }
-
-  if (document.userId !== session.user.id) {
-    return new VirgilError("forbidden:document").toResponse();
+  const getErr = documentRowAccessVirgilError({
+    document,
+    sessionUserId: session.user.id,
+  });
+  if (getErr) {
+    return getErr.toResponse();
   }
 
   return Response.json(documents, { status: 200 });
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
   const session = await auth();
 
   if (!session?.user) {
-    return new VirgilError("not_found:document").toResponse();
+    return new VirgilError("unauthorized:document").toResponse();
   }
 
   let content: string;
@@ -138,8 +139,12 @@ export async function DELETE(request: Request) {
 
   const [document] = documents;
 
-  if (document.userId !== session.user.id) {
-    return new VirgilError("forbidden:document").toResponse();
+  const delErr = documentRowAccessVirgilError({
+    document,
+    sessionUserId: session.user.id,
+  });
+  if (delErr) {
+    return delErr.toResponse();
   }
 
   const parsedTimestamp = new Date(timestamp);

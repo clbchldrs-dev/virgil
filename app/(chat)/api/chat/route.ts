@@ -297,6 +297,7 @@ export async function POST(request: Request) {
               supportsTools: promptSupportsTools,
               productOpportunityEnabled,
               agentTaskEnabled,
+              ...(isOllamaLocal ? { localModelClass } : {}),
             });
 
     const convertedModelMessages = await convertToModelMessages(uiMessages);

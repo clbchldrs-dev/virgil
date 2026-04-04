@@ -39,3 +39,19 @@ Self-hosted cron: [AGENTS.md](../../AGENTS.md#scheduled-jobs-on-the-host-no-verc
 ## File uploads (`POST` `/api/files/upload`)
 
 Authenticated users only; MIME (JPEG/PNG) and size limits are validated in [`app/(chat)/api/files/upload/route.ts`](../../app/(chat)/api/files/upload/route.ts). Blobs use **`access: "public"`** so image URLs work in the chat UI without signed URLs; object keys are scoped under **`userId/uuid-filename`** to avoid a single flat namespace. Treat uploaded images as **sensitive** if chats contain private content — URLs are unguessable but shareable if leaked.
+
+---
+
+## IDOR prevention (mutating / sensitive reads)
+
+Shared ownership checks for high-traffic routes live in [`lib/security/idor.ts`](../../lib/security/idor.ts) with unit tests in [`tests/unit/idor.test.ts`](../../tests/unit/idor.test.ts). Other routes enforce ownership in **query** `WHERE` clauses (e.g. `memory.userId`, `agentTask.userId`) — see [`lib/db/query-modules/`](../../lib/db/query-modules/).
+
+| Area | Mechanism |
+|------|-----------|
+| Vote (`/api/vote`) | `auth()` then `getChatById`; `chatVoteAccessVirgilError` — chat must exist and `chat.userId === session.user.id` |
+| Suggestions (`/api/suggestions`) | Auth before DB read; `suggestionWrongOwnerVirgilError` on first row |
+| Document (`/api/document`) | `auth()` then fetch; `documentRowAccessVirgilError` for GET/DELETE; POST checks owner before update |
+| Chat (`/api/chat`) | `getChatById` then `userId` match; DELETE same |
+| Memory PATCH (`proposals`, `night-review`) | `WHERE memory.id AND memory.userId` in query layer |
+| Agent tasks PATCH | `UPDATE … WHERE id AND userId` |
+| Jobs / background jobs | `userId` in query or `get*ForUser` helpers |

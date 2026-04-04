@@ -154,9 +154,11 @@ Use when adding a decision:
 
 **Decision:** Introduce `LocalModelClass` (`3b` | `7b`) on `ChatModel`, with `inferLocalModelClassFromOllamaTag(tag)` for synthetic fallbacks and discovered Ollama tags (`<=4B` → `3b`, else `7b`). `getResolvedLocalModelClass` feeds `buildSlim*` / `buildCompact*` in `lib/ai/slim-prompt.ts` for local Ollama only; gateway models unchanged.
 
+**Update (E2 follow-up):** When local Ollama uses the **full** companion prompt (`promptVariant: full`, or any path that is not slim/compact), `app/(chat)/api/chat/route.ts` passes `localModelClass` into `buildCompanionSystemPrompt` so 3B- vs 7B-class length guidance matches the slim buckets. Hosted/gateway calls omit `localModelClass`.
+
 **Consequences:** Adjusting roster entries can set `localModelClass` explicitly when tags are ambiguous; new slim copy must stay non-sycophantic per voice ADRs.
 
-**Links:** [lib/ai/models.ts](../lib/ai/models.ts), [lib/ai/slim-prompt.ts](../lib/ai/slim-prompt.ts), E2 in [ENHANCEMENTS.md](ENHANCEMENTS.md)
+**Links:** [lib/ai/models.ts](../lib/ai/models.ts), [lib/ai/slim-prompt.ts](../lib/ai/slim-prompt.ts), [lib/ai/companion-prompt.ts](../lib/ai/companion-prompt.ts), [app/(chat)/api/chat/route.ts](../app/(chat)/api/chat/route.ts), E2 in [ENHANCEMENTS.md](ENHANCEMENTS.md)
 
 ---
 

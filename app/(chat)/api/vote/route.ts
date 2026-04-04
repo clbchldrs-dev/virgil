@@ -2,6 +2,7 @@ import { z } from "zod";
 import { auth } from "@/app/(auth)/auth";
 import { getChatById, getVotesByChatId, voteMessage } from "@/lib/db/queries";
 import { VirgilError } from "@/lib/errors";
+import { chatVoteAccessVirgilError } from "@/lib/security/idor";
 
 const voteSchema = z.object({
   chatId: z.string(),
@@ -28,12 +29,13 @@ export async function GET(request: Request) {
 
   const chat = await getChatById({ id: chatId });
 
-  if (!chat) {
-    return new VirgilError("not_found:chat").toResponse();
-  }
-
-  if (chat.userId !== session.user.id) {
-    return new VirgilError("forbidden:vote").toResponse();
+  const getErr = chatVoteAccessVirgilError({
+    chat,
+    sessionUserId: session.user.id,
+    notFoundCode: "not_found:chat",
+  });
+  if (getErr) {
+    return getErr.toResponse();
   }
 
   const votes = await getVotesByChatId({ id: chatId });
@@ -66,12 +68,13 @@ export async function PATCH(request: Request) {
 
   const chat = await getChatById({ id: chatId });
 
-  if (!chat) {
-    return new VirgilError("not_found:vote").toResponse();
-  }
-
-  if (chat.userId !== session.user.id) {
-    return new VirgilError("forbidden:vote").toResponse();
+  const patchErr = chatVoteAccessVirgilError({
+    chat,
+    sessionUserId: session.user.id,
+    notFoundCode: "not_found:vote",
+  });
+  if (patchErr) {
+    return patchErr.toResponse();
   }
 
   await voteMessage({

@@ -1,4 +1,5 @@
 import { buildGoalGuidancePromptAppendix } from "@/lib/ai/goal-guidance-prompt";
+import type { LocalModelClass } from "@/lib/ai/models";
 import type { Memory } from "@/lib/db/schema";
 import type { RequestHints } from "./prompts";
 import { artifactsPrompt, getRequestPromptFromHints } from "./prompts";
@@ -31,6 +32,7 @@ export function buildCompanionSystemPrompt({
   supportsTools,
   productOpportunityEnabled = false,
   agentTaskEnabled = false,
+  localModelClass,
 }: {
   ownerName: string | null;
   memories: Memory[];
@@ -40,6 +42,11 @@ export function buildCompanionSystemPrompt({
   productOpportunityEnabled?: boolean;
   /** Gateway: enables submitAgentTask tool guidance */
   agentTaskEnabled?: boolean;
+  /**
+   * When set (local Ollama + `promptVariant: full`), tightens length guidance to match
+   * {@link LocalModelClass} — same buckets as slim/compact; gateway omits this.
+   */
+  localModelClass?: LocalModelClass;
 }): string {
   const parts: string[] = [];
 
@@ -64,6 +71,16 @@ Anti-sycophancy: you are not here to be liked; you are here to be useful. Do not
 - Be concise. Don't narrate your tool use.
 - Front-load the answer — the first sentence should contain the most important information.
 - No filler. No preamble like "Great question!" or "Sure, I can help with that." Start with substance.`);
+
+  if (localModelClass === "3b") {
+    parts.push(
+      "Local model capability (3B-class): aim for 1-2 sentences per reply; one sub-question at a time; avoid long multi-step plans in a single reply."
+    );
+  } else if (localModelClass === "7b") {
+    parts.push(
+      "Local model capability (7B-class): keep replies concise (usually 2-3 sentences); short lists are fine when they clarify."
+    );
+  }
 
   parts.push(
     "Scope: you are advisory, not a therapist — refer out if they need support beyond advice. You may decline unhelpful requests with one sentence why."
