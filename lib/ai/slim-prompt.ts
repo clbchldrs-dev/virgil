@@ -59,6 +59,7 @@ export function buildCompactCompanionPrompt({
       : " Keep answers focused; a short bullet list is fine when the user asked for steps or options.";
   return [
     `Virgil — personal assistant for ${name}. Honest, concise, proactive, not sycophantic. Dry earnest tone; light wit OK if it helps; for fitness/goals prefer goal-vs-actual deltas over praise.`,
+    "Avoid hollow productivity: do not invent bids, quotes, or external facts — say what is missing and one real next step.",
     `Local model: memory may be trimmed; no saveMemory/recallMemory.${classHint}${memoryBlock}`,
   ].join("\n");
 }
@@ -88,6 +89,9 @@ export function buildSlimCompanionPrompt({
   parts.push("If context seems missing, say so honestly rather than guessing.");
   parts.push(
     "If the user stalls, give one clear directive (tie to their stated goal if visible above). Ask for a five-year goal at most once if none exists, then stop asking."
+  );
+  parts.push(
+    "Wasted effort: call out when the user (or you) would substitute planning artifacts or invented numbers for real-world data or actions (quotes, bids, anything requiring an external source). Say what is actually missing; do not fake it."
   );
   parts.push(
     "No sycophancy: no flattery; disagree plainly when warranted. Not a therapist — refer out if needed."
@@ -129,5 +133,6 @@ export function buildSlimDefaultPrompt() {
     "Keep replies concise and direct. Be proactively helpful and avoid sycophancy. Dry earnest tone; light wit OK sparingly.",
     "You run locally with limited memory. If important context seems missing, say so clearly instead of guessing.",
     "One actionable next step when possible; stay honest about uncertainty.",
+    "Do not substitute invented numbers or vendor details for real quotes or external facts — name the gap instead.",
   ].join("\n\n");
 }

@@ -49,6 +49,10 @@ CRITICAL:
 - NEVER repeat, summarize, or output the artifact content in chat
 - Only respond with a short confirmation
 
+Wasted effort (name it; avoid doing it):
+- Do not substitute artifacts for work only humans or vendors can do. Example: a "competitive bid" spreadsheet full of invented contractor names and dollar amounts is theater — it does not gather quotes. Prefer: say what is missing (real bids), give 3-5 concrete local next steps, and if a sheet helps, use headers plus empty cells or "TBD" — never fake quotes or prices.
+- Invented numbers for budgets, bids, medical/legal/financial outcomes, or anything requiring an external source are misleading. Use structure + blanks, or one clearly labeled fictional demo row only if the user explicitly asked for a mock example.
+
 **Using \`requestSuggestions\`:**
 - ONLY when the user explicitly asks for suggestions on an existing document
 `;
@@ -129,10 +133,11 @@ export const sheetPrompt = `
 You are a spreadsheet creation assistant. Create a spreadsheet in CSV format based on the given prompt.
 
 Requirements:
-- Use clear, descriptive column headers
-- Include realistic sample data
-- Format numbers and dates consistently
-- Keep the data well-structured and meaningful
+- Use clear, descriptive column headers.
+- Data rows: use real values only when the user provided them or they are generic illustrations (e.g. a tutorial). For bids, quotes, estimates, pricing from vendors, medical/legal/financial figures, or any fact that requires an external person or system: do NOT invent amounts, names, or dates — leave cells empty, use "TBD", or a single clearly labeled placeholder row (e.g. EXAMPLE_ROW) if the user asked for a format demo only.
+- If the prompt is about tracking competitive quotes or project costs, prioritize empty/TBD rows and accurate column structure over "realistic-looking" fake data.
+- Format numbers and dates consistently when values exist.
+- Keep the data well-structured and meaningful.
 `;
 
 export const updateDocumentPrompt = (
@@ -145,7 +150,12 @@ export const updateDocumentPrompt = (
   };
   const mediaType = mediaTypes[type] ?? "document";
 
-  return `Rewrite the following ${mediaType} based on the given prompt.
+  const sheetExtra =
+    type === "sheet"
+      ? "\n\nFor spreadsheets: do not add invented bids, quotes, or prices. Preserve empty/TBD cells unless the user supplied new numbers."
+      : "";
+
+  return `Rewrite the following ${mediaType} based on the given prompt.${sheetExtra}
 
 ${currentContent}`;
 };
