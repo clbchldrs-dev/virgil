@@ -1,10 +1,12 @@
 # Stable stop handoff (local branch)
 
-Use this when returning after a long pause. Last verified with:
+Use this when returning after a long pause. **Stability roadmap:** [STABILITY_TRACK.md](STABILITY_TRACK.md).
 
-- `pnpm check` — pass
+Last verified with:
+
+- `pnpm stable:check` — pass (lint + TypeScript + unit tests; no DB required)
 - `pnpm build` — pass (includes `tsx lib/db/migrate && next build`; needs DB reachable if migrations run)
-- `node --test --import tsx tests/unit/*.test.ts` — all unit tests pass
+- Or in one step: `pnpm stable:check:full` (runs `stable:check` then `pnpm build`)
 
 ## Resume commands (copy order)
 
@@ -12,9 +14,8 @@ Use this when returning after a long pause. Last verified with:
 cd /path/to/virgil
 corepack enable && corepack prepare pnpm@10.32.1 --activate
 pnpm install
-pnpm check
+pnpm stable:check
 pnpm build
-node --test --import tsx tests/unit/*.test.ts
 pnpm dev
 ```
 

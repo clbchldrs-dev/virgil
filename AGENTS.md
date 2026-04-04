@@ -612,7 +612,10 @@ Always verify behavior that could silently hurt the local path.
 
 High-value checks:
 
-- `node --test --import tsx tests/unit/local-context.test.ts`
+- `pnpm stable:check` — `pnpm check` + `pnpm run type-check` + `pnpm test:unit` (fast stability gate)
+- `pnpm stable:check:full` — same plus `pnpm build` (needs DB for migrations)
+- `pnpm test:unit` (all `tests/unit/*.test.ts`; CI runs this after `pnpm check`)
+- `node --test --import tsx tests/unit/local-context.test.ts` — quick slice when iterating on local context only
 - `pnpm check`
 - `pnpm build`
 - `pnpm ollama:smoke`
