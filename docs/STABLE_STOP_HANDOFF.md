@@ -8,7 +8,7 @@ Last verified with:
 - `pnpm build` — pass (includes `tsx lib/db/migrate && next build`; needs DB reachable if migrations run)
 - Or in one step: `pnpm stable:check:full` (runs `stable:check` then `pnpm build`)
 
-**Latest run:** both `pnpm stable:check` and `pnpm stable:check:full` succeeded on a dev machine with Postgres reachable; Turbopack NFT warning unchanged (see below).
+**Latest run:** both `pnpm stable:check` and `pnpm stable:check:full` succeeded on a dev machine with Postgres reachable; Turbopack NFT warning for user-context addressed by splitting path resolution (`lib/ai/user-context-path.ts`, no `fs`) from prompt assembly and removing unused `systemPrompt` in `lib/ai/prompts.ts`.
 
 ## Resume commands (copy order)
 
@@ -30,11 +30,9 @@ Optional local stack: see [AGENTS.md](../AGENTS.md) Docker section.
 
 ## Known non-blocking notes
 
-- **Next build** may log a Turbopack NFT warning tracing through `next.config.ts` → `lib/ai/prompts.ts` (filesystem read for `user-context.md`). Build still completed successfully.
 - **Untracked** `.cursor/debug-*.log` files: safe to delete or ignore; do not commit.
 
 ## Suggested next tasks (when you return)
 
 1. Decide whether to remove or gate **debug ingest** `fetch` calls to localhost (dev-only) to reduce noise and accidental coupling.
-2. Address the **Turbopack NFT** warning by narrowing dynamic `readFileSync` usage in prompts (or documenting an ignore) if it becomes noisy.
-3. Reconcile **month-long** product priorities (voice, WhatsApp, etc.) with [docs/PROJECT.md](PROJECT.md) when you resume.
+2. Reconcile **month-long** product priorities (voice, WhatsApp, etc.) with [docs/PROJECT.md](PROJECT.md) when you resume.

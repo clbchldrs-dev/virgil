@@ -4,6 +4,22 @@ Significant, stable choices for Virgil. New entries go at the **top** (reverse c
 
 ---
 
+## 2026-04-03 — v1 hosted stack vs v2 home stack; v2 Postgres vs SQLite (documentation) — Accepted
+
+**Context:** v1 production is commonly described as **Vercel + Neon + Upstash (Redis + QStash) + Resend + Vercel Blob** (managed free/hobby posture). v2 intent is **Mac mini + local Ollama + Python backend**, leveraging **hardware and open-source** inference. The migration doc historically emphasized **SQLite + Mem0** for greenfield v2, while **migrating from v1** may favor **Postgres on the home host** for schema parity.
+
+**Decision:**
+
+1. **Document** both deployment narratives in [docs/PROJECT.md](PROJECT.md) (“Deployment tracks”) without duplicating env tables (those stay in [AGENTS.md](../AGENTS.md)).
+2. **Document** both v2 data tracks in [docs/V2_MIGRATION.md](V2_MIGRATION.md): **greenfield** SQLite/Mem0 vs **migration-first** local/LAN Postgres. This is **positioning and handoff clarity**, not a commitment to implement two production backends in parallel.
+3. **Record** v1→v2 friction (contracts, monolithic chat route, auth, background jobs) in [docs/V1_V2_RISK_AUDIT.md](V1_V2_RISK_AUDIT.md) and link E10 tickets for mitigations.
+
+**Consequences:** Contributors can quote a single place for “what v1 is in production” vs “what v2 aims for”; Python/backend work should still follow E10 **T1–T8** for concrete API and memory artifacts.
+
+**Links:** [docs/PROJECT.md](PROJECT.md), [docs/V2_MIGRATION.md](V2_MIGRATION.md), [docs/V1_V2_RISK_AUDIT.md](V1_V2_RISK_AUDIT.md), [docs/tickets/2026-04-01-v2-groundwork-overview.md](tickets/2026-04-01-v2-groundwork-overview.md)
+
+---
+
 ## 2026-04-02 — Target architecture: Virgil brain + Agent Zero executor (scoped, not shipped) — Accepted
 
 **Context:** Owner hardware (Mac mini with 48 GB unified memory) and product intent (capable local agent, delegated computer use, skills, bounded self-improvement) were discussed outside committed docs. The shipped codebase remains TypeScript-only for tools; OpenClaw was referenced only as inspiration for workspace/night patterns, which caused confusion about the real target stack.

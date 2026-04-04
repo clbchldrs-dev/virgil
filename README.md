@@ -78,13 +78,14 @@ ollama pull qwen2.5:14b
 ollama pull qwen2.5:32b
 ```
 
-Postgres and Redis via Docker (OrbStack or Docker Desktop) if v2 needs them. Full architecture: [docs/V2_ARCHITECTURE.md](docs/V2_ARCHITECTURE.md). Hardware decisions: [docs/HARDWARE.md](docs/HARDWARE.md).
+Postgres and Redis via Docker (OrbStack or Docker Desktop) if v2 needs them. Full architecture: [docs/V2_ARCHITECTURE.md](docs/V2_ARCHITECTURE.md). Hardware decisions: [docs/HARDWARE.md](docs/HARDWARE.md). Migration and v1→v2 risks: [docs/V2_MIGRATION.md](docs/V2_MIGRATION.md), [docs/V1_V2_RISK_AUDIT.md](docs/V1_V2_RISK_AUDIT.md).
 
 ## Docs
 
 **SSOT map:** [docs/PROJECT.md](docs/PROJECT.md) lists where each topic lives (same structure as this section—read PROJECT first for intent and links).
 
-- [docs/PROJECT.md](docs/PROJECT.md): **start here** — intent, documentation map, architecture overview, agent handoff (new Cursor chat)
+- [docs/PROJECT.md](docs/PROJECT.md): **start here** — intent, documentation map, architecture overview, agent handoff (new Cursor chat); **v1 vs v2 deployment tracks** (hosted vs Mac mini)
+- [docs/V1_V2_RISK_AUDIT.md](docs/V1_V2_RISK_AUDIT.md): v1 patterns that complicate v2 (and E10 mitigations)
 - [docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md): **target stack** — Virgil vs Agent Zero, Mac mini hardware profile, bridge (planned), self-improvement gates
 - [AGENTS.md](AGENTS.md): **setup and deployment detail** (env, Docker, LAN, cron, Vercel, env var table) plus coding rules and checklists
 - [SETUP.md](SETUP.md), [DEPLOY.md](DEPLOY.md): thin link hubs → AGENTS.md (no duplicate tables)

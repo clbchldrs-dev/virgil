@@ -91,23 +91,55 @@ export function trimMessagesForBudget<T extends LocalContextMessage>({
     if (!candidate) {
       continue;
     }
-    const next = [candidate, ...keptMiddle];
-    const withMarker = [firstMessage, buildTrimMarker<T>(), ...next, ...tail];
-    const withoutMarker = [firstMessage, ...next, ...tail];
-    const totalTokens = estimateMessages(
-      middle.length === next.length ? withoutMarker : withMarker
-    );
 
-    if (totalTokens <= budget) {
-      keptMiddle = next;
+    const before = keptMiddle;
+    let trial: T[] = [candidate, ...keptMiddle];
+
+    while (true) {
+      const totalTokens = estimateFirstTailMiddleTokens({
+        firstMessage,
+        middleLength: middle.length,
+        middleIndex: index,
+        trial,
+        tail,
+      });
+      if (totalTokens <= budget) {
+        break;
+      }
+      if (trial.length === 0) {
+        break;
+      }
+
+      const assistantIndex = trial.findIndex((m) => m.role === "assistant");
+      if (assistantIndex >= 0) {
+        trial = trial.filter((_, j) => j !== assistantIndex);
+      } else {
+        trial = trial.slice(1);
+        break;
+      }
     }
+
+    if (trial.length === 0) {
+      const tokensIfEmptyMiddle = estimateFirstTailMiddleTokens({
+        firstMessage,
+        middleLength: middle.length,
+        middleIndex: index,
+        trial: [],
+        tail,
+      });
+      if (tokensIfEmptyMiddle > budget) {
+        keptMiddle = before;
+        continue;
+      }
+    }
+
+    keptMiddle = trial;
   }
 
-  const droppedMiddleCount = middle.length - keptMiddle.length;
-  const trimmed =
-    droppedMiddleCount > 0
-      ? [firstMessage, buildTrimMarker<T>(), ...keptMiddle, ...tail]
-      : [firstMessage, ...keptMiddle, ...tail];
+  const useMiddleTrimMarker = !isFullMiddleKept(keptMiddle, middle);
+  const trimmed = useMiddleTrimMarker
+    ? [firstMessage, buildTrimMarker<T>(), ...keptMiddle, ...tail]
+    : [firstMessage, ...keptMiddle, ...tail];
 
   if (estimateMessages(trimmed) <= budget || trimmed.length === 0) {
     return dedupeAdjacent(trimmed);
@@ -188,6 +220,41 @@ function estimateMessages(messages: LocalContextMessage[]) {
     0
   );
   return contentTokens + TOKENS_PER_MESSAGE_OVERHEAD * messages.length;
+}
+
+function isFullMiddleKept<T extends LocalContextMessage>(
+  kept: T[],
+  full: T[]
+): boolean {
+  if (kept.length !== full.length) {
+    return false;
+  }
+  for (let i = 0; i < kept.length; i++) {
+    if (kept[i] !== full[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function estimateFirstTailMiddleTokens<T extends LocalContextMessage>({
+  firstMessage,
+  middleLength,
+  middleIndex,
+  trial,
+  tail,
+}: {
+  firstMessage: T;
+  middleLength: number;
+  middleIndex: number;
+  trial: T[];
+  tail: T[];
+}): number {
+  const useMarker = middleIndex > 0 || trial.length < middleLength;
+  const seq = useMarker
+    ? [firstMessage, buildTrimMarker<T>(), ...trial, ...tail]
+    : [firstMessage, ...trial, ...tail];
+  return estimateMessages(seq);
 }
 
 function stringifyContent(value: unknown): string {

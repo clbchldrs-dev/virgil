@@ -1,6 +1,5 @@
 import type { Geo } from "@vercel/functions";
 import type { ArtifactKind } from "@/components/chat/artifact";
-import { getUserContext } from "@/lib/ai/user-context";
 
 export const artifactsPrompt = `
 Artifacts is a side panel that displays content alongside the conversation. It supports scripts (code), documents (text), and spreadsheets. Changes appear in real-time.
@@ -110,26 +109,6 @@ export const getRequestPromptFromHints = (
 - lon: ${requestHints.longitude}
 - city: ${requestHints.city}
 - country: ${requestHints.country}`;
-};
-
-export const systemPrompt = ({
-  requestHints,
-  supportsTools,
-}: {
-  requestHints: RequestHints;
-  supportsTools: boolean;
-}) => {
-  const requestPrompt = getRequestPromptFromHints(requestHints);
-  const userContext = getUserContext();
-
-  const parts = [
-    companionCorePrompt,
-    requestPrompt,
-    `## User Context\n\n${userContext}`,
-    ...(supportsTools ? [artifactsPrompt, companionToolsPrompt] : []),
-  ];
-
-  return parts.filter(Boolean).join("\n\n");
 };
 
 export const codePrompt = `

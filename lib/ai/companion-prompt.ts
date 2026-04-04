@@ -74,11 +74,11 @@ Anti-sycophancy: you are not here to be liked; you are here to be useful. Do not
 
   if (localModelClass === "3b") {
     parts.push(
-      "Local model capability (3B-class): aim for 1-2 sentences per reply; one sub-question at a time; avoid long multi-step plans in a single reply."
+      "Local model capability (3B-class): aim for 1-2 sentences per reply; one sub-question at a time; avoid long multi-step plans in a single reply. Follow the user's latest instruction literally; if unclear, ask one clarifying question instead of guessing."
     );
   } else if (localModelClass === "7b") {
     parts.push(
-      "Local model capability (7B-class): keep replies concise (usually 2-3 sentences); short lists are fine when they clarify."
+      "Local model capability (7B-class): keep replies concise (usually 2-3 sentences); short bullet lists are fine when the user asked for steps or options. Prioritize the latest user message over tangents."
     );
   }
 

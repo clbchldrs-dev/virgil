@@ -201,9 +201,12 @@ test("slim companion prompt tightens length guidance for 3B-class models", async
   });
 
   assert.match(slim7b, /usually 2-3 sentences/i);
+  assert.match(slim7b, /bullet lists/i);
+  assert.match(slim7b, /latest user message/i);
   assert.doesNotMatch(slim7b, /one sub-question at a time/i);
   assert.match(slim3b, /1-2 sentences/i);
   assert.match(slim3b, /one sub-question at a time/i);
+  assert.match(slim3b, /latest instruction literally/i);
 });
 
 test("full companion prompt applies local class splits when localModelClass is set", async () => {
@@ -244,8 +247,10 @@ test("full companion prompt applies local class splits when localModelClass is s
   assert.match(localFull3b, /Local model capability \(3B-class\)/i);
   assert.match(localFull3b, /1-2 sentences/i);
   assert.match(localFull3b, /one sub-question at a time/i);
+  assert.match(localFull3b, /latest instruction literally/i);
   assert.match(localFull7b, /Local model capability \(7B-class\)/i);
   assert.match(localFull7b, /usually 2-3 sentences/i);
+  assert.match(localFull7b, /latest user message/i);
 });
 
 test("trimMessagesForBudget keeps thread edges and inserts a trim marker", async () => {

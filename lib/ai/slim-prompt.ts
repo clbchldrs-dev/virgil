@@ -54,8 +54,8 @@ export function buildCompactCompanionPrompt({
       : "";
   const classHint =
     localModelClass === "3b"
-      ? " Prefer one short paragraph; answer the single most important point first."
-      : " Keep answers focused; a short list is fine when it helps.";
+      ? " Prefer one short paragraph; answer the single most important point first. If the ask is unclear, one clarifying question beats a long guess."
+      : " Keep answers focused; a short bullet list is fine when the user asked for steps or options.";
   return [
     `Virgil — personal assistant for ${name}. Honest, concise, proactive, not sycophantic. Dry earnest tone; light wit OK if it helps; for fitness/goals prefer goal-vs-actual deltas over praise.`,
     `Local model: memory may be trimmed; no saveMemory/recallMemory.${classHint}${memoryBlock}`,
@@ -98,8 +98,16 @@ export function buildSlimCompanionPrompt({
     parts.push(
       "Keep replies very short: aim for 1-2 sentences. Tackle one sub-question at a time; avoid long multi-step plans in a single reply."
     );
+    parts.push(
+      "Follow the user's latest instruction literally. If the request is ambiguous, ask one clarifying question instead of inventing missing context."
+    );
   } else {
-    parts.push("Keep replies concise: usually 2-3 sentences.");
+    parts.push(
+      "Keep replies concise: usually 2-3 sentences. Short bullet lists (2-4 items) are fine when the user asked for steps, options, or a checklist."
+    );
+    parts.push(
+      "Prioritize answering the latest user message; avoid digressions unless they are needed to resolve that ask."
+    );
   }
 
   const selectedMemories = selectSlimMemories(memories);

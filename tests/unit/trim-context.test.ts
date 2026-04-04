@@ -26,6 +26,36 @@ test("estimateTokens scales with text length", () => {
   assert.ok(estimateTokens("x".repeat(350)) >= 100);
 });
 
+test("middle trim drops assistant turns before user turns when budget is tight", () => {
+  const fatBlock = "x".repeat(400);
+  const fat = `assistant-fat-${fatBlock}`;
+  const messages = [
+    { role: "user", content: "first" },
+    { role: "user", content: "user-anchor-early" },
+    { role: "assistant", content: fat },
+    { role: "user", content: "user-mid" },
+    { role: "assistant", content: "a" },
+    { role: "user", content: "u" },
+    { role: "assistant", content: "a" },
+    { role: "user", content: "u" },
+    { role: "assistant", content: "a" },
+    { role: "user", content: "t1" },
+    { role: "assistant", content: "t2" },
+    { role: "user", content: "t3" },
+    { role: "assistant", content: "t4" },
+  ];
+
+  const trimmed = trimMessagesForBudget({
+    messages,
+    systemTokenCount: 0,
+    maxContextTokens: 90,
+  });
+
+  const joined = trimmed.map((m) => String(m.content)).join("\n");
+  assert.ok(joined.includes("user-anchor-early"));
+  assert.ok(!joined.includes(fatBlock));
+});
+
 test("oversized first user turn is compressed so recent tail can remain", () => {
   const hugeFirst = "U".repeat(1200);
   const trimmed = trimMessagesForBudget({

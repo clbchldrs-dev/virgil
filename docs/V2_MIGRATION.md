@@ -12,9 +12,18 @@
 ## What gets replaced
 
 - **Inference layer** — v1 Ollama/gateway mix → v2 Python backend on Mac Mini M4 Pro with local-first Ollama (14B/32B) + Gemini API escalation. Phase 2: tiiny.ai Pocket Lab for heavy local tier (70B+).
-- **Database** — Postgres/Drizzle → SQLite + Mem0 (simpler, no server dependency).
+- **Database** — v1’s **Neon/server Postgres + Drizzle** (see [docs/PROJECT.md](PROJECT.md)) → see **Data layer options** below (not a single mandated store).
 - **Backend runtime** — Next.js API routes → Python FastAPI (headless).
-- **Memory** — Redis + Postgres → Three-tier SQLite/Mem0 with priority weighting.
+- **Memory** — Redis + Postgres → v2’s tiered design (see blueprint in E10 **T4** / future `V2_MEMORY_MIGRATION.md`); greenfield often described as SQLite/Mem0 with priority weighting.
+
+## Data layer options (v2)
+
+Two tracks are valid; pick one per environment and document it.
+
+- **Greenfield v2 (lean blueprint):** **SQLite + Mem0** as in the original migration summary—minimal server dependency, matches many samples in [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md). Implementation may target SQLite **first** in Python while the UI remains Next.js.
+- **Migration-first (parity with v1):** Run **Postgres on the Mac mini or LAN** (Docker or native) so Drizzle/schema and relational data can move with **less** ETL shock; optional later consolidation to SQLite if you still want the lean footprint.
+
+Do **not** assume every deployment uses only one of these forever: the risk is maintaining **two** parallel migration scripts—gate by explicit operator choice (see [docs/V1_V2_RISK_AUDIT.md](V1_V2_RISK_AUDIT.md)).
 
 ## What's new in v2
 
@@ -27,7 +36,7 @@
 
 ## Pre-migration data collection (active now)
 
-See `workspace/v2-eval/README.md` for what v1 is collecting to inform v2 development.
+See `workspace/v2-eval/README.md` for what v1 is collecting to inform v2 development. Known v1 friction points for v2 are listed in [docs/V1_V2_RISK_AUDIT.md](V1_V2_RISK_AUDIT.md).
 
 **Execution plan:** [docs/tickets/2026-04-01-v2-groundwork-overview.md](tickets/2026-04-01-v2-groundwork-overview.md) — two-sprint ticket set (API contract, tool map, chat instrumentation, memory blueprint, night parity, traces, cost telemetry, persona SSOT).
 
