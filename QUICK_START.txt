@@ -1,0 +1,205 @@
+================================================================================
+VIRGIL PHASE 1 — QUICK START
+================================================================================
+
+You are here: /Users/caleb/Documents/virgil
+
+What's ready: Complete Phase 1 implementation plan for Cursor
+
+Files created:
+  ✓ docs/ADR-002-three-paths-virgil.md         (Design)
+  ✓ docs/CURSOR_PROMPTS_TYPESCRIPT.md          (8 Prompts)
+  ✓ VIRGIL_PHASE1_SETUP.md                     (Timeline)
+  ✓ VIRGIL_READY_TO_BUILD.md                   (Overview)
+
+================================================================================
+START HERE (DO THIS NOW)
+================================================================================
+
+1. Read ADR-002 (15 min):
+   cat docs/ADR-002-three-paths-virgil.md | head -150
+
+2. Review Session 1:
+   cat VIRGIL_PHASE1_SETUP.md | grep -A 20 "Session 1"
+
+3. Open Cursor, copy PROMPT 1:
+   cat docs/CURSOR_PROMPTS_TYPESCRIPT.md | grep -A 100 "PROMPT 1"
+
+4. Paste PROMPT 1 into Cursor
+
+5. Let Cursor generate schema changes
+
+6. Test:
+   npx drizzle-kit push
+   npm run type-check
+
+================================================================================
+WHAT GETS BUILT (PHASE 1)
+================================================================================
+
+Database:
+  ✓ BackgroundJob (extend with wallTimeMs, retryCount, proposalCount)
+  ✓ BackgroundJobAudit (new, audit trail)
+  ✓ Memory (extend with tier: observe/propose/act)
+
+API Endpoints:
+  ✓ POST /api/jobs (create job)
+  ✓ GET /api/jobs (list jobs)
+  ✓ GET /api/jobs/{id} (get detail + audit)
+  ✓ DELETE /api/jobs/{id} (cancel)
+  ✓ POST /api/jobs/{id}/approve (Phase 2 uses this)
+  ✓ GET /api/metrics/job-slas (SLA metrics)
+
+Queue:
+  ✓ Job processor (pending → running → completed/failed)
+  ✓ Retry logic (exponential backoff)
+  ✓ Idempotency (nightly jobs only once per user per day)
+
+Night Review:
+  ✓ Create Insights (tier="observe")
+  ✓ Create Proposals (tier="propose")
+
+Tests:
+  ✓ Jest unit tests (6+ passing)
+
+NOT in Phase 1:
+  ✗ Approval UI (Phase 2)
+  ✗ Email (Phase 2)
+  ✗ Execution (Phase 3)
+
+================================================================================
+THE 8-WEEK PLAN
+================================================================================
+
+Week 1:
+  Session 1: Database schema (30 min)
+  Session 2: Query module (45 min)
+
+Week 2:
+  Session 3: API routes (1 hr)
+  Session 4: Queue processor (1.5 hrs)
+
+Week 3:
+  Session 5: Job handlers (30 min)
+  Session 6: Jest tests (1 hr)
+
+Week 4:
+  Session 7: Night review (1.5 hrs)
+  Session 8: SLA metrics (30 min)
+
+Total: ~8 hours
+
+================================================================================
+TESTING AFTER EACH SESSION
+================================================================================
+
+After Session 1 (Schema):
+  npx drizzle-kit push
+  npm run type-check
+
+After Session 2 (Queries):
+  npm run type-check
+
+After Session 3 (API):
+  npm run dev
+  curl http://localhost:3000/api/jobs?userId=test
+
+After Session 4 (Processor):
+  [Run processor manually, it should process pending jobs]
+
+After Session 6 (Tests):
+  npm test tests/api/jobs.test.ts
+
+After Session 8 (Done):
+  curl http://localhost:3000/api/metrics/job-slas
+
+================================================================================
+FILES TO READ (IN ORDER)
+================================================================================
+
+1. QUICK_START.txt (this file) — 5 min
+2. docs/ADR-002-three-paths-virgil.md — 15 min (design)
+3. VIRGIL_PHASE1_SETUP.md — 10 min (timeline)
+4. docs/CURSOR_PROMPTS_TYPESCRIPT.md — reference (8 prompts)
+
+================================================================================
+CURSOR WORKFLOW
+================================================================================
+
+For each PROMPT (1-8):
+
+1. cat docs/CURSOR_PROMPTS_TYPESCRIPT.md | grep -A 100 "PROMPT X"
+   (Copy the entire prompt section)
+
+2. Open Cursor
+
+3. Paste prompt
+
+4. Let Cursor generate code
+
+5. Review generated code
+
+6. Run tests (see commands above)
+
+7. If issues, ask Cursor for clarification
+
+8. Move to next prompt
+
+================================================================================
+QUICK LINKS (In Repo)
+================================================================================
+
+Design:           docs/ADR-002-three-paths-virgil.md
+Prompts:          docs/CURSOR_PROMPTS_TYPESCRIPT.md
+Timeline:         VIRGIL_PHASE1_SETUP.md
+Overview:         VIRGIL_READY_TO_BUILD.md
+This file:        QUICK_START.txt
+
+Existing code to reference:
+  - Schema: lib/db/schema.ts (existing BackgroundJob)
+  - Queries: lib/db/query-modules/ (follow this pattern)
+  - API routes: app/api/ (follow this pattern)
+  - Tests: tests/ (follow this pattern)
+
+================================================================================
+SUCCESS CRITERIA (END OF PHASE 1)
+================================================================================
+
+✅ POST /api/jobs creates a job
+✅ GET /api/jobs lists user's jobs
+✅ GET /api/jobs/{id} shows detail + audit trail
+✅ DELETE /api/jobs/{id} cancels job
+✅ Job processor handles async execution
+✅ Insights stored in Memory (tier="observe")
+✅ Proposals stored in Memory (tier="propose")
+✅ Jest tests passing (6+)
+✅ SLA metrics endpoint working
+✅ TypeScript strict mode passing
+
+================================================================================
+QUESTIONS?
+================================================================================
+
+Design questions?       → Read docs/ADR-002-three-paths-virgil.md
+Implementation questions? → Look at existing code in lib/db/, app/api/
+Stuck on a prompt?      → Ask Cursor for clarification
+Timeline questions?     → See VIRGIL_PHASE1_SETUP.md weekly checklist
+
+================================================================================
+READY TO START?
+================================================================================
+
+Next action:
+
+1. Read docs/ADR-002-three-paths-virgil.md (15 min)
+2. Open Cursor
+3. Copy PROMPT 1 from docs/CURSOR_PROMPTS_TYPESCRIPT.md
+4. Paste into Cursor
+5. Let it generate schema changes
+6. Test with: npx drizzle-kit push
+
+Then follow the 4-week plan in VIRGIL_PHASE1_SETUP.md
+
+Good luck! 🚀
+
+================================================================================

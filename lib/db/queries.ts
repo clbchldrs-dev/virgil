@@ -1,4 +1,6 @@
+export { computeWallTimeMetrics } from "@/lib/background-jobs/wall-time-metrics";
 export * from "./query-modules/agent-task";
+export * from "./query-modules/background-jobs";
 export * from "./query-modules/chat-meta-and-streams";
 export * from "./query-modules/chats";
 export * from "./query-modules/documents";

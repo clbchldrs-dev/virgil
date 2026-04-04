@@ -10,6 +10,7 @@
     "build:docker": "next build",
     "start": "next start",
     "check": "ultracite check",
+    "type-check": "tsc --noEmit",
     "fix": "ultracite fix",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "npx tsx lib/db/migrate.ts",

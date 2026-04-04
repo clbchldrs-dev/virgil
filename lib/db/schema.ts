@@ -3,6 +3,7 @@ import {
   boolean,
   date,
   foreignKey,
+  index,
   integer,
   json,
   jsonb,
@@ -148,11 +149,17 @@ export const memory = pgTable("Memory", {
   kind: varchar("kind", { enum: ["note", "fact", "goal", "opportunity"] })
     .notNull()
     .default("note"),
+  tier: varchar("tier", { enum: ["observe", "propose", "act"] })
+    .notNull()
+    .default("observe"),
   content: text("content").notNull(),
   metadata: json("metadata")
     .$type<Record<string, unknown>>()
     .notNull()
     .default({}),
+  proposedAt: timestamp("proposedAt"),
+  approvedAt: timestamp("approvedAt"),
+  appliedAt: timestamp("appliedAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
@@ -252,6 +259,82 @@ export const agentTask = pgTable("AgentTask", {
 });
 
 export type AgentTask = InferSelectModel<typeof agentTask>;
+
+/** User-scoped async jobs (deep analysis, future queued work). */
+export const backgroundJob = pgTable(
+  "BackgroundJob",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    kind: varchar("kind", { length: 64 }).notNull(),
+    status: varchar("status", {
+      enum: [
+        "pending",
+        "running",
+        "completed",
+        "failed",
+        "cancelled",
+        "approving",
+      ],
+    })
+      .notNull()
+      .default("pending"),
+    wallTimeMs: integer("wallTimeMs"),
+    retryCount: integer("retryCount").notNull().default(0),
+    proposalCount: integer("proposalCount").notNull().default(0),
+    input: jsonb("input")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    result: jsonb("result").$type<Record<string, unknown>>(),
+    error: text("error"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+    startedAt: timestamp("startedAt"),
+    completedAt: timestamp("completedAt"),
+  },
+  (table) => ({
+    userCreatedIdx: index("BackgroundJob_userId_createdAt_idx").on(
+      table.userId,
+      table.createdAt
+    ),
+    userStatusIdx: index("BackgroundJob_userId_status_idx").on(
+      table.userId,
+      table.status
+    ),
+  })
+);
+
+export type BackgroundJob = InferSelectModel<typeof backgroundJob>;
+
+/** Append-only audit trail for background job status transitions. */
+export const backgroundJobAudit = pgTable(
+  "BackgroundJobAudit",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    jobId: uuid("jobId")
+      .notNull()
+      .references(() => backgroundJob.id, { onDelete: "cascade" }),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    oldStatus: varchar("oldStatus", { length: 64 }).notNull(),
+    newStatus: varchar("newStatus", { length: 64 }).notNull(),
+    actor: varchar("actor", { length: 128 }).notNull(),
+    reason: text("reason"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    jobCreatedIdx: index("BackgroundJobAudit_jobId_createdAt_idx").on(
+      table.jobId,
+      table.createdAt
+    ),
+  })
+);
+
+export type BackgroundJobAudit = InferSelectModel<typeof backgroundJobAudit>;
 
 /** Queued execution handoff to OpenClaw (optional LAN integration). */
 export const pendingIntent = pgTable("PendingIntent", {

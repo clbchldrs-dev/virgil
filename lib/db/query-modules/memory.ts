@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, gte } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { VirgilError } from "@/lib/errors";
 import { client, db } from "../client";
 import { type Memory, memory } from "../schema";
@@ -13,21 +13,62 @@ export async function saveMemoryRecord({
   kind,
   content,
   metadata,
+  tier = "observe",
+  proposedAt,
+  approvedAt,
+  appliedAt,
 }: {
   userId: string;
   chatId?: string;
   kind: "note" | "fact" | "goal" | "opportunity";
   content: string;
   metadata?: Record<string, unknown>;
+  tier?: "observe" | "propose" | "act";
+  proposedAt?: Date | null;
+  approvedAt?: Date | null;
+  appliedAt?: Date | null;
 }) {
   try {
     const [created] = await db
       .insert(memory)
-      .values({ userId, chatId, kind, content, metadata: metadata ?? {} })
+      .values({
+        userId,
+        chatId,
+        kind,
+        tier,
+        content,
+        metadata: metadata ?? {},
+        proposedAt: proposedAt ?? null,
+        approvedAt: approvedAt ?? null,
+        appliedAt: appliedAt ?? null,
+      })
       .returning();
     return created;
   } catch (_error) {
     throw new VirgilError("bad_request:database", "Failed to save memory");
+  }
+}
+
+export async function approveMemoriesForUser({
+  memoryIds,
+  userId,
+}: {
+  memoryIds: string[];
+  userId: string;
+}): Promise<number> {
+  if (memoryIds.length === 0) {
+    return 0;
+  }
+  try {
+    const now = new Date();
+    const result = await db
+      .update(memory)
+      .set({ approvedAt: now, updatedAt: now })
+      .where(and(eq(memory.userId, userId), inArray(memory.id, memoryIds)))
+      .returning({ id: memory.id });
+    return result.length;
+  } catch (_error) {
+    throw new VirgilError("bad_request:database", "Failed to approve memories");
   }
 }
 
@@ -58,7 +99,7 @@ export async function searchMemories({
     }
 
     const result = await client.unsafe<Memory[]>(
-      `SELECT "id", "userId", "chatId", "kind", "content", "metadata", "createdAt", "updatedAt"
+      `SELECT "id", "userId", "chatId", "kind", "tier", "content", "metadata", "proposedAt", "approvedAt", "appliedAt", "createdAt", "updatedAt"
        FROM "Memory"
        WHERE "userId" = $1 ${kindClause}
          AND "tsv" @@ to_tsquery('english', $2)
@@ -69,6 +110,31 @@ export async function searchMemories({
     return result;
   } catch (_error) {
     throw new VirgilError("bad_request:database", "Failed to search memories");
+  }
+}
+
+export async function getMemoriesBySourceJobId({
+  userId,
+  jobId,
+}: {
+  userId: string;
+  jobId: string;
+}): Promise<Memory[]> {
+  try {
+    return await db
+      .select()
+      .from(memory)
+      .where(
+        and(
+          eq(memory.userId, userId),
+          sql`(${memory.metadata}->>'sourceJobId') = ${jobId}`
+        )
+      );
+  } catch (_error) {
+    throw new VirgilError(
+      "bad_request:database",
+      "Failed to load memories for job"
+    );
   }
 }
 

@@ -25,6 +25,7 @@ import {
   getNightReviewModelId,
   getNightReviewTimezone,
 } from "@/lib/night-review/config";
+import { runNightlyReview } from "@/lib/night-review/proposal-tier";
 import { nightReviewOutputSchema } from "@/lib/night-review/schema";
 import { loadNightWorkspaceFiles } from "@/lib/night-review/workspace";
 
@@ -248,6 +249,12 @@ export async function runNightReviewForUser(
       windowKey: payload.windowKey,
       summaryLine,
     });
+
+    try {
+      await runNightlyReview(payload.userId);
+    } catch {
+      // Tier-1 proposal memories are best-effort.
+    }
 
     return { skipped: false };
   } catch (e) {

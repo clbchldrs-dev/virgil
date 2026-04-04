@@ -9,10 +9,13 @@ import {
   type Memory,
   memory,
   message,
+  type NightReviewRun,
   nightReviewRun,
 } from "../schema";
 
 const notDismissedClause = sql`(coalesce((${memory.metadata}->>'reviewDecision'), 'pending') <> 'dismissed')`;
+
+const notNightReviewCompletePhaseClause = sql`coalesce((${memory.metadata}->>'phase'), '') <> 'complete'`;
 
 export async function saveNightReviewRunLog({
   userId,
@@ -45,6 +48,81 @@ export async function saveNightReviewRunLog({
     throw new VirgilError(
       "bad_request:database",
       "Failed to save night review run log"
+    );
+  }
+}
+
+export type NightReviewRunSummary = Pick<
+  NightReviewRun,
+  | "id"
+  | "windowKey"
+  | "runId"
+  | "outcome"
+  | "durationMs"
+  | "createdAt"
+  | "error"
+>;
+
+/** Recent observability rows for Background activity / status UIs. */
+export async function getRecentNightReviewRunsForUser({
+  userId,
+  limit = 10,
+}: {
+  userId: string;
+  limit?: number;
+}): Promise<NightReviewRunSummary[]> {
+  try {
+    return await db
+      .select({
+        id: nightReviewRun.id,
+        windowKey: nightReviewRun.windowKey,
+        runId: nightReviewRun.runId,
+        outcome: nightReviewRun.outcome,
+        durationMs: nightReviewRun.durationMs,
+        createdAt: nightReviewRun.createdAt,
+        error: nightReviewRun.error,
+      })
+      .from(nightReviewRun)
+      .where(eq(nightReviewRun.userId, userId))
+      .orderBy(desc(nightReviewRun.createdAt))
+      .limit(limit);
+  } catch (_error) {
+    throw new VirgilError(
+      "bad_request:database",
+      "Failed to list night review runs"
+    );
+  }
+}
+
+/**
+ * Counts night-review memories the user can still accept or dismiss
+ * (excludes completion markers and dismissed rows).
+ */
+export async function countActionableNightReviewInsights({
+  userId,
+  since,
+}: {
+  userId: string;
+  since: Date;
+}): Promise<number> {
+  try {
+    const [row] = await db
+      .select({ c: count() })
+      .from(memory)
+      .where(
+        and(
+          eq(memory.userId, userId),
+          gte(memory.createdAt, since),
+          sql`(${memory.metadata}->>'source') = 'night-review'`,
+          notDismissedClause,
+          notNightReviewCompletePhaseClause
+        )
+      );
+    return Number(row?.c ?? 0);
+  } catch (_error) {
+    throw new VirgilError(
+      "bad_request:database",
+      "Failed to count night review insights"
     );
   }
 }
