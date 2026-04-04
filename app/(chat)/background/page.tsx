@@ -7,8 +7,26 @@ import {
   countActionableNightReviewInsights,
   countPendingProposalsForUser,
   getRecentNightReviewRunsForUser,
+  listBackgroundJobsForUser,
 } from "@/lib/db/queries";
+import type { BackgroundJob } from "@/lib/db/schema";
 import { isNightReviewEnabled } from "@/lib/night-review/config";
+
+function jobStatusBadgeClass(status: BackgroundJob["status"]): string {
+  switch (status) {
+    case "completed":
+      return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400";
+    case "failed":
+      return "bg-destructive/15 text-destructive";
+    case "running":
+    case "approving":
+      return "bg-amber-500/15 text-amber-800 dark:text-amber-400";
+    case "cancelled":
+      return "bg-muted text-muted-foreground";
+    default:
+      return "bg-blue-500/15 text-blue-800 dark:text-blue-300";
+  }
+}
 
 function outcomeLabel(outcome: string): string {
   switch (outcome) {
@@ -34,11 +52,12 @@ export default async function BackgroundActivityPage() {
   const userId = session.user.id;
   const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
   const sinceProposals = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-  const [recentRuns, actionableInsightsCount, pendingProposalsCount] =
+  const [recentRuns, actionableInsightsCount, pendingProposalsCount, jobs] =
     await Promise.all([
       getRecentNightReviewRunsForUser({ userId, limit: 10 }),
       countActionableNightReviewInsights({ userId, since }),
       countPendingProposalsForUser({ userId, since: sinceProposals }),
+      listBackgroundJobsForUser({ userId, limit: 30 }),
     ]);
   const nightReviewEnabled = isNightReviewEnabled();
 
@@ -137,6 +156,64 @@ export default async function BackgroundActivityPage() {
         </section>
 
         <section className="space-y-4 rounded-xl border border-border/60 bg-card/30 p-6 shadow-[var(--shadow-float)]">
+          <div>
+            <h2 className="text-lg font-medium">Background jobs</h2>
+            <p className="text-muted-foreground text-sm">
+              Queued work (goal synthesis, fitness, spending, deep analysis,
+              etc.). Open a job for status, audit trail, and memories written
+              for that run (
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
+                sourceJobId
+              </code>
+              ).
+            </p>
+          </div>
+          {jobs.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              No jobs yet. Enqueue work from the app or API (for example{" "}
+              <code className="font-mono text-xs">POST /api/jobs</code> or deep
+              analysis) and results will show here.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border/60 rounded-lg border border-border/60">
+              {jobs.map((job) => (
+                <li key={job.id}>
+                  <Link
+                    className="flex flex-col gap-2 p-4 transition-colors hover:bg-muted/30 sm:flex-row sm:items-center sm:justify-between"
+                    href={`/background/jobs/${job.id}`}
+                  >
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-sm font-medium">
+                          {job.kind}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${jobStatusBadgeClass(job.status)}`}
+                        >
+                          {job.status}
+                        </span>
+                      </div>
+                      <p className="text-muted-foreground text-xs">
+                        {format(job.createdAt, "MMM d, yyyy HH:mm")}
+                        {typeof job.wallTimeMs === "number"
+                          ? ` · ${job.wallTimeMs} ms`
+                          : ""}
+                        {job.proposalCount > 0
+                          ? ` · ${job.proposalCount} proposal(s)`
+                          : ""}
+                      </p>
+                    </div>
+                    <span className="text-muted-foreground shrink-0 text-sm">
+                      View →
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="space-y-4 rounded-xl border border-border/60 bg-card/30 p-6 shadow-[var(--shadow-float)]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-lg font-medium">Proposals</h2>
@@ -156,15 +233,6 @@ export default async function BackgroundActivityPage() {
               <dd className="font-medium">{pendingProposalsCount}</dd>
             </div>
           </dl>
-        </section>
-
-        <section className="space-y-3 rounded-xl border border-dashed border-border/60 bg-muted/20 p-6">
-          <h2 className="text-lg font-medium">Deep analysis (coming)</h2>
-          <p className="text-muted-foreground text-sm">
-            Longer jobs—multi-step reports, broad history review—will use a
-            dedicated queue with explicit status, separate from live chat. That
-            keeps fast answers fast and heavy work visible.
-          </p>
         </section>
       </div>
     </div>
