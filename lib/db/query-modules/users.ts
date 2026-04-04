@@ -1,10 +1,10 @@
 import "server-only";
 
-import { and, eq, exists, or, sql } from "drizzle-orm";
+import { and, eq, exists, sql } from "drizzle-orm";
 import { VirgilError } from "@/lib/errors";
 import { generateUUID } from "@/lib/utils";
 import { db } from "../client";
-import { businessProfile, chat, type User, user } from "../schema";
+import { chat, type User, user } from "../schema";
 import { generateHashedPassword } from "../utils";
 
 export async function getUser(email: string): Promise<User[]> {
@@ -35,27 +35,6 @@ export async function getUserById({
   }
 }
 
-export async function getOwnerUsers(): Promise<User[]> {
-  try {
-    return await db
-      .select({
-        id: user.id,
-        email: user.email,
-        password: user.password,
-        name: user.name,
-        emailVerified: user.emailVerified,
-        image: user.image,
-        isAnonymous: user.isAnonymous,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      })
-      .from(user)
-      .innerJoin(businessProfile, eq(businessProfile.userId, user.id));
-  } catch (_error) {
-    throw new VirgilError("bad_request:database", "Failed to get owner users");
-  }
-}
-
 const userRowSelect = {
   id: user.id,
   email: user.email,
@@ -70,19 +49,12 @@ const userRowSelect = {
 
 /**
  * Users eligible for companion background jobs (digest, night review): non-guest
- * accounts that either have a business profile **or** have at least one chat
- * (companion-only / personal Virgil use).
+ * accounts with at least one chat.
  */
 export async function getUsersEligibleForCompanionBackgroundJobs(): Promise<
   User[]
 > {
   try {
-    const hasBusinessProfile = exists(
-      db
-        .select({ id: businessProfile.id })
-        .from(businessProfile)
-        .where(eq(businessProfile.userId, user.id))
-    );
     const hasChat = exists(
       db.select({ id: chat.id }).from(chat).where(eq(chat.userId, user.id))
     );
@@ -90,12 +62,7 @@ export async function getUsersEligibleForCompanionBackgroundJobs(): Promise<
     return await db
       .select(userRowSelect)
       .from(user)
-      .where(
-        and(
-          sql`${user.email} NOT LIKE 'guest-%'`,
-          or(hasBusinessProfile, hasChat)
-        )
-      );
+      .where(and(sql`${user.email} NOT LIKE 'guest-%'`, hasChat));
   } catch (_error) {
     throw new VirgilError(
       "bad_request:database",

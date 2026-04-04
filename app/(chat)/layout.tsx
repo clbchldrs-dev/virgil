@@ -9,6 +9,7 @@ import { ModelMetricsProvider } from "@/components/chat/model-metrics-provider";
 import { ChatShell } from "@/components/chat/shell";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ActiveChatProvider } from "@/hooks/use-active-chat";
+import { postVirgilDebugIngest } from "@/lib/debug-ingest";
 import { auth } from "../(auth)/auth";
 
 const pixelFont = VT323({
@@ -39,6 +40,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 async function SidebarShell({ children }: { children: React.ReactNode }) {
   const [session, cookieStore] = await Promise.all([auth(), cookies()]);
   const isCollapsed = cookieStore.get("sidebar_state")?.value !== "true";
+  // #region agent log
+  postVirgilDebugIngest(
+    {
+      sessionId: "6a8d1d",
+      runId: "pre-fix",
+      hypothesisId: "H3",
+      location: "app/(chat)/layout.tsx:SidebarShell",
+      message: "Sidebar shell resolved session and cookie state",
+      data: {
+        hasSessionUser: Boolean(session?.user),
+        isCollapsed,
+      },
+      timestamp: Date.now(),
+    },
+    { "X-Debug-Session-Id": "6a8d1d" }
+  );
+  // #endregion
 
   return (
     <SidebarProvider defaultOpen={!isCollapsed}>

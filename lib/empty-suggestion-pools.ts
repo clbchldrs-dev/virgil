@@ -25,7 +25,127 @@ export function firstSuggestion<T>(items: readonly T[]): T {
   return item;
 }
 
-/** Left pill: video-game defeat / continue screen energy. */
+/** Middle pill: single label; second line empty (hidden in UI). */
+export const MIDDLE_CONTINUE_SUGGESTION: ChatEmptySuggestion = {
+  prompt:
+    "Continue from where we are. No recap—just the next useful move forward.",
+  lines: ["Continue", ""],
+};
+
+/**
+ * Left pill: cryptic fallback when personalization is unavailable.
+ * Prompts are concrete; chip lines stay unsettling.
+ */
+export const CRYPTIC_FALLBACK_LEFT_SUGGESTIONS: ChatEmptySuggestion[] = [
+  {
+    prompt:
+      "What is the one thing I am avoiding naming right now? Say it plainly.",
+    lines: ["The door behind you", "was never locked"],
+  },
+  {
+    prompt:
+      "Name the task that would break the spell if I finished it. One sentence.",
+    lines: ["The third name", "on the list you tore"],
+  },
+  {
+    prompt:
+      "What should I do in the next hour that I keep pretending I forgot?",
+    lines: ["You already know", "which file"],
+  },
+  {
+    prompt: "Call out the real blocker—not the polite one. Be direct.",
+    lines: ["Not the bug", "the fear"],
+  },
+  {
+    prompt: "What is the smallest honest step I can take before I go to sleep?",
+    lines: ["Before midnight", "send one message"],
+  },
+  {
+    prompt: "What am I optimizing for that I would not admit out loud?",
+    lines: ["Comfort", "disguised as progress"],
+  },
+  {
+    prompt: "What should I delete from my week to make room for the real goal?",
+    lines: ["The ritual", "that eats the hour"],
+  },
+  {
+    prompt:
+      "What is the one conversation I am postponing because it would change everything?",
+    lines: ["They are waiting", "in draft"],
+  },
+  {
+    prompt: "What would I do if I stopped negotiating with myself?",
+    lines: ["No more", "tomorrow clauses"],
+  },
+  {
+    prompt:
+      "What is the task that feels like bad luck but is actually just avoidance?",
+    lines: ["The email", "with no subject"],
+  },
+  {
+    prompt: "Name the next physical action—not the plan, the action.",
+    lines: ["Stand up", "open the drawer"],
+  },
+  {
+    prompt:
+      "What should I do in the next ten minutes that I would regret skipping?",
+    lines: ["The timer", "already started"],
+  },
+];
+
+/** Right pill: flamboyant Dark Souls / soulslike energy. */
+export const DARK_SOULS_RIGHT_SUGGESTIONS: ChatEmptySuggestion[] = [
+  {
+    prompt:
+      "Channel a flamboyant Dark Souls narrator: roast my procrastination like a boss intro.",
+    lines: ["PRAISE THE SUN", "then touch grass"],
+  },
+  {
+    prompt:
+      "Give me advice in the voice of Solaire—optimistic, unhinged, slightly heroic.",
+    lines: ["JOLLY COOPERATION", "or solo suffering"],
+  },
+  {
+    prompt:
+      "What would Patches say about my current priorities? Be theatrical.",
+    lines: ["TRUST ME", "this hole is fine"],
+  },
+  {
+    prompt: "Frame my next task as a soulslike boss name + one weak spot.",
+    lines: ["YOU DIED", "to the dishes"],
+  },
+  {
+    prompt:
+      "Write a one-line item description for my to-do list in Dark Souls item text style.",
+    lines: ["RING OF LAST RESORT", "Equip: denial +5"],
+  },
+  {
+    prompt:
+      "Motivate me like I just rested at a bonfire and the fog gate is open.",
+    lines: ["HUMANITY RESTORED", "now roll"],
+  },
+  {
+    prompt:
+      "Explain my situation as if a cryptic NPC is warning me before a boss.",
+    lines: ["THE ABYSS", "also your inbox"],
+  },
+  {
+    prompt: "Give me a soulslike loading screen tip for real life.",
+    lines: ["TRY TONGUE", "but hole"],
+  },
+  {
+    prompt:
+      "Roast my excuses with the energy of a red soapstone sign outside my door.",
+    lines: ["INVADED", "by responsibility"],
+  },
+  {
+    prompt:
+      "What would the Crestfallen Warrior say about my week? Dramatic, bleak, funny.",
+    lines: ["HEH", "another round"],
+  },
+];
+
+/** Left pill: video-game defeat / continue screen energy (preview, legacy). */
 export const DEFEAT_SCREEN_SUGGESTIONS: ChatEmptySuggestion[] = [
   {
     prompt: "I got destroyed today. Help me debrief like a post-game lobby.",
@@ -72,7 +192,7 @@ export const DEFEAT_SCREEN_SUGGESTIONS: ChatEmptySuggestion[] = [
   },
 ];
 
-/** Middle pill fallback when we skip or can't run personalization. */
+/** Middle pill fallback when we skip or can't run personalization (preview). */
 export const GENERIC_HELPFUL_MIDDLES: ChatEmptySuggestion[] = [
   {
     prompt:
@@ -93,7 +213,7 @@ export const GENERIC_HELPFUL_MIDDLES: ChatEmptySuggestion[] = [
   },
 ];
 
-/** Right pill: silly / non sequitur starters. */
+/** Right pill: silly / non sequitur starters (preview). */
 export const AMUSING_RANDOM_SUGGESTIONS: ChatEmptySuggestion[] = [
   {
     prompt:

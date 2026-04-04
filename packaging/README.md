@@ -69,6 +69,16 @@ These live in **`packaging/`** and `cd` to the repo root automatically, so you c
 
 Both wrappers call **`launch-virgil.sh`** (macOS) or **`launch-virgil.ps1`** (Windows), which start Docker Compose and open the browser.
 
+### macOS Dock — `packaging/macos/Virgil.app`
+
+Use this when you want a **real `.app`** you can **drag to the Dock** and **Keep in Dock** (Finder shows its own icon instead of Terminal’s).
+
+1. Open **`packaging/macos/`** in Finder and drag **`Virgil.app`** to the Dock (or double-click to run once, then right‑click the Dock icon → **Options** → **Keep in Dock**).
+2. The launcher walks upward from the app bundle until it finds **`packaging/launch-virgil.sh`** and **`docker-compose.yml`**, so the app must stay **inside your clone** at **`packaging/macos/Virgil.app`** (moving only the `.app` to `/Applications` will not find the repo). If you need the app elsewhere, set **`VIRGIL_ROOT`** to the repo root in your environment, or use **`Virgil.command`** / a symlink instead.
+3. **Custom icon (e.g. skull):** copy your image in Finder (**Edit → Copy**). **Get Info** on **`Virgil.app`**, click the **small icon** at the top of the info window, then **Edit → Paste**.
+
+First launch may require **System Settings → Privacy & Security** approval if Gatekeeper prompts.
+
 ### Tier 0 — Manual shortcuts (no repo files)
 
 If you prefer a shortcut that points at the existing scripts directly:

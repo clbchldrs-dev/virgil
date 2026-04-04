@@ -7,7 +7,7 @@ Current companion-oriented capabilities in Virgil (high level — actual tool sc
 | Memory | Save, search/recall notes, facts, goals, opportunities |
 | Reminders | Schedule email delivery via QStash |
 | Artifacts | Documents / code artifacts in chat (when enabled) |
-| Business mode | Intake, escalations, front-desk tools (when business profile exists) |
+| Gateway tools | Weather, memory, reminders, artifacts, optional GitHub/agent tasks (when model + env allow) |
 
 ## Candidate skills (for reviewer output only)
 

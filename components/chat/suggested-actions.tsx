@@ -3,23 +3,19 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { motion, useReducedMotion } from "framer-motion";
 import { memo, useEffect, useState } from "react";
-import { getPersonalizedMiddleEmptySuggestion } from "@/app/(chat)/empty-chat-suggestion-actions";
+import { getPersonalizedLeftEmptySuggestion } from "@/app/(chat)/empty-chat-suggestion-actions";
 import {
-  AMUSING_RANDOM_SUGGESTIONS,
   type ChatEmptySuggestion,
-  DEFEAT_SCREEN_SUGGESTIONS,
+  CRYPTIC_FALLBACK_LEFT_SUGGESTIONS,
+  DARK_SOULS_RIGHT_SUGGESTIONS,
   firstSuggestion,
-  GENERIC_HELPFUL_MIDDLES,
+  MIDDLE_CONTINUE_SUGGESTION,
   pickRandom,
 } from "@/lib/empty-suggestion-pools";
 import type { ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Suggestion } from "../ai-elements/suggestion";
 import type { VisibilityType } from "./visibility-selector";
-
-/** One vertical period (~sine); phase offset per index = worm. Lower = higher frequency. */
-const WORM_DURATION_S = 2;
-const WORM_Y_PX = [0, -3.5, -4.2, -3.5, 0, 3.5, 4.2, 3.5, 0] as const;
 
 type SuggestedActionsProps = {
   chatId: string;
@@ -33,25 +29,21 @@ function useEmptyChatSuggestions(): [
   ChatEmptySuggestion,
 ] {
   const [left, setLeft] = useState<ChatEmptySuggestion>(() =>
-    firstSuggestion(DEFEAT_SCREEN_SUGGESTIONS)
-  );
-  const [middle, setMiddle] = useState<ChatEmptySuggestion>(() =>
-    firstSuggestion(GENERIC_HELPFUL_MIDDLES)
+    firstSuggestion(CRYPTIC_FALLBACK_LEFT_SUGGESTIONS)
   );
   const [right, setRight] = useState<ChatEmptySuggestion>(() =>
-    firstSuggestion(AMUSING_RANDOM_SUGGESTIONS)
+    firstSuggestion(DARK_SOULS_RIGHT_SUGGESTIONS)
   );
 
   useEffect(() => {
-    setLeft(pickRandom(DEFEAT_SCREEN_SUGGESTIONS));
-    setRight(pickRandom(AMUSING_RANDOM_SUGGESTIONS));
+    setRight(pickRandom(DARK_SOULS_RIGHT_SUGGESTIONS));
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    getPersonalizedMiddleEmptySuggestion().then((m) => {
+    getPersonalizedLeftEmptySuggestion().then((m) => {
       if (!cancelled) {
-        setMiddle(m);
+        setLeft(m);
       }
     });
     return () => {
@@ -59,17 +51,40 @@ function useEmptyChatSuggestions(): [
     };
   }, []);
 
-  return [left, middle, right];
+  return [left, MIDDLE_CONTINUE_SUGGESTION, right];
 }
 
 function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
   const [left, middle, right] = useEmptyChatSuggestions();
   const prefersReducedMotion = useReducedMotion();
-  const items = [left, middle, right];
+
+  const slots = [
+    {
+      key: "empty-sugg-left",
+      item: left,
+      translate: "md:translate-y-4",
+      animIndex: 0,
+      uppercaseLine: true,
+    },
+    {
+      key: "empty-sugg-mid",
+      item: middle,
+      translate: "md:-translate-y-2",
+      animIndex: 1,
+      uppercaseLine: false,
+    },
+    {
+      key: "empty-sugg-right",
+      item: right,
+      translate: "md:translate-y-4",
+      animIndex: 2,
+      uppercaseLine: true,
+    },
+  ] as const;
 
   return (
     <div
-      className="flex w-full flex-col gap-3 pb-1 md:flex-row md:items-end md:justify-center md:gap-4"
+      className="flex w-full flex-col gap-2 pb-0.5 md:flex-row md:items-stretch md:justify-center md:gap-2.5"
       data-testid="suggested-actions"
       style={{
         scrollbarWidth: "none",
@@ -77,41 +92,38 @@ function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
         msOverflowStyle: "none",
       }}
     >
-      {items.map((item, index) => (
+      {slots.map((slot) => (
         <div
           className={cn(
-            "min-w-0 w-full md:max-w-[min(100%,13.75rem)] md:flex-1",
-            index === 0 && "md:translate-y-8",
-            index === 1 && "md:-translate-y-3",
-            index === 2 && "md:translate-y-8"
+            "min-w-0 w-full md:max-w-[min(100%,11.5rem)] md:flex-1",
+            slot.translate
           )}
-          key={item.prompt}
+          key={slot.key}
         >
           <motion.div
             animate={{ opacity: 1, y: 0 }}
             className="min-w-0"
-            exit={{ opacity: 0, y: 16 }}
-            initial={{ opacity: 0, y: 16 }}
+            exit={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 12 }}
             transition={{
-              delay: prefersReducedMotion ? 0 : 0.06 * index,
-              duration: 0.38,
+              delay: prefersReducedMotion ? 0 : 0.05 * slot.animIndex,
+              duration: 0.28,
               ease: [0.22, 1, 0.36, 1],
             }}
           >
             <motion.div
-              animate={prefersReducedMotion ? { y: 0 } : { y: [...WORM_Y_PX] }}
-              className="min-w-0"
-              transition={{
-                delay: prefersReducedMotion
-                  ? 0
-                  : 0.42 + (index / 3) * WORM_DURATION_S,
-                duration: WORM_DURATION_S,
-                ease: "easeInOut",
-                repeat: prefersReducedMotion ? 0 : Number.POSITIVE_INFINITY,
-              }}
+              className={cn(
+                "min-w-0",
+                !prefersReducedMotion && "suggestion-pill-12f-loop"
+              )}
+              style={
+                prefersReducedMotion
+                  ? undefined
+                  : { animationDelay: `${0.35 + slot.animIndex * 0.08}s` }
+              }
             >
               <Suggestion
-                className="inline-flex h-auto w-full flex-col items-center gap-0.5 whitespace-normal rounded-sm border border-border/50 px-3 py-3 text-center text-[15px] leading-tight text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:text-foreground hover:shadow-[var(--shadow-card)] md:text-[16px]"
+                className="inline-flex h-auto min-h-0 w-full flex-col items-center gap-0 whitespace-normal rounded-sm border border-border/50 px-2 py-2 text-center text-[12px] leading-[1.15] text-muted-foreground transition-all duration-150 hover:text-foreground hover:shadow-[var(--shadow-card)] md:text-[13px]"
                 data-suggestion-pill="true"
                 onClick={(suggestion) => {
                   window.history.pushState(
@@ -124,12 +136,21 @@ function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
                     parts: [{ type: "text", text: suggestion }],
                   });
                 }}
-                suggestion={item.prompt}
+                suggestion={slot.item.prompt}
               >
-                <span className="block text-balance">{item.lines[0]}</span>
-                <span className="mt-0.5 block text-balance">
-                  {item.lines[1]}
+                <span
+                  className={cn(
+                    "block text-balance font-medium tracking-wide",
+                    slot.uppercaseLine && "uppercase"
+                  )}
+                >
+                  {slot.item.lines[0]}
                 </span>
+                {slot.item.lines[1].length > 0 ? (
+                  <span className="mt-0.5 block text-balance opacity-90">
+                    {slot.item.lines[1]}
+                  </span>
+                ) : null}
               </Suggestion>
             </motion.div>
           </motion.div>

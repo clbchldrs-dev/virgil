@@ -235,10 +235,20 @@ Use when adding a decision:
 
 ---
 
-## 2026-01-15 — Personal assistant first; business mode optional — Accepted
+## 2026-01-15 — Personal assistant first; business mode optional — Superseded (2026-04-01)
 
-**Context:** Virgil serves individuals first; front-desk features are a subset of users.
+**Context:** Virgil serves individuals first; front-desk features were a subset of users.
 
-**Decision:** Personal assistant mode is default. Business/front-desk mode requires explicit setup (business profile); business tools must not add overhead to the default personal path.
+**Decision (historical):** Personal assistant mode was default; business/front-desk required a business profile.
 
-**Consequences:** Prompt and tool gating in chat route; onboarding and settings reflect opt-in.
+**Superseded by:** Removal of business/front-desk tables, tools, and UI. The product is personal-assistant-only.
+
+---
+
+## 2026-04-01 — Personal assistant only; optional gateway multi-agent (AutoGen-style) — Accepted
+
+**Context:** Microsoft AutoGen is Python-first; Virgil is TypeScript/Next.js.
+
+**Decision:** Drop business/front-desk product surface. Add optional **planner + executor** orchestration on the **gateway** chat path using Vercel AI SDK `generateText` + `streamText`, gated by `VIRGIL_MULTI_AGENT_ENABLED`. This is **pattern parity** with AutoGen-style roles, not a dependency on `microsoft/autogen`.
+
+**Consequences:** Extra latency/cost when enabled; local Ollama path unchanged (no planner, no tools on `streamText`).

@@ -191,7 +191,7 @@ export function NightInsightsClient({ initialMemories }: Props) {
   }
 
   return (
-    <div className="space-y-6">
+    <div aria-busy={pending !== null} className="space-y-6">
       {listHeader}
       <div className="flex flex-col gap-6">
         {groups.map((group) => {

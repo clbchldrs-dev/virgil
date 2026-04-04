@@ -17,6 +17,7 @@ import {
   useArtifact,
   useArtifactSelector,
 } from "@/hooks/use-artifact";
+import { postVirgilDebugIngest } from "@/lib/debug-ingest";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Artifact } from "./artifact";
@@ -68,6 +69,25 @@ export function ChatShell() {
 
   const prevChatIdRef = useRef(chatId);
   useEffect(() => {
+    // #region agent log
+    postVirgilDebugIngest(
+      {
+        sessionId: "6a8d1d",
+        runId: "pre-fix",
+        hypothesisId: "H4",
+        location: "components/chat/shell.tsx:chat_id_effect",
+        message: "Chat shell mounted or chat id changed",
+        data: {
+          previousChatId: prevChatIdRef.current,
+          nextChatId: chatId,
+          messageCount: messages.length,
+          isLoading,
+        },
+        timestamp: Date.now(),
+      },
+      { "X-Debug-Session-Id": "6a8d1d" }
+    );
+    // #endregion
     if (prevChatIdRef.current !== chatId) {
       prevChatIdRef.current = chatId;
       stopRef.current();
@@ -75,7 +95,7 @@ export function ChatShell() {
       setEditingMessage(null);
       setAttachments([]);
     }
-  }, [chatId, setArtifact]);
+  }, [chatId, isLoading, messages.length, setArtifact]);
 
   return (
     <>

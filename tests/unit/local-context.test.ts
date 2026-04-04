@@ -7,7 +7,7 @@ import {
   resolveRuntimeModelId,
 } from "../../lib/ai/models";
 
-test("Virgil companion prompts emphasize proactive help without sycophancy", async () => {
+test("Virgil companion prompts emphasize advisor stance without sycophancy", async () => {
   const companion = await import("../../lib/ai/companion-prompt").catch(
     () => null
   );
@@ -32,11 +32,12 @@ test("Virgil companion prompts emphasize proactive help without sycophancy", asy
   });
 
   assert.match(fullPrompt, /You are Virgil/i);
-  assert.match(fullPrompt, /proactive/i);
-  assert.match(fullPrompt, /Avoid sycophancy/i);
+  assert.match(fullPrompt, /advisor/i);
+  assert.match(fullPrompt, /sycophancy/i);
+  assert.doesNotMatch(fullPrompt, /About the user's request location/);
   assert.match(slimPrompt, /You are Virgil/i);
-  assert.match(slimPrompt, /proactive/i);
-  assert.match(slimPrompt, /No sycophancy/i);
+  assert.match(slimPrompt, /advisor/i);
+  assert.match(slimPrompt, /sycophancy/i);
 });
 
 test("default slim assistant prompt is personal, not front-desk fallback", async () => {
@@ -156,7 +157,7 @@ test("local preset ids are allowed and resolve to the pulled Ollama tag", () => 
   assert.equal(allowedModelIds.has("ollama/qwen2.5:7b-lean"), true);
 });
 
-test("slim companion prompt keeps warmth and is honest about limited memory", async () => {
+test("slim companion prompt stays advisor-direct and is honest about limited memory", async () => {
   const mod = await import("../../lib/ai/slim-prompt").catch(() => null);
   assert.ok(mod, "expected slim-prompt module");
 
@@ -175,7 +176,7 @@ test("slim companion prompt keeps warmth and is honest about limited memory", as
     ],
   });
 
-  assert.match(prompt, /Warm, direct, helpful/i);
+  assert.match(prompt, /advisor/i);
   assert.match(prompt, /limited memory/i);
   assert.match(prompt, /Don't claim to remember things you can't see/i);
   // Slim/local prompt may mention the tool names to clarify they are unavailable.
@@ -203,31 +204,6 @@ test("slim companion prompt tightens length guidance for 3B-class models", async
   assert.doesNotMatch(slim7b, /one sub-question at a time/i);
   assert.match(slim3b, /1-2 sentences/i);
   assert.match(slim3b, /one sub-question at a time/i);
-});
-
-test("slim front desk prompt keeps business guardrails but drops tool choreography", async () => {
-  const mod = await import("../../lib/ai/slim-prompt").catch(() => null);
-  assert.ok(mod, "expected slim-prompt module");
-
-  const prompt = mod.buildSlimFrontDeskPrompt({
-    profile: {
-      businessName: "Night Desk",
-      tonePreference: "professional",
-      industry: "hospitality",
-      hoursOfOperation: "24/7",
-      services: ["check-in", "late arrival support"],
-      neverPromise: ["free upgrades"],
-    },
-    priorityNote: "If context is missing, say so clearly.",
-  });
-
-  assert.match(prompt, /Night Desk/);
-  assert.match(prompt, /professional/i);
-  assert.match(prompt, /don't have enough context/i);
-  assert.doesNotMatch(
-    prompt,
-    /recordIntake|escalateToHuman|summarizeOpportunity/
-  );
 });
 
 test("trimMessagesForBudget keeps thread edges and inserts a trim marker", async () => {

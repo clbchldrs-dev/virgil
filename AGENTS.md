@@ -13,11 +13,9 @@ Default mode:
 - proactive but honest
 - cost-constrained by design
 
-Optional mode:
+Optional:
 
-- business/front-desk assistant
-- only when the user explicitly sets up a business profile
-- business tools should add zero default prompt/tool overhead unless that mode is enabled
+- **Gateway-only** AutoGen-style orchestration: set `VIRGIL_MULTI_AGENT_ENABLED=1` to run a short internal planner pass before the main `streamText` (extra latency/cost; off by default). See `lib/ai/orchestration/`.
 
 ## North Star
 
@@ -57,8 +55,7 @@ If the user is wrong, unclear, or about to do something unhelpful, Virgil should
 
 ## Default Behavior
 
-- No business profile: personal assistant mode
-- Business profile present: business/front-desk mode becomes available and can shape prompts/tools
+- Personal assistant mode only (companion prompts and tools)
 - Local Ollama models are the default path
 - Hosted gateway models are optional and should stay secondary
 
@@ -68,7 +65,6 @@ If the user is wrong, unclear, or about to do something unhelpful, Virgil should
 
 - `app/(chat)/api/chat/route.ts`
 - This is the primary integration point for:
-  - mode selection
   - prompt selection
   - tool selection
   - local vs hosted model routing
@@ -78,7 +74,7 @@ If the user is wrong, unclear, or about to do something unhelpful, Virgil should
 
 - `lib/ai/companion-prompt.ts` — full personal-assistant prompt
 - `lib/ai/slim-prompt.ts` — slim local prompt variants
-- `lib/ai/front-desk-prompt.ts` — optional business/front-desk prompt
+- `lib/ai/orchestration/` — optional gateway planner + executor (AutoGen-style pattern; not Python AutoGen)
 
 ### Model/provider layers
 
@@ -237,7 +233,7 @@ Scheduled **night review** uses a larger model to analyze the last 24 hours of c
 2. Set **`NIGHT_REVIEW_MODEL`** if you want something other than the default (`ollama/qwen2.5:7b-review` — see [`lib/ai/models.ts`](lib/ai/models.ts)). Local Ollama must be reachable when the worker runs if you use an `ollama/…` id.
 3. Optional: **`NIGHT_REVIEW_STAGGER_SECONDS`** (default `60`) spaces QStash deliveries per owner. **`NIGHT_REVIEW_TIMEZONE`** (default `UTC`) defines the calendar **`windowKey`** for idempotency (one completed run per user per local date).
 4. **Cron:** Vercel Cron calls **`GET /api/night-review/enqueue`** with `Authorization: Bearer $CRON_SECRET` (see [`vercel.json`](vercel.json), `0 3 * * *` UTC). Self-hosted: use the same request from `cron` or Task Scheduler against your public base URL.
-5. The enqueue endpoint publishes one **QStash** message per **eligible user** (non-guest, and either a **business profile** or **at least one chat** — same rule as the daily digest). Each message hits **`POST /api/night-review/run`** (signed). Findings are stored as **`Memory`** rows with `metadata.source = "night-review"`; completion rows use `metadata.phase = "complete"` for deduplication. Each run also appends a row to **`NightReviewRun`** (duration, outcome, model id).
+5. The enqueue endpoint publishes one **QStash** message per **eligible user** (non-guest with **at least one chat** — same rule as the daily digest). Each message hits **`POST /api/night-review/run`** (signed). Findings are stored as **`Memory`** rows with `metadata.source = "night-review"`; completion rows use `metadata.phase = "complete"` for deduplication. Each run also appends a row to **`NightReviewRun`** (duration, outcome, model id).
 6. **Optional email** when there are findings: set **`NIGHT_REVIEW_EMAIL_ON_FINDINGS=1`** (requires `RESEND_API_KEY`). **In-app:** `GET /api/memories/night-review?days=14` (authenticated) returns recent night-review memories for a “Night insights” UI.
 7. **Tool egress:** HTTP from tools uses **`AGENT_FETCH_ALLOWLIST_HOSTS`** (comma-separated hostnames); default allows Open-Meteo hosts used by weather. Extend the list when adding new fetch-based tools.
 8. **Quota:** each eligible user costs **one QStash message per night** in addition to reminders. The free tier is **500 messages/day** on Upstash.
@@ -274,7 +270,7 @@ With `POSTGRES_URL` set in `.env.local`:
 pnpm db:migrate
 ```
 
-This applies `lib/db/migrations/` (including front-desk tables).
+This applies `lib/db/migrations/`.
 
 ### Optional — GitHub product opportunities (gateway models)
 
@@ -402,7 +398,7 @@ Then: `systemctl daemon-reload && systemctl enable --now virgil-night-enqueue.ti
 pnpm dev
 ```
 
-Open the URL shown (usually `http://localhost:3000`). Register or use guest login, then visit `/onboarding` to configure the business profile.
+Open the URL shown (usually `http://localhost:3000`). Register or use guest login.
 
 ### Ollama (local Qwen in the model picker)
 
@@ -448,7 +444,7 @@ Each pass prints **first-token latency** (`first_token_ms`), **total wall time**
 pnpm db:seed
 ```
 
-Creates a demo user and sample businesses (see `lib/db/seed.ts`). Use only on a dev database.
+Creates a demo user (see `lib/db/seed.ts`). Use only on a dev database.
 
 ---
 
@@ -563,8 +559,10 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `NIGHT_REVIEW_TIMEZONE` | No             | No                 | IANA tz for idempotency window key (default `UTC`) |
 | `NIGHT_REVIEW_EMAIL_ON_FINDINGS` | No   | No                 | Set to `1` to email when review finds material (needs Resend) |
 | `AGENT_FETCH_ALLOWLIST_HOSTS` | No      | No                 | Comma-separated hostnames for tool `fetch` (defaults include Open-Meteo) |
+| `MEM0_API_KEY` | No | No | Enables Mem0 semantic memory; without it, recall uses Postgres FTS only |
 | `MEM0_MONTHLY_SEARCH_LIMIT` | No | No | Monthly cap on mem0 search API calls; falls back to Postgres FTS when exhausted (default `1000`) |
 | `MEM0_MONTHLY_ADD_LIMIT` | No | No | Optional monthly cap on mem0 **add** (write) calls when `REDIS_URL` is set; when exhausted, mem0 writes are skipped (omit env for unlimited) |
+| `MEM0_DISABLE_LOCAL_SYNC` | No | No | Set to `1` to skip post-turn Mem0 batch ingest for **local Ollama** chats only (cloud path unchanged) |
 | `VIRGIL_CALENDAR_INTEGRATION` | No | No | Reserved: set to `1` when read-only calendar sync is implemented |
 | `VIRGIL_GIT_SIGNALS` | No | No | Reserved: set to `1` when Git/Vercel commit signals for study momentum are implemented |
 | `VIRGIL_JOURNAL_FILE_PARSE` | No | No | Reserved: set to `1` when optional journaling file parse is implemented |
@@ -578,6 +576,8 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `OPENCLAW_EXECUTE_PATH` | No | No | POST path for intents (default `/api/execute`) |
 | `OPENCLAW_SKILLS_PATH` | No | No | GET path for skills (default `/api/skills`) |
 | `OPENCLAW_HEALTH_PATH` | No | No | GET path for health ping (default `/health`) |
+| `VIRGIL_MULTI_AGENT_ENABLED` | No | No | Set to `1` / `true` for gateway-only planner+executor pass before `streamText` (extra cost/latency) |
+| `VIRGIL_MULTI_AGENT_PLANNER_MODEL` | No | No | Optional model id for the planner when different from the chat model |
 
 ### Hobby-to-Pro threshold
 
@@ -651,7 +651,7 @@ When `AGENT_TASK_TRIAGE_ENABLED=1`, a cron job (`GET /api/agent-tasks/enqueue`, 
 
 Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](docs/DECISIONS.md)**.
 
-- **Bespoke single-owner** product intent: [docs/OWNER_PRODUCT_VISION.md](docs/OWNER_PRODUCT_VISION.md) (2026-03-31 ADR). Commercial multi-tenant SaaS is not a design goal for this repo. Business/demo code paths are optional pruning candidates: [docs/PRUNING_CANDIDATES.md](docs/PRUNING_CANDIDATES.md). Local models default; gateway optional.
+- **Bespoke single-owner** product intent: [docs/OWNER_PRODUCT_VISION.md](docs/OWNER_PRODUCT_VISION.md) (2026-03-31 ADR). Commercial multi-tenant SaaS is not a design goal for this repo. Personal-assistant-only surface (business/front-desk paths removed 2026-04). Local models default; gateway optional. Optional gateway multi-agent orchestration via env (see `lib/ai/orchestration/`).
 - Postgres FTS for recall (no casual vector DB). QStash for reminders. Docker Compose defaults include **bundled Ollama** + health-gated **`virgil-app`** (see `docker-compose.yml`); host-Ollama layout in `docker-compose.host-ollama.yml`.
 - Night review optional ([workspace/night/README.md](workspace/night/README.md)). HTTP auth cookies via `shouldUseSecureAuthCookie()` where applicable.
 - Voice: clarity over flattery; slim prompts stay minimal. Local **slim/compact** copy branches on `LocalModelClass` (`3b` vs `7b`, tag-inferred when unset) — see [docs/DECISIONS.md](docs/DECISIONS.md).
@@ -674,7 +674,7 @@ Backlog (E1–E11, …), review cadence, and acceptance criteria: [docs/ENHANCEM
 - [ ] Focused tests cover the changed local-model behavior
 - [ ] No hardcoded secrets were introduced
 - [ ] New env vars are documented everywhere required
-- [ ] Business-mode changes do not leak into the default personal path
+- [ ] Optional multi-agent / gateway-only features do not hurt the default local path
 - [ ] Prompt changes do not increase sycophancy or context bloat
 - [ ] Docker/local instructions still match real runtime behavior
 

@@ -3,15 +3,13 @@ import { z } from "zod";
 import type { ArtifactKind } from "@/components/chat/artifact";
 import type { createDocument } from "./ai/tools/create-document";
 import type { editDocument } from "./ai/tools/edit-document";
-import type { escalateToHuman } from "./ai/tools/escalate-to-human";
 import type { getWeather } from "./ai/tools/get-weather";
 import type { recallMemory } from "./ai/tools/recall-memory";
-import type { recordIntake } from "./ai/tools/record-intake";
 import type { requestSuggestions } from "./ai/tools/request-suggestions";
 import type { saveMemory } from "./ai/tools/save-memory";
 import type { setReminder } from "./ai/tools/set-reminder";
+import type { submitAgentTask } from "./ai/tools/submit-agent-task";
 import type { submitProductOpportunity } from "./ai/tools/submit-product-opportunity";
-import type { summarizeOpportunity } from "./ai/tools/summarize-opportunity";
 import type { updateDocument } from "./ai/tools/update-document";
 import type { Suggestion } from "./db/schema";
 
@@ -33,9 +31,7 @@ export type ChatTools = {
   submitProductOpportunity: InferUITool<
     ReturnType<typeof submitProductOpportunity>
   >;
-  escalateToHuman: InferUITool<ReturnType<typeof escalateToHuman>>;
-  recordIntake: InferUITool<ReturnType<typeof recordIntake>>;
-  summarizeOpportunity: InferUITool<typeof summarizeOpportunity>;
+  submitAgentTask: InferUITool<ReturnType<typeof submitAgentTask>>;
 };
 
 /** Last completed assistant turn; emitted as `data-model-metrics` from the chat API. */

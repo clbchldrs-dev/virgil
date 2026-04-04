@@ -1,24 +1,22 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import type { Geo } from "@vercel/functions";
 import type { ArtifactKind } from "@/components/chat/artifact";
-
-function getUserContext(): string {
-  try {
-    const contextPath =
-      process.env.USER_CONTEXT_PATH ?? join(process.cwd(), "user-context.md");
-    return readFileSync(contextPath, "utf-8");
-  } catch {
-    return "(No user context file found.)";
-  }
-}
+import { getUserContext } from "@/lib/ai/user-context";
 
 export const artifactsPrompt = `
 Artifacts is a side panel that displays content alongside the conversation. It supports scripts (code), documents (text), and spreadsheets. Changes appear in real-time.
 
-CRITICAL RULES:
-1. Only call ONE tool per response. After calling any create/edit/update tool, STOP. Do not chain tools.
-2. After creating or editing an artifact, NEVER output its content in chat. The user can already see it. Respond with only a 1-2 sentence confirmation.
+Tool chaining (read with the Behavior section above):
+- Non-artifact tools (e.g. getBriefing, recallMemory, saveMemory, getWeather, readFile, Jira, calendar): chain freely when needed.
+- Artifact tools are stricter — see below. Before the first artifact tool in a response, non-artifact tools are allowed (e.g. getBriefing then createDocument). After any artifact tool call, do not add more tools in that response — except multiple editDocument calls are allowed as described below.
+
+Artifact tool rules:
+- createDocument: at most one call per response. No editDocument, updateDocument, or further tools after it in that response.
+- editDocument: you may call it multiple times in one response for independent find-replace edits on the same artifact. No non-artifact tools mixed in once you begin editDocument calls.
+- updateDocument: at most one call per response. No other tools after it.
+- Never use createDocument in the same response as editDocument or updateDocument.
+
+CRITICAL:
+1. After creating or editing an artifact, NEVER output its content in chat. The user can already see it. Respond with only a 1-2 sentence confirmation.
 
 **When to use \`createDocument\`:**
 - When the user asks to write, create, or generate content (essays, stories, emails, reports)
@@ -65,7 +63,7 @@ export const companionCorePrompt = `You are a companion assistant with access to
 5. State assumptions briefly at the end. When you fill in gaps from context, note what you assumed in a short parenthetical — do not ask for confirmation first.
 6. No filler. No compliments, no cheerleading, no preamble like "Great question!" or "Sure, I can help with that." Start with substance.
 7. Be direct about limitations and failures. If a tool call fails or you cannot do something, say so plainly and suggest an alternative.
-8. Chain multiple tool calls in one turn when the task requires it. Do not wait for confirmation between steps if the intent is clear.
+8. Chain multiple non-artifact tool calls in one turn when the task requires it. Artifact tools (create/edit/update document) follow stricter rules — see Artifacts section. Do not wait for confirmation between steps if the intent is clear.
 9. On new sessions, call the getBriefing tool to establish situational awareness before responding to the user's first message.
 10. When the user shares information that changes their active state (new tickets, schedule changes, completed work), propose updating the user context file — but do not write to it without confirmation.`;
 
@@ -77,7 +75,7 @@ Guidelines:
 - If a tool returns an error, explain what went wrong and suggest alternatives.
 - For shell commands, prefer safe and reversible operations. Never run destructive commands without explicit user confirmation.
 - When reading files, summarize the relevant parts rather than dumping the entire content unless asked.
-- You can chain multiple tool calls in a single response if a task requires it (e.g., read a file, then write a modified version).
+- You can chain multiple non-artifact tool calls in a single response if a task requires it. Artifact tools (create/edit/update document) follow the Artifacts rules — not arbitrary chaining.
 `;
 
 export type RequestHints = {
@@ -87,13 +85,32 @@ export type RequestHints = {
   country: Geo["country"];
 };
 
-export const getRequestPromptFromHints = (requestHints: RequestHints) => `\
-About the origin of user's request:
+function hasUsefulRequestHints(requestHints: RequestHints): boolean {
+  const { latitude, longitude, city, country } = requestHints;
+  const hasLat =
+    latitude != null && typeof latitude === "number" && !Number.isNaN(latitude);
+  const hasLon =
+    longitude != null &&
+    typeof longitude === "number" &&
+    !Number.isNaN(longitude);
+  const hasCity = typeof city === "string" && city.trim().length > 0;
+  const hasCountry = typeof country === "string" && country.trim().length > 0;
+  return hasLat || hasLon || hasCity || hasCountry;
+}
+
+/** Location block for the system prompt only when geolocation returned data. Empty otherwise. */
+export const getRequestPromptFromHints = (
+  requestHints: RequestHints
+): string => {
+  if (!hasUsefulRequestHints(requestHints)) {
+    return "";
+  }
+  return `About the user's request location (use only when relevant — e.g. weather, local time, travel, region-specific services; do not mention location in your reply when the topic does not need it):
 - lat: ${requestHints.latitude}
 - lon: ${requestHints.longitude}
 - city: ${requestHints.city}
-- country: ${requestHints.country}
-`;
+- country: ${requestHints.country}`;
+};
 
 export const systemPrompt = ({
   requestHints,

@@ -24,10 +24,3 @@ export function productOpportunityDeniedMessage(
   }
   return null;
 }
-
-export function escalationOwnersMismatch(
-  ownerUserId: string,
-  businessOwnerUserId: string
-): boolean {
-  return ownerUserId !== businessOwnerUserId;
-}

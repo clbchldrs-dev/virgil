@@ -1,11 +1,53 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import {
+  getGatewayErrorStreamMessage,
   getOllamaConnectionErrorCause,
   getOllamaErrorStreamMessage,
   getOllamaErrorUserPayload,
 } from "../../lib/ai/providers";
 import { VirgilError } from "../../lib/errors";
+
+describe("getGatewayErrorStreamMessage", () => {
+  test("detects invalid API key wording", () => {
+    const msg = getGatewayErrorStreamMessage(
+      new Error("AI Gateway authentication failed: Invalid API key")
+    );
+    assert.ok(msg);
+    assert.ok(msg?.includes("AI_GATEWAY_API_KEY"));
+  });
+
+  test("detects AI SDK dev unauthenticated gateway message", () => {
+    const err = new Error(
+      "Unauthenticated request to AI Gateway.\n\nTo authenticate, set the AI_GATEWAY_API_KEY environment variable."
+    );
+    err.name = "GatewayAuthenticationError";
+    const msg = getGatewayErrorStreamMessage(err);
+    assert.ok(msg);
+    assert.ok(msg?.includes("AI_GATEWAY_API_KEY"));
+  });
+
+  test("detects AI SDK production GatewayError message", () => {
+    const err = new Error(
+      "Unauthenticated. Configure AI_GATEWAY_API_KEY or use a provider module. Learn more: https://ai-sdk.dev/unauthenticated-ai-gateway"
+    );
+    err.name = "GatewayError";
+    const msg = getGatewayErrorStreamMessage(err);
+    assert.ok(msg);
+  });
+
+  test("reads nested Error.cause", () => {
+    const inner = new Error("Invalid API key");
+    const outer = new Error("wrapped");
+    outer.cause = inner;
+    const msg = getGatewayErrorStreamMessage(outer);
+    assert.ok(msg);
+  });
+
+  test("returns null for unrelated errors", () => {
+    assert.equal(getGatewayErrorStreamMessage(new Error("timeout")), null);
+  });
+});
 
 describe("getOllamaConnectionErrorCause", () => {
   test("detects unreachable host", () => {

@@ -22,6 +22,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 
+# `next build` imports DB modules while collecting route data. Connection is lazy; compose supplies the real URL at runtime.
+ARG POSTGRES_URL=postgresql://virgil:virgil@postgres:5432/virgil
+ENV POSTGRES_URL=${POSTGRES_URL}
+
 RUN pnpm run build:docker
 
 # migrate.ts is not traced into standalone; copy these from pnpm's store for tsx at runtime.

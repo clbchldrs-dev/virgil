@@ -4,37 +4,26 @@ import { generateText } from "ai";
 import { auth } from "@/app/(auth)/auth";
 import { isLocalModel, titleModel } from "@/lib/ai/models";
 import { getTitleModel } from "@/lib/ai/providers";
-import {
-  getBusinessProfileByUserId,
-  getRecentMemories,
-} from "@/lib/db/queries";
+import { getRecentMemories } from "@/lib/db/queries";
 import {
   type ChatEmptySuggestion,
-  GENERIC_HELPFUL_MIDDLES,
+  CRYPTIC_FALLBACK_LEFT_SUGGESTIONS,
   pickRandom,
 } from "@/lib/empty-suggestion-pools";
 
-const PERSONALIZATION_SYSTEM = `You propose ONE question the user might tap as a suggested chip in their AI chat (two-line UI).
+const PERSONALIZATION_SYSTEM = `You propose ONE left suggested chip for an AI chat empty state (two-line UI, cryptic tone).
 Reply with ONLY valid JSON (no markdown code fences): {"line1":"...","line2":"...","prompt":"..."}
 Rules:
-- line1: short first line, max 6 words
-- line2: second line, max 9 words; together they read as one invitation to chat
-- prompt: one clear question sentence — this exact text is sent as the user's message when they tap the chip
-- Ground the question in MEMORY CONTEXT when it is non-empty; reference goals, projects, habits, or open threads naturally
-- If MEMORY CONTEXT is empty, propose one warm, practical starter (energy, one priority, clarity, or checking in)`;
+- line1: cryptic, unsettling, short (max 6 words). Liminal / wrong-texture / overheard. Not gore, not slurs.
+- line2: optional second line (max 9 words), or "" if one line is enough.
+- prompt: one clear sentence — this exact text is sent as the user's message when they tap the chip. Ground in MEMORY CONTEXT when non-empty; make the task concrete while chip lines stay cryptic.
+- If MEMORY CONTEXT is empty, still propose a creepy-cryptic chip that pushes one concrete next step (no generic cheer).`;
 
-export async function getPersonalizedMiddleEmptySuggestion(): Promise<ChatEmptySuggestion> {
+export async function getPersonalizedLeftEmptySuggestion(): Promise<ChatEmptySuggestion> {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return pickRandom(GENERIC_HELPFUL_MIDDLES);
-    }
-
-    const profile = await getBusinessProfileByUserId({
-      userId: session.user.id,
-    });
-    if (!profile) {
-      return pickRandom(GENERIC_HELPFUL_MIDDLES);
+      return pickRandom(CRYPTIC_FALLBACK_LEFT_SUGGESTIONS);
     }
 
     const memories = await getRecentMemories({
@@ -75,7 +64,7 @@ ${memoryBlock}`;
   } catch {
     /* use fallback below */
   }
-  return pickRandom(GENERIC_HELPFUL_MIDDLES);
+  return pickRandom(CRYPTIC_FALLBACK_LEFT_SUGGESTIONS);
 }
 
 function parseSuggestionJson(raw: string): ChatEmptySuggestion | null {
@@ -100,7 +89,7 @@ function parseSuggestionJson(raw: string): ChatEmptySuggestion | null {
     const line1 = data.line1.trim();
     const line2 = data.line2.trim();
     const prompt = data.prompt.trim();
-    if (!line1 || !line2 || !prompt) {
+    if (!line1 || !prompt) {
       return null;
     }
     return { lines: [line1, line2] as const, prompt };

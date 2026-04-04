@@ -7,7 +7,7 @@ Virgil can file **GitHub Issues** when using **AI Gateway models** (not local Ol
 - Tool: `submitProductOpportunity` ([`lib/ai/tools/submit-product-opportunity.ts`](../lib/ai/tools/submit-product-opportunity.ts)).
 - **Local Ollama chats do not register this tool** — keeps the small-model path light.
 - **Reasoning / “no tools” gateway models:** Some models report `reasoning` but **not** `tools` from the gateway. The chat route sets `experimental_activeTools` to **[]** for those models, so **no tools run at all** in that session — including `submitProductOpportunity` — even if `GITHUB_*` is configured. Use a tool-capable gateway model to file issues.
-- The model should only call it **after the user agrees** (see system prompt hints in companion / front-desk prompts).
+- The model should only call it **after the user agrees** (see system prompt hints in the companion prompt).
 - Issues include alignment fields (local-first, low cost, test plan) and anonymized `userRef` + `chatId` for correlation — no email in the body.
 - **Errors:** Failed GitHub API calls return **sanitized** messages to the tool result (no raw JSON bodies). Check server logs for details.
 

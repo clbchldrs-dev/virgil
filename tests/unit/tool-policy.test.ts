@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   chatOwnershipDenial,
-  escalationOwnersMismatch,
   productOpportunityDeniedMessage,
 } from "@/lib/ai/tool-policy";
 
@@ -27,9 +26,4 @@ test("productOpportunityDeniedMessage: blocked", () => {
 
 test("productOpportunityDeniedMessage: allowed", () => {
   assert.equal(productOpportunityDeniedMessage(true), null);
-});
-
-test("escalationOwnersMismatch", () => {
-  assert.equal(escalationOwnersMismatch("a", "a"), false);
-  assert.equal(escalationOwnersMismatch("a", "b"), true);
 });

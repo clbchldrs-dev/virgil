@@ -1,0 +1,50 @@
+#!/bin/bash
+# Dock-pinnable launcher: starts Virgil via Docker Compose (same as packaging/launch-virgil.sh).
+set -euo pipefail
+
+PROGDIR="$(cd "$(dirname "$0")" && pwd)"
+CONTENTS="$(cd "$PROGDIR/.." && pwd)"
+BUNDLE="$(cd "$CONTENTS/.." && pwd)"
+
+ROOT=""
+SEARCH="$BUNDLE"
+while [ "$SEARCH" != "/" ]; do
+	if [[ -f "$SEARCH/packaging/launch-virgil.sh" && -f "$SEARCH/docker-compose.yml" ]]; then
+		ROOT="$SEARCH"
+		break
+	fi
+	SEARCH="$(dirname "$SEARCH")"
+done
+
+if [[ -z "$ROOT" && -n "${VIRGIL_ROOT:-}" && -f "$VIRGIL_ROOT/packaging/launch-virgil.sh" ]]; then
+	ROOT="$VIRGIL_ROOT"
+fi
+
+if [[ -z "$ROOT" ]]; then
+	osascript <<'APPLESCRIPT' || true
+display dialog "Virgil could not find the git repo (no packaging/launch-virgil.sh). Keep Virgil.app inside packaging/macos/, or set VIRGIL_ROOT to your clone and try again." buttons {"OK"} default button 1 with title "Virgil launcher"
+APPLESCRIPT
+	exit 1
+fi
+
+# Do not cd into the repo here: Finder-launched apps may lack TCC access to ~/Documents, so cd can
+# fail under set -e before we hand off. launch-virgil.sh resolves ROOT from its own absolute path and cds.
+LAUNCHER="$ROOT/packaging/launch-virgil.sh"
+# Finder / Dock often provide a minimal PATH: ensure bash, docker, and common install locations resolve.
+export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:${PATH:-}"
+
+# Finder-launched apps may not execute repo scripts under ~/Documents via exec; Terminal.app can.
+if ! osascript <<APPLESCRIPT
+tell application "Terminal"
+	activate
+	do script "exec /bin/bash " & quoted form of "${LAUNCHER}"
+end tell
+APPLESCRIPT
+then
+	if ! exec /bin/bash "$LAUNCHER"; then
+		osascript <<'APPLESCRIPT' || true
+display dialog "Virgil could not open Terminal to run the launcher. Try: packaging/launch-virgil.sh from Terminal." buttons {"OK"} default button 1 with title "Virgil launcher"
+APPLESCRIPT
+		exit 1
+	fi
+fi

@@ -17,6 +17,7 @@ import {
   type ChangeEvent,
   type Dispatch,
   memo,
+  type ReactNode,
   type SetStateAction,
   useCallback,
   useEffect,
@@ -742,17 +743,32 @@ function PureModelSelectorCompact({
     activeModels.find((m: ChatModel) => m.id === DEFAULT_CHAT_MODEL) ??
     activeModels[0];
   const [provider] = selectedModel.id.split("/");
+  const selectedIsLocal = isLocalModel(selectedModelId);
 
   return (
     <ModelSelector onOpenChange={setOpen} open={open}>
       <ModelSelectorTrigger asChild>
         <Button
-          className="h-7 max-w-[200px] justify-between gap-1.5 rounded-lg px-2 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
+          className="h-7 max-w-[min(100%,260px)] justify-between gap-1.5 rounded-lg px-2 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
           data-testid="model-selector"
+          title={
+            selectedIsLocal
+              ? "Local — runs on your machine; no AI Gateway usage for chat."
+              : "Cloud — uses AI Gateway for this model."
+          }
+          type="button"
           variant="ghost"
         >
           {provider && <ModelSelectorLogo provider={provider} />}
-          <ModelSelectorName>{selectedModel.name}</ModelSelectorName>
+          <ModelSelectorName className="min-w-0 truncate">
+            {selectedModel.name}
+          </ModelSelectorName>
+          <span
+            className="shrink-0 rounded bg-muted/70 px-1 py-px text-[9px] font-medium text-muted-foreground uppercase tracking-wide"
+            title={selectedIsLocal ? "Economical (local)" : "Gateway (cloud)"}
+          >
+            {selectedIsLocal ? "Local" : "Cloud"}
+          </span>
         </Button>
       </ModelSelectorTrigger>
       <ModelSelectorContent>
@@ -767,29 +783,31 @@ function PureModelSelectorCompact({
                 ]
               : chatModels;
 
-            const grouped: Record<
-              string,
-              { model: ChatModel; curated: boolean }[]
-            > = {};
-            for (const model of allModels) {
-              const key = curatedIds.has(model.id)
-                ? "_available"
-                : model.provider;
-              if (!grouped[key]) {
-                grouped[key] = [];
-              }
-              grouped[key].push({ model, curated: curatedIds.has(model.id) });
-            }
+            type Entry = { model: ChatModel; curated: boolean };
+            const localEntries: Entry[] = [];
+            const cloudCuratedEntries: Entry[] = [];
+            const cloudDynamicByProvider: Record<string, Entry[]> = {};
 
-            const sortedKeys = Object.keys(grouped).sort((a, b) => {
-              if (a === "_available") {
-                return -1;
+            for (const model of allModels) {
+              const curated = curatedIds.has(model.id);
+              if (curated) {
+                if (isLocalModel(model.id)) {
+                  localEntries.push({ model, curated: true });
+                } else {
+                  cloudCuratedEntries.push({ model, curated: true });
+                }
+                continue;
               }
-              if (b === "_available") {
-                return 1;
+              if (isLocalModel(model.id)) {
+                localEntries.push({ model, curated: false });
+              } else {
+                const p = model.provider;
+                if (!cloudDynamicByProvider[p]) {
+                  cloudDynamicByProvider[p] = [];
+                }
+                cloudDynamicByProvider[p].push({ model, curated: false });
               }
-              return a.localeCompare(b);
-            });
+            }
 
             const providerNames: Record<string, string> = {
               alibaba: "Alibaba",
@@ -816,16 +834,13 @@ function PureModelSelectorCompact({
               zai: "Zai",
             };
 
-            return sortedKeys.map((key) => (
-              <ModelSelectorGroup
-                heading={
-                  key === "_available"
-                    ? "Available"
-                    : (providerNames[key] ?? key)
-                }
-                key={key}
-              >
-                {grouped[key].map(({ model, curated }) => {
+            const renderGroup = (
+              heading: string,
+              key: string,
+              entries: Entry[]
+            ) => (
+              <ModelSelectorGroup heading={heading} key={key}>
+                {entries.map(({ model, curated }) => {
                   const logoProvider = model.id.split("/")[0];
                   return (
                     <ModelSelectorItem
@@ -833,7 +848,7 @@ function PureModelSelectorCompact({
                         "flex w-full",
                         model.id === selectedModel.id &&
                           "border-b border-dashed border-foreground/50",
-                        !curated && "opacity-40 cursor-default"
+                        !curated && "cursor-default opacity-40"
                       )}
                       key={model.id}
                       onSelect={() => {
@@ -873,7 +888,41 @@ function PureModelSelectorCompact({
                   );
                 })}
               </ModelSelectorGroup>
-            ));
+            );
+
+            const sections: ReactNode[] = [];
+            if (localEntries.length > 0) {
+              sections.push(
+                renderGroup(
+                  "Local (economical)",
+                  "_local_economical",
+                  localEntries
+                )
+              );
+            }
+            if (cloudCuratedEntries.length > 0) {
+              sections.push(
+                renderGroup(
+                  "Cloud (AI Gateway)",
+                  "_cloud_gateway_curated",
+                  cloudCuratedEntries
+                )
+              );
+            }
+            const dynamicProviderKeys = Object.keys(
+              cloudDynamicByProvider
+            ).sort((a, b) => a.localeCompare(b));
+            for (const p of dynamicProviderKeys) {
+              sections.push(
+                renderGroup(
+                  providerNames[p] ?? p,
+                  `_cloud_dyn_${p}`,
+                  cloudDynamicByProvider[p]
+                )
+              );
+            }
+
+            return sections;
           })()}
         </ModelSelectorList>
       </ModelSelectorContent>

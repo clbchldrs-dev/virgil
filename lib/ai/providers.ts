@@ -103,6 +103,40 @@ export function getOllamaErrorUserPayload(
   return `${OLLAMA_FULL_MESSAGE_PREFIX}Ollama reported an error: ${sanitized}. If this persists, check \`ollama list\` and the Ollama service logs.`;
 }
 
+/** User-safe explanation for AI Gateway auth / key failures (stream onError and HTTP catch). */
+export function getGatewayErrorStreamMessage(error: unknown): string | null {
+  const parts: string[] = [];
+  let current: unknown = error;
+  let depth = 0;
+  while (current instanceof Error && depth < 6) {
+    parts.push(`${current.name} ${current.message}`);
+    current = current.cause;
+    depth += 1;
+  }
+  const text = parts.join(" ").toLowerCase();
+  if (!text) {
+    return null;
+  }
+
+  const looksLikeGatewayAuth =
+    text.includes("invalid api key") ||
+    text.includes("ai gateway authentication failed") ||
+    (text.includes("authentication failed") &&
+      (text.includes("gateway") || text.includes("vercel"))) ||
+    (text.includes("unauthorized") && text.includes("gateway")) ||
+    (text.includes("unauthenticated") &&
+      (text.includes("ai gateway") || text.includes("ai_gateway_api_key"))) ||
+    text.includes("ai_gateway_api_key") ||
+    text.includes("gatewayauthenticationerror") ||
+    (text.includes("gatewayerror") && text.includes("unauthenticated"));
+
+  if (!looksLikeGatewayAuth) {
+    return null;
+  }
+
+  return "AI Gateway rejected this request (invalid or expired API key, or the project is not set up for Gateway). For local dev, set AI_GATEWAY_API_KEY in .env.local or .env.docker from the Vercel dashboard, or pick a Local (economical) Ollama model in the menu. See https://vercel.com/docs/ai-gateway";
+}
+
 /** Message for SSE/stream onError (plain text, no VirgilError wrapper). */
 export function getOllamaErrorStreamMessage(
   error: unknown,

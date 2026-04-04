@@ -19,13 +19,13 @@ See [`docs/security/tool-inventory.md`](../../security/tool-inventory.md).
 
 ### A2 — Server-side policy for high-impact tools — **Done**
 
-- [`lib/ai/tool-policy.ts`](../../../lib/ai/tool-policy.ts) — shared helpers; chat ownership enforced in `saveMemory` / `setReminder`; `submitProductOpportunity` requires `allowed`; `escalateToHuman` requires `ownerUserId === businessOwnerUserId`. Document tools already check `session` vs document `userId` in handlers.
+- [`lib/ai/tool-policy.ts`](../../../lib/ai/tool-policy.ts) — shared helpers; chat ownership enforced in `saveMemory` / `setReminder`; `submitProductOpportunity` requires `allowed`. Document tools already check `session` vs document `userId` in handlers.
 - Tests: [`tests/unit/tool-policy.test.ts`](../../../tests/unit/tool-policy.test.ts).
 
 ### A3 — Tool approval UX — **Done**
 
-- **Requires approval (`needsApproval: true`):** `getWeather`, `saveMemory`, `setReminder`, `recordIntake`, `escalateToHuman`, `submitProductOpportunity`.
-- **Auto-run:** `createDocument`, `editDocument`, `updateDocument`, `requestSuggestions`, `recallMemory`, `summarizeOpportunity` (results visible in artifact / chat as today).
+- **Requires approval (`needsApproval: true`):** `getWeather`, `saveMemory`, `setReminder`, `submitProductOpportunity`.
+- **Auto-run:** `createDocument`, `editDocument`, `updateDocument`, `requestSuggestions`, `recallMemory` (results visible in artifact / chat as today).
 - **UI:** [`components/chat/message.tsx`](../../../components/chat/message.tsx) — generic tool renderer for approval states on tools not using the weather/artifact/requestSuggestions-specific layouts. Server policy: Phase A2.
 
 ### A4 — Prompt injection + logging

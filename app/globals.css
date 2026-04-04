@@ -859,9 +859,18 @@ textarea:focus-visible {
     0 0 0 1px color-mix(in oklch, var(--primary) 14%, transparent),
     0 0 28px color-mix(in oklch, var(--primary) 16%, transparent),
     var(--shadow-card);
-  padding: 1rem 1.125rem;
+  padding: 0.65rem 0.85rem;
   position: relative;
   z-index: 1;
+}
+
+[data-chat-phase="invitation"] .empty-chat-greeting__dialogue {
+  border-color: oklch(0.72 0.14 58 / 0.55);
+  box-shadow:
+    0 0 0 1px oklch(0.7 0.16 58 / 0.4),
+    0 0 44px oklch(0.74 0.15 58 / 0.28),
+    0 0 80px oklch(0.68 0.12 58 / 0.12),
+    var(--shadow-card);
 }
 
 .empty-chat-greeting__scanlines {
@@ -883,8 +892,13 @@ textarea:focus-visible {
 .empty-chat-greeting__soul {
   animation: empty-greeting-soul-pulse 3.2s ease-in-out infinite;
   filter: drop-shadow(
-    0 0 8px color-mix(in oklch, var(--primary) 45%, transparent)
+    0 0 10px color-mix(in oklch, var(--primary) 55%, transparent)
   );
+}
+
+[data-chat-phase="invitation"] .empty-chat-greeting__soul {
+  color: oklch(0.78 0.18 58);
+  filter: drop-shadow(0 0 14px oklch(0.78 0.2 58 / 0.55));
 }
 
 .empty-chat-greeting__headline {
@@ -965,13 +979,67 @@ textarea:focus-visible {
 [data-chat-phase="invitation"] [data-suggestion-pill="true"] {
   background: linear-gradient(
     180deg,
-    oklch(0.16 0.04 58 / 0.95),
-    oklch(0.1 0.025 58 / 0.97)
+    oklch(0.2 0.09 58 / 0.97),
+    oklch(0.12 0.06 58 / 0.99)
   );
   box-shadow:
-    0 0 0 1px oklch(0.55 0.1 58 / 0.2),
-    0 0 20px oklch(0.62 0.12 58 / 0.06),
+    0 0 0 1px oklch(0.68 0.16 58 / 0.42),
+    0 0 22px oklch(0.76 0.14 58 / 0.2),
+    0 0 48px oklch(0.7 0.12 58 / 0.1),
     var(--shadow-card);
+}
+
+[data-chat-phase="invitation"] [data-suggestion-pill="true"]:hover {
+  border-color: oklch(0.72 0.16 58 / 0.55);
+  color: oklch(0.92 0.04 58);
+}
+
+.suggestion-pill-12f-loop {
+  animation: suggestion-pill-12f 720ms steps(12, end) infinite;
+  transform-origin: center;
+  will-change: transform;
+}
+
+@keyframes suggestion-pill-12f {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  8.333% {
+    transform: translate(-2px, -1px) rotate(-1.2deg);
+  }
+  16.666% {
+    transform: translate(1px, -3px) rotate(0.8deg);
+  }
+  25% {
+    transform: translate(-1px, 1px) rotate(-0.8deg);
+  }
+  33.333% {
+    transform: translate(2px, -2px) rotate(1deg);
+  }
+  41.666% {
+    transform: translate(-2px, 2px) rotate(-1.1deg);
+  }
+  50% {
+    transform: translate(1px, 2px) rotate(0.9deg);
+  }
+  58.333% {
+    transform: translate(-1px, -2px) rotate(-0.7deg);
+  }
+  66.666% {
+    transform: translate(2px, 1px) rotate(0.7deg);
+  }
+  75% {
+    transform: translate(-2px, 0) rotate(-0.9deg);
+  }
+  83.333% {
+    transform: translate(1px, -1px) rotate(0.6deg);
+  }
+  91.666% {
+    transform: translate(0, 1px) rotate(-0.5deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
 }
 
 /* Line labels inside pills inherit hover color (invitation span rule is more specific otherwise). */
@@ -1262,94 +1330,5 @@ textarea:focus-visible {
   50% {
     opacity: 0.88;
     transform: scale(1.04);
-  }
-}
-
-/* Empty chat: spooky pixel dialogue */
-.empty-chat-greeting {
-  contain: layout paint;
-  isolation: isolate;
-  position: relative;
-}
-
-.empty-chat-greeting__vignette {
-  background: radial-gradient(
-    ellipse at center,
-    transparent 35%,
-    color-mix(in oklch, var(--background) 72%, black) 100%
-  );
-  inset: -45%;
-  opacity: 0.55;
-  position: absolute;
-  z-index: 0;
-}
-
-.empty-chat-greeting__dialogue {
-  animation: empty-greeting-in 0.55s ease-out both;
-  background: color-mix(in oklch, var(--card) 88%, transparent);
-  border: 1px solid color-mix(in oklch, var(--primary) 42%, transparent);
-  border-radius: var(--radius-sm);
-  box-shadow:
-    0 0 0 1px color-mix(in oklch, var(--primary) 14%, transparent),
-    0 0 28px color-mix(in oklch, var(--primary) 16%, transparent),
-    var(--shadow-card);
-  padding: 1rem 1.125rem;
-  position: relative;
-  z-index: 1;
-}
-
-.empty-chat-greeting__scanlines {
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 1px,
-    color-mix(in oklch, var(--foreground) 35%, transparent) 1px,
-    color-mix(in oklch, var(--foreground) 35%, transparent) 2px
-  );
-  border-radius: inherit;
-  inset: 0;
-  opacity: 0.055;
-  pointer-events: none;
-  position: absolute;
-  z-index: 0;
-}
-
-.empty-chat-greeting__soul {
-  animation: empty-greeting-soul-pulse 3.2s ease-in-out infinite;
-  filter: drop-shadow(
-    0 0 8px color-mix(in oklch, var(--primary) 45%, transparent)
-  );
-}
-
-.empty-chat-greeting__headline {
-  color: var(--primary);
-  font-family: var(--font-pixel), ui-monospace, monospace;
-  line-height: 1.2;
-  position: relative;
-  text-shadow: 0 0 18px color-mix(in oklch, var(--primary) 38%, transparent);
-  z-index: 1;
-  animation: empty-greeting-phosphor 5.2s ease-in-out infinite;
-}
-
-.empty-chat-greeting__flavor {
-  font-family: var(--font-pixel), ui-monospace, monospace;
-  font-size: 0.78rem;
-  letter-spacing: 0.04em;
-  line-height: 1.35;
-  position: relative;
-  z-index: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .empty-chat-greeting__dialogue {
-    animation: none;
-  }
-
-  .empty-chat-greeting__headline {
-    animation: none;
-  }
-
-  .empty-chat-greeting__soul {
-    animation: none;
   }
 }

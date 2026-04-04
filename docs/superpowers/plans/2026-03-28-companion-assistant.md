@@ -1,5 +1,7 @@
 # Companion Assistant — Implementation Plan
 
+> **Historical note (2026-04):** Business/front-desk mode described in this plan was **removed** from the product. Treat owner/visitor dual-mode and front-desk sections as superseded; companion + personal path remains.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a personal companion layer to the front-desk Virgil experience — memory, reminders, daily digest — while keeping the visitor-facing front desk intact.

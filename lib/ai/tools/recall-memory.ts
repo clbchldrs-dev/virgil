@@ -25,21 +25,19 @@ export function recallMemory({ userId }: { userId: string }) {
           ...(input.kind ? { categories: [input.kind] } : {}),
         });
 
-        if (mem0Results.length === 0) {
-          return { found: false, message: "No relevant memories found." };
+        if (mem0Results.length > 0) {
+          return {
+            found: true,
+            count: mem0Results.length,
+            memories: mem0Results.map((m) => ({
+              kind: m.categories?.at(0) ?? "note",
+              content: m.memory ?? "",
+              savedAt: m.created_at
+                ? new Date(m.created_at).toISOString()
+                : new Date().toISOString(),
+            })),
+          };
         }
-
-        return {
-          found: true,
-          count: mem0Results.length,
-          memories: mem0Results.map((m) => ({
-            kind: m.categories?.at(0) ?? "note",
-            content: m.memory ?? "",
-            savedAt: m.created_at
-              ? new Date(m.created_at).toISOString()
-              : new Date().toISOString(),
-          })),
-        };
       }
 
       const results = await searchMemories({

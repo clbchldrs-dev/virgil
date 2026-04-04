@@ -7,13 +7,13 @@ The project is optimized for:
 - low recurring cost
 - strong local-model performance on 3B/7B-class models
 - honest, proactive assistance instead of bloated prompts or hosted-model dependence
-- an optional business/front-desk mode when you explicitly configure it
+- optional gateway-only multi-agent planning (`VIRGIL_MULTI_AGENT_ENABLED`) when you want an extra orchestration pass
 
 ## What Virgil does
 
 - Runs locally with Ollama by default
 - Supports hosted models through AI Gateway when you want them
-- Stores chat history, memories, reminders, and optional business data in Postgres
+- Stores chat history, memories, and reminders in Postgres
 - Uses Redis for rate limits and stream support
 - Can run as a normal local dev app or as a one-command Docker stack
 
@@ -63,12 +63,6 @@ ollama pull qwen2.5:7b-instruct
 ```
 
 Hosted models remain available, but the default direction of the project is local-first.
-
-## Optional business mode
-
-Virgil is a personal assistant by default.
-
-If you complete onboarding, it can also act as a business front desk with intake, escalation, and opportunity capture. Those business-specific tools stay out of the default personal path unless you opt in.
 
 ## V2 Python backend (planned)
 

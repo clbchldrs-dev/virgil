@@ -9,6 +9,16 @@ This file is the **single entrypoint** for intent, documentation map, architectu
 - **Iterable:** Small, focused changes; preserve existing abstractions unless they hurt the local path; verify with `pnpm check`, tests, and AGENTS checklists.
 - **Self-improvement:** The **product** (Virgil) improves via a backlog ([docs/ENHANCEMENTS.md](ENHANCEMENTS.md)), measured changes, and reviews—not unbounded autonomous edits to prompts or production behavior. The **repo** improves via the same loop plus human or agent review in Cursor.
 
+## Personal v1 scope, memory across models, and a three-device topology
+
+**v1 product slice (personal):** Virgil is aimed at a **persistent, signed-in companion** experience for the **primary owner**—chats and optional structured memory tied to that account. This is the main “you and Virgil” loop the prompts and tools optimize for first.
+
+**Guests:** Guest sessions are supported for lightweight use; the main product loop is the signed-in owner and persistent chats/memory.
+
+**Memory and switching models:** Chat history and `Memory` rows in Postgres are scoped by **`userId`**, so changing the LLM (local Ollama vs AI Gateway) does not start a new identity. When **`MEM0_API_KEY`** is set, semantic search goes through Mem0 first; **`MEM0_MONTHLY_SEARCH_LIMIT`** (default **1000**/month, Redis-backed when `REDIS_URL` is set) caps retrieval calls and then logic falls back toward **Postgres FTS**—see [AGENTS.md](../AGENTS.md) env summary. After each completed turn, conversation text can be mirrored into Mem0 for recall later (including after **local Ollama** chats, unless you set **`MEM0_DISABLE_LOCAL_SYNC=1`** to skip Mem0 writes for local-only traffic). Gateway chat still exposes **`saveMemory` / `recallMemory`** tools; the local Ollama path stays slim (no those tools) to protect context size on small models.
+
+**Example deployment topology:** **Phone** as the usual browser UI; **MacBook (e.g. M1 Air)** as the always-on stack (Docker Compose or `pnpm dev` + Postgres/Redis/Ollama per [AGENTS.md](../AGENTS.md)); a **LAN PC** with more RAM as a heavier Ollama **workhorse** by pointing **`OLLAMA_BASE_URL`** at that host (see [docs/beta-lan-gaming-pc.md](beta-lan-gaming-pc.md) and the LAN notes in [AGENTS.md](../AGENTS.md#setup-checklist)).
+
 ## Where truth lives (SSOT map)
 
 | Topic | Authoritative doc / location |
@@ -64,7 +74,7 @@ flowchart LR
   api --> redis
 ```
 
-- **Chat path:** Request → auth / rate limits → load chat + messages → build system prompt (companion vs front-desk, slim vs full) → trim context for local models → `streamText` with tools as configured.
+- **Chat path:** Request → auth / rate limits → load chat + messages → build system prompt (companion, slim vs full) → optional gateway planner outline → trim context for local models → `streamText` with tools as configured.
 - **Data:** Drizzle schema in `lib/db/schema.ts`; access via `@/lib/db/queries` (implementation under `lib/db/query-modules/`).
 - **Background:** Reminders via QStash; optional digest / night-review per route docs; cron on Vercel or host—see [AGENTS.md](../AGENTS.md#scheduled-jobs-on-the-host-no-vercel-cron).
 
@@ -74,7 +84,7 @@ Details and file-level pointers: [AGENTS.md § Architecture Notes](../AGENTS.md#
 
 1. **Backlog:** Pick or add items in [docs/ENHANCEMENTS.md](ENHANCEMENTS.md) with realistic impact/cost.
 2. **Implement:** Follow [AGENTS.md](../AGENTS.md) (focused diffs, local-first defaults, one tool per file).
-3. **Verify:** `pnpm check`, `pnpm build`, targeted tests (`tests/unit/local-context.test.ts`, `pnpm ollama:smoke` when behavior touches models/Ollama).
+3. **Verify:** `pnpm check`, `pnpm build`, targeted tests (`tests/unit/local-context.test.ts`, `tests/unit/multi-agent-orchestration.test.ts`, `pnpm ollama:smoke` when behavior touches models/Ollama).
 4. **Decide:** Record meaningful tradeoffs in [docs/DECISIONS.md](DECISIONS.md) (ADR-style).
 5. **Hand off:** Use the checklist below and AGENTS Review + Handoff checklists.
 

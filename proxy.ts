@@ -5,15 +5,54 @@ import {
   getAuthSecretResolved,
 } from "./lib/auth-secret";
 import { guestRegex, shouldUseSecureAuthCookie } from "./lib/constants";
+import { postVirgilDebugIngest } from "./lib/debug-ingest";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const includesNextAuthPath = pathname.includes("/api/auth");
+  // #region agent log
+  postVirgilDebugIngest(
+    {
+      sessionId: "6a8d1d",
+      runId: "pre-fix",
+      hypothesisId: "H1",
+      location: "proxy.ts:proxy_entry",
+      message: "Proxy received request",
+      data: {
+        pathname,
+        method: request.method,
+        includesNextAuthPath,
+      },
+      timestamp: Date.now(),
+    },
+    { "X-Debug-Session-Id": "6a8d1d" }
+  );
+  // #endregion
 
   if (pathname.startsWith("/ping")) {
     return new Response("pong", { status: 200 });
   }
 
   if (pathname.startsWith("/api/auth")) {
+    // #region debug auth proxy bypass
+    postVirgilDebugIngest(
+      {
+        sessionId: "03b2e8",
+        runId: "debug",
+        hypothesisId: "H1",
+        location: "proxy.ts:middleware_bypass_start",
+        message: "NextAuth API request bypassed proxy",
+        data: {
+          pathname,
+          startsWithApiAuth: pathname.startsWith("/api/auth"),
+          nextPublicBasePath: base,
+        },
+        timestamp: Date.now(),
+      },
+      { "X-Debug-Session-Id": "03b2e8" }
+    );
+    // #endregion
     return NextResponse.next();
   }
 
@@ -22,6 +61,20 @@ export async function proxy(request: NextRequest) {
     secret = getAuthSecretResolved();
   } catch {
     if (pathname.startsWith("/api")) {
+      // #region debug auth missing secret
+      postVirgilDebugIngest(
+        {
+          sessionId: "03b2e8",
+          runId: "debug",
+          hypothesisId: "H3",
+          location: "proxy.ts:missing_auth_secret_api",
+          message: "Auth secret resolution failed for API request",
+          data: { pathname },
+          timestamp: Date.now(),
+        },
+        { "X-Debug-Session-Id": "03b2e8" }
+      );
+      // #endregion
       return NextResponse.json(
         {
           error: "Missing AUTH_SECRET",
@@ -39,16 +92,78 @@ export async function proxy(request: NextRequest) {
     );
   }
 
+  const secureCookie = shouldUseSecureAuthCookie();
   const token = await getToken({
     req: request,
     secret,
-    secureCookie: shouldUseSecureAuthCookie(),
+    secureCookie,
   });
 
-  const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  if (includesNextAuthPath) {
+    // #region debug auth token check
+    postVirgilDebugIngest(
+      {
+        sessionId: "03b2e8",
+        runId: "debug",
+        hypothesisId: "H1",
+        location: "proxy.ts:middleware_token_check",
+        message: "Middleware inspected auth token for NextAuth-like path",
+        data: {
+          pathname,
+          tokenFound: Boolean(token),
+          secureCookie,
+          nextPublicBasePath: base,
+          startsWithApiAuth: pathname.startsWith("/api/auth"),
+        },
+        timestamp: Date.now(),
+      },
+      { "X-Debug-Session-Id": "03b2e8" }
+    );
+    // #endregion
+  }
 
   if (!token) {
     const redirectUrl = encodeURIComponent(new URL(request.url).pathname);
+    // #region agent log
+    postVirgilDebugIngest(
+      {
+        sessionId: "6a8d1d",
+        runId: "pre-fix",
+        hypothesisId: "H2",
+        location: "proxy.ts:missing_token_redirect",
+        message: "Proxy redirecting due to missing token",
+        data: {
+          pathname,
+          redirectTo: `${base}/api/auth/guest`,
+          redirectUrlLength: redirectUrl.length,
+        },
+        timestamp: Date.now(),
+      },
+      { "X-Debug-Session-Id": "6a8d1d" }
+    );
+    // #endregion
+
+    if (includesNextAuthPath) {
+      // #region debug auth redirect when token missing
+      postVirgilDebugIngest(
+        {
+          sessionId: "03b2e8",
+          runId: "debug",
+          hypothesisId: "H1",
+          location: "proxy.ts:middleware_redirect_no_token",
+          message:
+            "Middleware redirecting due to missing token for auth-like path",
+          data: {
+            pathname,
+            redirectToPath: `${base}/api/auth/guest`,
+            hasRedirectUrl: redirectUrl.length > 0,
+          },
+          timestamp: Date.now(),
+        },
+        { "X-Debug-Session-Id": "03b2e8" }
+      );
+      // #endregion
+    }
 
     return NextResponse.redirect(
       new URL(`${base}/api/auth/guest?redirectUrl=${redirectUrl}`, request.url)

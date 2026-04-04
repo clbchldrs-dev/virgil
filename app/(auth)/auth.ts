@@ -5,6 +5,7 @@ import Credentials from "next-auth/providers/credentials";
 import { getAuthSecretResolved } from "@/lib/auth-secret";
 import { DUMMY_PASSWORD, shouldUseSecureAuthCookie } from "@/lib/constants";
 import { createGuestUser, getUser } from "@/lib/db/queries";
+import { postVirgilDebugIngest } from "@/lib/debug-ingest";
 import { authConfig } from "./auth.config";
 
 export type UserType = "guest" | "regular";
@@ -83,20 +84,93 @@ export const {
   ],
   callbacks: {
     jwt({ token, user }) {
-      if (user) {
-        token.id = user.id as string;
-        token.type = user.type;
-      }
+      try {
+        // #region debug nextauth jwt callback
+        postVirgilDebugIngest(
+          {
+            sessionId: "03b2e8",
+            runId: "debug",
+            hypothesisId: "H4",
+            location: "app/(auth)/auth.ts:nextauth_jwt_callback",
+            message: "NextAuth jwt callback executed",
+            data: { hasUser: Boolean(user), tokenType: token.type },
+            timestamp: Date.now(),
+          },
+          { "X-Debug-Session-Id": "03b2e8" }
+        );
+        // #endregion
 
-      return token;
+        if (user) {
+          token.id = user.id as string;
+          token.type = user.type;
+        }
+
+        return token;
+      } catch (error) {
+        // #region debug nextauth jwt callback error
+        postVirgilDebugIngest(
+          {
+            sessionId: "03b2e8",
+            runId: "debug",
+            hypothesisId: "H4",
+            location: "app/(auth)/auth.ts:nextauth_jwt_callback_error",
+            message: "NextAuth jwt callback threw",
+            data: {
+              error: error instanceof Error ? error.message : String(error),
+            },
+            timestamp: Date.now(),
+          },
+          { "X-Debug-Session-Id": "03b2e8" }
+        );
+        // #endregion
+        throw error;
+      }
     },
     session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id;
-        session.user.type = token.type;
-      }
+      try {
+        // #region debug nextauth session callback
+        postVirgilDebugIngest(
+          {
+            sessionId: "03b2e8",
+            runId: "debug",
+            hypothesisId: "H4",
+            location: "app/(auth)/auth.ts:nextauth_session_callback",
+            message: "NextAuth session callback executed",
+            data: {
+              hasSessionUser: Boolean(session.user),
+              tokenType: token.type,
+            },
+            timestamp: Date.now(),
+          },
+          { "X-Debug-Session-Id": "03b2e8" }
+        );
+        // #endregion
 
-      return session;
+        if (session.user) {
+          session.user.id = token.id;
+          session.user.type = token.type;
+        }
+
+        return session;
+      } catch (error) {
+        // #region debug nextauth session callback error
+        postVirgilDebugIngest(
+          {
+            sessionId: "03b2e8",
+            runId: "debug",
+            hypothesisId: "H4",
+            location: "app/(auth)/auth.ts:nextauth_session_callback_error",
+            message: "NextAuth session callback threw",
+            data: {
+              error: error instanceof Error ? error.message : String(error),
+            },
+            timestamp: Date.now(),
+          },
+          { "X-Debug-Session-Id": "03b2e8" }
+        );
+        // #endregion
+        throw error;
+      }
     },
   },
 });
