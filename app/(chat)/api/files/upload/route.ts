@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { auth } from "@/app/(auth)/auth";
+import { generateUUID } from "@/lib/utils";
 
 const FileSchema = z.object({
   file: z
@@ -49,7 +50,10 @@ export async function POST(request: Request) {
     const fileBuffer = await file.arrayBuffer();
 
     try {
-      const data = await put(`${safeName}`, fileBuffer, {
+      // Public URLs let the chat UI load images without signed-URL plumbing; scope by user + id
+      // so blobs are not a flat global namespace.
+      const objectPath = `${session.user.id}/${generateUUID()}-${safeName}`;
+      const data = await put(objectPath, fileBuffer, {
         access: "public",
       });
 

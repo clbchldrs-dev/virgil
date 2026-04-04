@@ -33,3 +33,9 @@ LLM-invoked tools live under [`lib/ai/tools/`](../../lib/ai/tools/). Server-side
 | `/api/reminders` | POST | **QStash** signature (same pattern) |
 
 Self-hosted cron: [AGENTS.md](../../AGENTS.md#scheduled-jobs-on-the-host-no-vercel-cron). No sensitive work without these checks.
+
+---
+
+## File uploads (`POST` `/api/files/upload`)
+
+Authenticated users only; MIME (JPEG/PNG) and size limits are validated in [`app/(chat)/api/files/upload/route.ts`](../../app/(chat)/api/files/upload/route.ts). Blobs use **`access: "public"`** so image URLs work in the chat UI without signed URLs; object keys are scoped under **`userId/uuid-filename`** to avoid a single flat namespace. Treat uploaded images as **sensitive** if chats contain private content — URLs are unguessable but shareable if leaked.

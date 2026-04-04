@@ -2,6 +2,7 @@
 
 import {
   ActivityIcon,
+  ListChecksIcon,
   MessageSquareIcon,
   MoonIcon,
   PanelLeftIcon,
@@ -132,6 +133,21 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     >
                       <ActivityIcon className="size-4" />
                       <span>Background</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {user && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                      onClick={() => {
+                        setOpenMobile(false);
+                        router.push("/proposals");
+                      }}
+                      tooltip="Proposals"
+                    >
+                      <ListChecksIcon className="size-4" />
+                      <span>Proposals</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}

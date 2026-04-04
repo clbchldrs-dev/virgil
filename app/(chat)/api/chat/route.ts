@@ -76,6 +76,12 @@ import {
 import type { DBMessage } from "@/lib/db/schema";
 import { VirgilError } from "@/lib/errors";
 import { isProductOpportunityConfigured } from "@/lib/github/product-opportunity-issue";
+import {
+  handleBotIdForChatPost,
+  isBotIdEnforceEnabled,
+  type BotIdVerification,
+} from "@/lib/security/botid-chat";
+import { logChatApiException } from "@/lib/security/log-safe-error";
 import { isOpenClawConfigured } from "@/lib/integrations/openclaw-config";
 import { checkIpRateLimit } from "@/lib/ratelimit";
 import type { ChatMessage } from "@/lib/types";
@@ -121,13 +127,23 @@ export async function POST(request: Request) {
     } = requestBody;
     const showThinking = showThinkingRaw === true;
 
-    const [, session] = await Promise.all([
-      checkBotId().catch(() => null),
+    const [botCheckResult, session] = await Promise.all([
+      checkBotId().catch((): null => null),
       auth(),
     ]);
 
     if (!session?.user) {
       return new VirgilError("unauthorized:chat").toResponse();
+    }
+
+    const bot = botCheckResult as BotIdVerification | null;
+    if (
+      handleBotIdForChatPost({
+        bot,
+        enforce: isBotIdEnforceEnabled(),
+      }) === "block"
+    ) {
+      return new VirgilError("forbidden:api").toResponse();
     }
 
     const chatModel = (await isAllowedChatModelId(selectedChatModel))
@@ -593,7 +609,7 @@ export async function POST(request: Request) {
         }
       },
       onError: (error) => {
-        console.error("Chat UI message stream error:", error);
+        logChatApiException("Chat UI message stream error", error, {});
         if (
           error instanceof Error &&
           error.message?.includes(
@@ -673,7 +689,9 @@ export async function POST(request: Request) {
       }
     }
 
-    console.error("Unhandled error in chat API:", error, { vercelId });
+    logChatApiException("Unhandled error in chat API", error, {
+      vercelId: vercelId ?? undefined,
+    });
     return new VirgilError("offline:chat").toResponse();
   }
 }

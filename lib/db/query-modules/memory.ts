@@ -299,7 +299,10 @@ export async function setProposalMemoryDecision({
         .where(eq(memory.id, memoryId))
         .returning();
       if (!updated) {
-        throw new VirgilError("bad_request:database", "Failed to update memory");
+        throw new VirgilError(
+          "bad_request:database",
+          "Failed to update memory"
+        );
       }
       return updated;
     }

@@ -30,7 +30,7 @@ See [`docs/security/tool-inventory.md`](../../security/tool-inventory.md).
 
 ### A4 — Prompt injection + logging
 
-- [ ] Review prompts for clear role separation; ensure prod logs don’t dump full prompts/secrets.
+- [x] Chat API unhandled/stream errors use `logChatApiException` (no full error object dump in production — `lib/security/log-safe-error.ts`). Prompt copy review remains periodic.
 
 ---
 
@@ -42,11 +42,11 @@ See [`docs/security/tool-inventory.md`](../../security/tool-inventory.md).
 
 ### B2 — Rate limits
 
-- [ ] Document fail-open vs fail-closed when Redis is down; optional stricter guest caps — [ADR](../../DECISIONS.md) if behavior changes.
+- [x] Documented fail-open IP limiter behavior in [`lib/ratelimit.ts`](../../../lib/ratelimit.ts) module comment. Optional stricter guest caps unchanged — [ADR](../../DECISIONS.md) only if behavior changes.
 
 ### B3 — BotID
 
-- [ ] Decide: log-only vs block for `checkBotId` in production; document env if needed.
+- [x] `checkBotId` result wired: production **log** for unverified bots on `POST /api/chat`; optional **`BOTID_ENFORCE=1`** for 403 — [`lib/security/botid-chat.ts`](../../../lib/security/botid-chat.ts), [AGENTS.md](../../../AGENTS.md) env table.
 
 ---
 
@@ -58,7 +58,7 @@ Matrix in [`tool-inventory.md` § Background routes](../../security/tool-invento
 
 ### C2 — Blob upload
 
-- [ ] Revisit `access: "public"` on Blob if attachments are sensitive; MIME/size limits.
+- [x] MIME/size limits unchanged; public access documented in [`tool-inventory.md`](../../security/tool-inventory.md#file-uploads-post-apifilesupload); uploads namespaced `userId/uuid-name` in [`upload/route.ts`](../../../app/(chat)/api/files/upload/route.ts).
 
 ---
 

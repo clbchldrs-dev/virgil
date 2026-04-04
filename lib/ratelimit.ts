@@ -1,3 +1,12 @@
+/**
+ * IP-based chat abuse guard (production only, see `checkIpRateLimit`).
+ *
+ * **Fail-open:** If `REDIS_URL` is unset, the client is not created. If Redis is down or not
+ * yet `isReady`, `checkIpRateLimit` returns without incrementing (no 429). If `incr` throws a
+ * non-`VirgilError`, the catch swallows it — traffic is allowed. Intentional: chat stays
+ * available when Redis is degraded; per-user hourly caps in Postgres still apply for gateway
+ * traffic unless `SKIP_CHAT_MESSAGE_RATE_LIMIT` is set.
+ */
 import { createClient } from "redis";
 
 import { isProductionEnvironment } from "@/lib/constants";

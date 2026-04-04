@@ -5,6 +5,7 @@ import { auth } from "@/app/(auth)/auth";
 import { Button } from "@/components/ui/button";
 import {
   countActionableNightReviewInsights,
+  countPendingProposalsForUser,
   getRecentNightReviewRunsForUser,
 } from "@/lib/db/queries";
 import { isNightReviewEnabled } from "@/lib/night-review/config";
@@ -32,10 +33,13 @@ export default async function BackgroundActivityPage() {
 
   const userId = session.user.id;
   const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-  const [recentRuns, actionableInsightsCount] = await Promise.all([
-    getRecentNightReviewRunsForUser({ userId, limit: 10 }),
-    countActionableNightReviewInsights({ userId, since }),
-  ]);
+  const sinceProposals = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  const [recentRuns, actionableInsightsCount, pendingProposalsCount] =
+    await Promise.all([
+      getRecentNightReviewRunsForUser({ userId, limit: 10 }),
+      countActionableNightReviewInsights({ userId, since }),
+      countPendingProposalsForUser({ userId, since: sinceProposals }),
+    ]);
   const nightReviewEnabled = isNightReviewEnabled();
 
   const lastRun = recentRuns[0];
@@ -130,6 +134,28 @@ export default async function BackgroundActivityPage() {
               </ul>
             </details>
           ) : null}
+        </section>
+
+        <section className="space-y-4 rounded-xl border border-border/60 bg-card/30 p-6 shadow-[var(--shadow-float)]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-medium">Proposals</h2>
+              <p className="text-muted-foreground text-sm">
+                Suggested actions (tier &quot;propose&quot;) from background
+                jobs and analysis. Review and accept on the proposals
+                page—nothing runs automatically.
+              </p>
+            </div>
+            <Button asChild className="shrink-0" variant="secondary">
+              <Link href="/proposals">Open proposals</Link>
+            </Button>
+          </div>
+          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground">Pending (90d)</dt>
+              <dd className="font-medium">{pendingProposalsCount}</dd>
+            </div>
+          </dl>
         </section>
 
         <section className="space-y-3 rounded-xl border border-dashed border-border/60 bg-muted/20 p-6">

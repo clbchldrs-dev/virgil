@@ -578,6 +578,7 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `OPENCLAW_HEALTH_PATH` | No | No | GET path for health ping (default `/health`) |
 | `VIRGIL_MULTI_AGENT_ENABLED` | No | No | Set to `1` / `true` for gateway-only planner+executor pass before `streamText` (extra cost/latency) |
 | `VIRGIL_MULTI_AGENT_PLANNER_MODEL` | No | No | Optional model id for the planner when different from the chat model |
+| `BOTID_ENFORCE` | No | No | Set to `1` / `true` to return 403 on `POST /api/chat` when BotID classifies an unverified bot; default is log-only in production (`lib/security/botid-chat.ts`) |
 
 ### Hobby-to-Pro threshold
 
