@@ -61,6 +61,7 @@ export type CustomUIDataTypes = {
   finish: null;
   "chat-title": string;
   "model-metrics": ModelMetricsPayload;
+  "fallback-notice": string;
 };
 
 export type ChatMessage = UIMessage<

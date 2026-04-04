@@ -8,7 +8,7 @@ const DECISION_PREFIX =
   "[Decision help — use DECISION POINT format; one combined recallMemory query max.]\n\n";
 
 const BLOCKER_PREFIX =
-  "[Blocker / pattern — use BLOCKER ALERT format; one recallMemory for mitigations max, then optional saveMemory if user approves.]\n\n";
+  "[Blocker / pattern — use BLOCKER ALERT format; one recallMemory for mitigations max, then optional saveMemory when they want it remembered.]\n\n";
 
 /**
  * Prepends routing hints for `/weekly`, `/decision`, `/blocker` messages (client-only).

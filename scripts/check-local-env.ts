@@ -16,7 +16,7 @@ const rows: Row[] = [
   {
     key: "POSTGRES_URL",
     ok: Boolean(process.env.POSTGRES_URL),
-    note: "Required for login, chat history, profiles. Neon free tier OK.",
+    note: "Required for login, chat history, profiles. Neon or Supabase free tier OK.",
     critical: true,
   },
   {

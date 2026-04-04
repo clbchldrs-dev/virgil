@@ -4,10 +4,15 @@ import { getUsersEligibleForCompanionBackgroundJobs } from "@/lib/db/queries";
 import {
   computeNightReviewWindow,
   computeWindowKey,
+  getNightReviewModelId,
   getNightReviewStaggerSeconds,
   getNightReviewTimezone,
   isNightReviewEnabled,
 } from "@/lib/night-review/config";
+import {
+  getNightReviewChatModelProfile,
+  resolveNightReviewLanguageModel,
+} from "@/lib/night-review/night-review-model";
 import { generateUUID } from "@/lib/utils";
 
 function getQStashClient(token: string) {
@@ -29,6 +34,20 @@ export async function GET(request: Request) {
 
   if (!isNightReviewEnabled()) {
     return NextResponse.json({ ok: true, skipped: true, reason: "disabled" });
+  }
+
+  const nightModelId = getNightReviewModelId();
+  const nightModelResolved = resolveNightReviewLanguageModel(
+    nightModelId,
+    getNightReviewChatModelProfile(nightModelId)?.ollamaOptions
+  );
+  if (!nightModelResolved.ok) {
+    return NextResponse.json({
+      ok: true,
+      skipped: true,
+      reason: "night_review_model_not_allowed",
+      detail: nightModelResolved.reason,
+    });
   }
 
   const qstashToken = process.env.QSTASH_TOKEN;

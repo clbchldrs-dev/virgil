@@ -10,10 +10,11 @@ const localOnlyTools = {
   readFile,
   writeFile,
   executeShell,
-  getBriefing,
 } as const;
 
+/** Safe on Vercel: time + optional `workspace/user-context.md` (missing file is OK). */
 const universalTools = {
+  getBriefing,
   getJiraIssue,
   searchJiraIssues,
   updateJiraIssue,

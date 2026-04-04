@@ -93,7 +93,7 @@ Use when adding a decision:
 **Decision:**
 
 - **Until pivot Phase 1 is implemented:** The **primary on-Postgres** recall path remains **FTS** as in the 2026-01-15 ADR. **Mem0** remains the optional **hosted semantic** layer when `MEM0_API_KEY` is configured; behavior stays as shipped.
-- **Program direction (hybrid):** When pivot Phase 1 is undertaken, prefer **pgvector inside the same Postgres** (e.g. Neon) plus **Ollama embeddings**, with **FTS retained as fallback** and for merge/dedup—**not** a separate managed vector database. Making vector search **rank before** FTS for recall requires a **follow-up ADR** at merge time (explicitly refining “primary” vs “fallback” ordering and migration).
+- **Program direction (hybrid):** When pivot Phase 1 is undertaken, prefer **pgvector inside the same Postgres** (e.g. Neon or Supabase) plus **Ollama embeddings**, with **FTS retained as fallback** and for merge/dedup—**not** a separate managed vector database. Making vector search **rank before** FTS for recall requires a **follow-up ADR** at merge time (explicitly refining “primary” vs “fallback” ordering and migration). Design sketch: [docs/tickets/2026-04-04-pgvector-memory-design.md](tickets/2026-04-04-pgvector-memory-design.md).
 - **Rejected for now:** Mem0-only as the sole semantic path for local-first posture (local Ollama users would not gain on-box semantic recall); pgvector-only without FTS fallback (regresses resilience).
 
 **Consequences:** Pivot work documents this stack in the epic ticket; v2 memory blueprint ticket ([T4](tickets/2026-04-01-v2-t4-memory-migration-blueprint.md)) must be updated if `memory_embeddings` or related tables ship.
@@ -302,3 +302,18 @@ Use when adding a decision:
 **Decision:** Drop business/front-desk product surface. Add optional **planner + executor** orchestration on the **gateway** chat path using Vercel AI SDK `generateText` + `streamText`, gated by `VIRGIL_MULTI_AGENT_ENABLED`. This is **pattern parity** with AutoGen-style roles, not a dependency on `microsoft/autogen`.
 
 **Consequences:** Extra latency/cost when enabled; local Ollama path unchanged (no planner, no tools on `streamText`).
+
+---
+
+## 2026-04-04 — Chat fallback cascade: Ollama → Gemini → Gateway — Accepted
+
+**Context:** Local Ollama inference is the default, but the server may be asleep, misconfigured, or missing a model. When that happens the user sees an error with no recovery. The owner has a personal Google Generative AI (Gemini) API key and wants to reduce Vercel AI Gateway token costs while keeping a safety net.
+
+**Decision:** Add an opt-in fallback cascade (`VIRGIL_CHAT_FALLBACK=1`) that escalates local Ollama failures through direct Gemini (personal API key via `@ai-sdk/google`), then Vercel AI Gateway as last resort. Constraints:
+
+- **No mid-stream fallback.** Escalation applies only to pre-stream failures (connection refused, missing model, timeout) detected before tokens flow to the client.
+- **Escalation tiers use gateway-class prompt and full tool set** (same `buildCompanionSystemPrompt` + all tools the gateway branch uses), so behavior matches hosted-model capabilities.
+- **Gemini requires `GOOGLE_GENERATIVE_AI_API_KEY`**; if absent, that tier is skipped and gateway is the only fallback.
+- **Fallback model ids are env-configurable** (`VIRGIL_FALLBACK_GEMINI_MODEL`, `VIRGIL_FALLBACK_GATEWAY_MODEL`) with sensible defaults (`gemini-2.5-flash`, `deepseek/deepseek-v3.2`).
+
+**Consequences:** When Ollama is down and fallback is enabled, chat stays available at the cost of one Gemini or gateway inference call. Billing for Gemini is on the owner's personal key. Title generation and night review are out of scope (they use their own model paths). `isFallbackEligibleError` is unit-tested to prevent accidental over-matching.

@@ -1,9 +1,15 @@
+import { google } from "@ai-sdk/google";
 import { customProvider, gateway, type LanguageModel } from "ai";
 import { createOllama } from "ai-sdk-ollama";
 import { isTestEnvironment } from "../constants";
 import { VirgilError } from "../errors";
 import type { ChatModel } from "./models";
-import { isLocalModel, resolveRuntimeModelId, titleModel } from "./models";
+import {
+  isGeminiModel,
+  isLocalModel,
+  resolveRuntimeModelId,
+  titleModel,
+} from "./models";
 
 /** Options passed to Ollama chat (including `think` for visible reasoning when supported). */
 export type OllamaLanguageModelOptions = NonNullable<
@@ -212,6 +218,15 @@ function getOllamaModel(
     : (ollamaProvider(ollamaModelName) as LanguageModel);
 }
 
+/**
+ * Returns a LanguageModel for a direct Gemini API call (requires GOOGLE_GENERATIVE_AI_API_KEY).
+ * The `modelId` should be the bare Google model name, e.g. `gemini-2.5-flash`.
+ */
+export function getGeminiLanguageModel(modelId: string): LanguageModel {
+  const bare = modelId.replace(/^gemini\//, "");
+  return google(bare) as LanguageModel;
+}
+
 export function getLanguageModel(
   modelId: string,
   ollamaOptions?: OllamaLanguageModelOptions
@@ -222,6 +237,10 @@ export function getLanguageModel(
 
   if (isLocalModel(modelId)) {
     return getOllamaModel(modelId, ollamaOptions);
+  }
+
+  if (isGeminiModel(modelId)) {
+    return getGeminiLanguageModel(modelId);
   }
 
   return gateway.languageModel(modelId) as LanguageModel;

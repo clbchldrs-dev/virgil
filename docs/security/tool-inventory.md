@@ -17,7 +17,7 @@ LLM-invoked tools live under [`lib/ai/tools/`](../../lib/ai/tools/). Server-side
 
 **High impact (prioritize server-side gates + tests):** `submitProductOpportunity`, `submitAgentTask`, `setReminder`, `saveMemory`, `createDocument` / `editDocument` / `updateDocument`.
 
-**Tool approval (A3):** Tools marked `needsApproval: true` pause for **Allow / Deny** in the chat UI before `execute` runs (`getWeather`, `saveMemory`, `setReminder`, `submitProductOpportunity`). Artifact tools (`createDocument`, `editDocument`, `updateDocument`) and `requestSuggestions` stay auto-run; the user still sees results in the artifact UI. Server-side checks from Phase A2 apply even if the client is bypassed.
+**Tool approval (A3):** Tools marked `needsApproval: true` pause for **Allow / Deny** in the chat UI before `execute` runs (`getWeather`, `setReminder`, `submitProductOpportunity`, `submitAgentTask` when registered). `saveMemory` / `recallMemory` are user-scoped DB reads/writes and run without that gate. Artifact tools (`createDocument`, `editDocument`, `updateDocument`) and `requestSuggestions` stay auto-run; the user still sees results in the artifact UI. Server-side checks from Phase A2 apply even if the client is bypassed.
 
 **Local Ollama:** Tools are not attached on the chat route; see [`app/(chat)/api/chat/route.ts`](../../app/(chat)/api/chat/route.ts).
 

@@ -7,7 +7,7 @@ Authoritative reference: [AGENTS.md](../AGENTS.md) (full table and provider link
 ## Before you paste
 
 1. Create accounts and grab credentials:
-   - **Neon** — `POSTGRES_URL` (pooled/serverless string)
+   - **Neon** or **Supabase** — `POSTGRES_URL` (pooled/serverless string; Supabase: transaction pooler URI, port `6543`)
    - **Upstash** — `REDIS_URL` (TLS `rediss://…`) and **QStash** — `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`
    - **Resend** — `RESEND_API_KEY`
    - **Vercel project** — connect the Git repo, add **Blob** → `BLOB_READ_WRITE_TOKEN`
@@ -20,7 +20,7 @@ Set these first (all **Production** unless you use Preview DBs separately):
 | Variable | Notes |
 | -------- | ----- |
 | `AUTH_SECRET` | `openssl rand -base64 32` — no quotes in dashboard unless needed |
-| `POSTGRES_URL` | Neon connection string |
+| `POSTGRES_URL` | Postgres connection string (Neon or Supabase pooler URI) |
 | `REDIS_URL` | Upstash Redis (`rediss://`) |
 | `BLOB_READ_WRITE_TOKEN` | From Vercel Storage → Blob for this project |
 | `QSTASH_TOKEN` | JWT-shaped (`ey…`) |
@@ -42,7 +42,7 @@ After adding or changing **`NEXT_PUBLIC_APP_URL`**, trigger a **new deployment**
 
 Copy from [.env.example](../.env.example) only if you use the feature:
 
-- **Night review** — `NIGHT_REVIEW_ENABLED`, `NIGHT_REVIEW_MODEL` (use a **gateway** id on Vercel, not `ollama/…` unless you have a reachable Ollama URL), `NIGHT_REVIEW_TIMEZONE`, `NIGHT_REVIEW_EMAIL_ON_FINDINGS`, `AGENT_FETCH_ALLOWLIST_HOSTS`
+- **Night review** — `NIGHT_REVIEW_ENABLED`, `NIGHT_REVIEW_MODEL` (**`google/…` + `GOOGLE_GENERATIVE_AI_API_KEY`** on Vercel, or `ollama/…` if Ollama is reachable from the runtime), `NIGHT_REVIEW_TIMEZONE`, `NIGHT_REVIEW_EMAIL_ON_FINDINGS`, `AGENT_FETCH_ALLOWLIST_HOSTS`
 - **GitHub product opportunities** — `GITHUB_REPOSITORY`, `GITHUB_PRODUCT_OPPORTUNITY_TOKEN` (or `GITHUB_TOKEN`)
 - **Mem0** — `MEM0_API_KEY`, `MEM0_MONTHLY_SEARCH_LIMIT` (default `1000`; caps retrieval API calls per month, falls back to Postgres FTS)
 - **Jira tools** — `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`

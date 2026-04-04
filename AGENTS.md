@@ -120,7 +120,7 @@ Docker details that matter:
 Online deployment should stay lightweight:
 
 - Vercel Hobby
-- Neon free tier
+- Neon **or** Supabase free tier (Postgres)
 - Upstash free tier
 - Resend free tier
 - AI Gateway optional
@@ -169,7 +169,11 @@ Do these in order. Paste each value on **one line** with no spaces around `=`.
 3. Copy the entire output (one line).
 4. Paste after `AUTH_SECRET=` in `.env.local` (no quotes unless the secret contains special characters that break the file—usually no quotes needed).
 
-### 1.2 `POSTGRES_URL` (Neon)
+### 1.2 `POSTGRES_URL` (Neon **or** Supabase)
+
+Use any standard Postgres provider. Two tested options:
+
+**Option A — Neon (free tier)**
 
 1. Go to [Neon Console](https://console.neon.tech) and sign up / log in.
 2. **Create project** (pick a region close to you).
@@ -177,6 +181,15 @@ Do these in order. Paste each value on **one line** with no spaces around `=`.
 4. Copy the URI that starts with `postgres://` or `postgresql://`.
 5. If Neon shows a **pooled** connection for serverless, prefer that for Vercel/Next.js.
 6. Paste into `.env.local` after `POSTGRES_URL=`.
+
+**Option B — Supabase (free tier)**
+
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard) and sign up / log in.
+2. **New project** → pick a region close to you → set a database password.
+3. Open the project → **Settings → Database** (or **Connect**).
+4. Copy the **transaction pooler** URI (port `6543`) for the app at runtime.
+5. Paste into `.env.local` after `POSTGRES_URL=`.
+6. For **migrations only** (`pnpm db:migrate`), use the **direct** connection string (port `5432`) — the pooler may reject DDL statements. You can pass it inline: `POSTGRES_URL='postgresql://...:5432/...' pnpm db:migrate`.
 
 ### 1.3 `REDIS_URL` (Upstash)
 
@@ -229,8 +242,8 @@ Do these in order. Paste each value on **one line** with no spaces around `=`.
 
 Scheduled **night review** uses a larger model to analyze the last 24 hours of chat (rollup + excerpts), guided by Markdown under [`workspace/night/`](workspace/night/) (`HEARTBEAT.md`, `SOUL.md`, `SKILLS.md`) — same *idea* as [OpenClaw heartbeat / workspace files](https://docs.openclaw.ai/gateway/heartbeat) and [NemoClaw workspace layout](https://docs.nvidia.com/nemoclaw/latest/workspace/workspace-files.html), implemented inside Virgil only.
 
-1. Set **`NIGHT_REVIEW_ENABLED=1`** in `.env.local` (or production env) when you want it to run.
-2. Set **`NIGHT_REVIEW_MODEL`** if you want something other than the default (`ollama/qwen2.5:7b-review` — see [`lib/ai/models.ts`](lib/ai/models.ts)). Local Ollama must be reachable when the worker runs if you use an `ollama/…` id.
+1. **Vercel production:** night review is **on by default** when `NIGHT_REVIEW_ENABLED` is unset (so the `vercel.json` cron is not a no-op). Set **`NIGHT_REVIEW_ENABLED=0`** to turn it off. **Local, preview, and self-hosted:** set **`NIGHT_REVIEW_ENABLED=1`** when you want the enqueue/worker path to run.
+2. Set **`NIGHT_REVIEW_MODEL`** only to an allowed id: **`ollama/…`** (local; Ollama must be reachable from the worker) or **`google/…`** (Gemini — bills your Google AI key, not Vercel AI Gateway). Example hosted: `NIGHT_REVIEW_MODEL=google/gemini-2.5-flash-lite` plus **`GOOGLE_GENERATIVE_AI_API_KEY`** from [Google AI Studio](https://aistudio.google.com/apikey). DeepSeek, Mistral, and other gateway-only ids are **blocked** for night review to limit token spend.
 3. Optional: **`NIGHT_REVIEW_STAGGER_SECONDS`** (default `60`) spaces QStash deliveries per owner. **`NIGHT_REVIEW_TIMEZONE`** (default `UTC`) defines the calendar **`windowKey`** for idempotency (one completed run per user per local date).
 4. **Cron:** Vercel Cron calls **`GET /api/night-review/enqueue`** with `Authorization: Bearer $CRON_SECRET` (see [`vercel.json`](vercel.json), `0 3 * * *` UTC). Self-hosted: use the same request from `cron` or Task Scheduler against your public base URL.
 5. The enqueue endpoint publishes one **QStash** message per **eligible user** (non-guest with **at least one chat** — same rule as the daily digest). Each message hits **`POST /api/night-review/run`** (signed). Findings are stored as **`Memory`** rows with `metadata.source = "night-review"`; completion rows use `metadata.phase = "complete"` for deduplication. Each run also appends a row to **`NightReviewRun`** (duration, outcome, model id).
@@ -463,18 +476,27 @@ Vercel and production env: provisioning, deploy commands, **environment variable
 ### Prerequisites
 
 - A [Vercel](https://vercel.com) account (Hobby tier, free)
-- A [Neon](https://neon.tech) account (free tier, no credit card)
+- A [Neon](https://neon.tech) or [Supabase](https://supabase.com) account (free tier, no credit card)
 - An [Upstash](https://upstash.com) account (free tier — Redis + QStash)
 - A [Resend](https://resend.com) account (free tier — 100 emails/day)
 - Node.js 20+ and pnpm 10+
 
 ### 1. Provision storage
 
-### Neon Postgres (free tier — 512 MB, 190 compute-hours/mo)
+### Postgres (Neon or Supabase — free tier)
+
+**Neon** (512 MB, 190 compute-hours/mo):
 
 1. Create a project at https://console.neon.tech
 2. Copy the **connection string** (starts with `postgres://...`)
 3. Set it as `POSTGRES_URL` in `.env.local` and in Vercel env vars
+
+**Supabase** (500 MB, 2 projects):
+
+1. Create a project at https://supabase.com/dashboard
+2. Go to **Settings → Database** → copy the **transaction pooler** URI (port `6543`) for the app
+3. Set it as `POSTGRES_URL` in `.env.local` and in Vercel env vars
+4. For `pnpm db:migrate`, use the **direct** connection (port `5432`) if the pooler rejects DDL
 
 ### Upstash Redis (free tier — 10K commands/day)
 
@@ -538,7 +560,7 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | Variable              | Required locally | Required on Vercel | Notes                                    |
 | --------------------- | ---------------- | ------------------ | ---------------------------------------- |
 | `AUTH_SECRET`         | Yes              | Yes                | Session encryption                       |
-| `POSTGRES_URL`        | Yes              | Yes                | Neon connection string                   |
+| `POSTGRES_URL`        | Yes              | Yes                | Postgres connection string (Neon or Supabase); use pooler URI for serverless, direct for migrations |
 | `REDIS_URL`           | Yes              | Yes                | Upstash Redis for rate limiting          |
 | `BLOB_READ_WRITE_TOKEN` | Yes           | Yes                | Vercel Blob for file uploads             |
 | `AI_GATEWAY_API_KEY`  | Yes              | **No** (OIDC)      | Only needed outside Vercel               |
@@ -553,12 +575,17 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `OLLAMA_BASE_URL`     | If using Ollama  | If using Ollama    | Default `http://127.0.0.1:11434` local; Docker/LAN: see [Setup checklist](#setup-checklist) / [beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md). |
 | `VIRGIL_OPEN_URL`     | No               | No                 | Optional; launcher / smoke open URL (packaging). |
 | `WARMUP_MODEL`        | No               | No                 | Optional; `pnpm warmup:ollama` target id (defaults to `DEFAULT_CHAT_MODEL`). |
-| `NIGHT_REVIEW_ENABLED` | No            | No                 | Set to `1` to run scheduled night review |
-| `NIGHT_REVIEW_MODEL`  | No               | No                 | Default `ollama/qwen2.5:7b-review` (or any chat model id) |
+| `NIGHT_REVIEW_ENABLED` | Local/preview/self-hosted: set `1` to enable | Vercel prod: default on if unset; set `0` to disable | Scheduled night review enqueue + worker |
+| `NIGHT_REVIEW_MODEL`  | No               | No                 | Default `ollama/qwen2.5:7b-review`. Only **`ollama/…`** or **`google/…`** allowed. |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | When using `google/…` for night review | Same | Gemini API key for scheduled night review only (not used for chat unless you pick a Gemini model there too). |
 | `NIGHT_REVIEW_STAGGER_SECONDS` | No      | No                 | Delay between per-user QStash jobs (default `60`) |
 | `NIGHT_REVIEW_TIMEZONE` | No             | No                 | IANA tz for idempotency window key (default `UTC`) |
 | `NIGHT_REVIEW_EMAIL_ON_FINDINGS` | No   | No                 | Set to `1` to email when review finds material (needs Resend) |
 | `AGENT_FETCH_ALLOWLIST_HOSTS` | No      | No                 | Comma-separated hostnames for tool `fetch` (defaults include Open-Meteo) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | No | No | Direct Gemini API key (personal plan). Enables Gemini as chat fallback tier and night-review model. Get a key at https://aistudio.google.com/apikey |
+| `VIRGIL_CHAT_FALLBACK` | No | No | Set to `1` to enable Ollama → Gemini → Gateway cascade on local model failure |
+| `VIRGIL_FALLBACK_GEMINI_MODEL` | No | No | Gemini model for fallback (default `gemini-2.5-flash`). Bare Google model name, no prefix. |
+| `VIRGIL_FALLBACK_GATEWAY_MODEL` | No | No | Gateway model for last-resort fallback (default `deepseek/deepseek-v3.2`) |
 | `MEM0_API_KEY` | No | No | Enables Mem0 semantic memory; without it, recall uses Postgres FTS only |
 | `MEM0_MONTHLY_SEARCH_LIMIT` | No | No | Monthly cap on mem0 search API calls; falls back to Postgres FTS when exhausted (default `1000`) |
 | `MEM0_MONTHLY_ADD_LIMIT` | No | No | Optional monthly cap on mem0 **add** (write) calls when `REDIS_URL` is set; when exhausted, mem0 writes are skipped (omit env for unlimited) |
@@ -587,7 +614,7 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 Monitor these free-tier limits:
 
 - **Vercel Hobby**: 100 GB bandwidth/mo, 1,000 serverless fn-hours/mo
-- **Neon free**: 512 MB storage, 190 compute-hours/mo, 1 project
+- **Neon free**: 512 MB storage, 190 compute-hours/mo, 1 project; **Supabase free**: 500 MB, 2 projects
 - **Upstash Redis free**: 10K commands/day, 256 MB storage
 - **Upstash QStash free**: 500 messages/day
 - **Resend free**: 100 emails/day, 3,000/month
@@ -604,7 +631,7 @@ Same flows as [Scheduled jobs on the host (no Vercel Cron)](#scheduled-jobs-on-t
 
 ### Minimal “live v1” posture (cost-first)
 
-- **Single Vercel Hobby project** + **Neon** + **Upstash** + **Resend** (all free tiers) is enough for **Virgil** in personal use or a tiny closed beta if traffic stays low and **AI Gateway** usage is capped (use **local Ollama** for bulk chat; gateway for occasional hosted models).
+- **Single Vercel Hobby project** + **Neon or Supabase** + **Upstash** + **Resend** (all free tiers) is enough for **Virgil** in personal use or a tiny closed beta if traffic stays low and **AI Gateway** usage is capped (use **local Ollama** for bulk chat; gateway for occasional hosted models).
 - **Do not** add databases, queues, or SaaS until a free-tier limit is actually hit — see the table in §6 above.
 - Roadmap and phased goals: [docs/PROJECT.md](docs/PROJECT.md), [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md).
 
@@ -657,7 +684,7 @@ When `AGENT_TASK_TRIAGE_ENABLED=1`, a cron job (`GET /api/agent-tasks/enqueue`, 
 
 Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](docs/DECISIONS.md)**.
 
-- **v1 vs v2 deployment tracks (2026-04-03 ADR):** v1 hosted stack (Vercel + Neon + Upstash Redis/QStash + Resend + Blob) vs planned v2 Mac mini + Ollama + Python backend; v2 data **either** Postgres-on-home (migration parity) **or** SQLite/Mem0 greenfield — [docs/PROJECT.md](docs/PROJECT.md), [docs/V2_MIGRATION.md](docs/V2_MIGRATION.md), [docs/V1_V2_RISK_AUDIT.md](docs/V1_V2_RISK_AUDIT.md).
+- **v1 vs v2 deployment tracks (2026-04-03 ADR):** v1 hosted stack (Vercel + Neon or Supabase + Upstash Redis/QStash + Resend + Blob) vs planned v2 Mac mini + Ollama + Python backend; v2 data **either** Postgres-on-home (migration parity) **or** SQLite/Mem0 greenfield — [docs/PROJECT.md](docs/PROJECT.md), [docs/V2_MIGRATION.md](docs/V2_MIGRATION.md), [docs/V1_V2_RISK_AUDIT.md](docs/V1_V2_RISK_AUDIT.md).
 - **Bespoke single-owner** product intent: [docs/OWNER_PRODUCT_VISION.md](docs/OWNER_PRODUCT_VISION.md) (2026-03-31 ADR). Commercial multi-tenant SaaS is not a design goal for this repo. Personal-assistant-only surface (business/front-desk paths removed 2026-04). Local models default; gateway optional. Optional gateway multi-agent orchestration via env (see `lib/ai/orchestration/`).
 - **Target architecture (owner intent):** Virgil as **brain** (this repo); **Agent Zero** as preferred external **executor** on a home **Mac mini (~48 GB unified memory)**; bridge **not shipped** — see [docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md) and [docs/DECISIONS.md](docs/DECISIONS.md).
 - Postgres FTS for recall (no casual vector DB). QStash for reminders. Docker Compose defaults include **bundled Ollama** + health-gated **`virgil-app`** (see `docker-compose.yml`); host-Ollama layout in `docker-compose.host-ollama.yml`.
@@ -670,6 +697,7 @@ Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](doc
 - **Agent task orchestration** (`submitAgentTask`): gateway-only tool writes to `AgentTask` table + optional GitHub Issue; background triage via local Ollama `generateObject`; manual approval required before any agent picks up work; owner UI at `/agent-tasks` — see [Agent Task Pickup Convention](#agent-task-pickup-convention).
 - **Proactive pivot (E11):** phased work toward nudges/goals/intent routing — [docs/tickets/2026-04-02-proactive-pivot-epic.md](docs/tickets/2026-04-02-proactive-pivot-epic.md); semantic recall strategy [docs/DECISIONS.md](docs/DECISIONS.md) (2026-04-02). Does not change default chat until phase PRs merge.
 - **OpenClaw bridge** (optional): `delegateTask` / `approveOpenClawIntent`, `PendingIntent` queue, `GET/PATCH /api/openclaw/pending` — [docs/openclaw-bridge.md](docs/openclaw-bridge.md), [docs/DECISIONS.md](docs/DECISIONS.md).
+- **Chat fallback cascade** (`VIRGIL_CHAT_FALLBACK=1`): when a local Ollama model fails (unreachable, missing model, timeout), the chat route automatically escalates to direct Gemini (personal API key), then Vercel AI Gateway. No mid-stream fallback; escalation uses gateway-style prompt and full tool set. See [docs/DECISIONS.md](docs/DECISIONS.md) (2026-04-04).
 
 ## Enhancement Review Process
 

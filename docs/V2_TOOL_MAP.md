@@ -27,7 +27,7 @@
 | `editDocument` | `edit-document.ts` | Gateway only | Y | **Yes** | No | Mutates document content stream. |
 | `updateDocument` | `update-document.ts` | Gateway only | Y | **Yes** | No | Persists document updates. |
 | `requestSuggestions` | `request-suggestions.ts` | Gateway only | Y (suggestion rows) | **Yes** | No | Writes suggestion state tied to document. |
-| `saveMemory` | `save-memory.ts` | Gateway only | Y (Memory rows) | **Yes** (v1 `needsApproval: true`) | No | UI approval step before persist; align v2 with same gate unless policy changes. |
+| `saveMemory` | `save-memory.ts` | Gateway only | Y (Memory rows) | No | No | User-scoped Postgres + optional Mem0; v1 runs without UI approval gate. |
 | `recallMemory` | `recall-memory.ts` | Gateway only | N | No | Yes | Read/search. |
 | `setReminder` | `set-reminder.ts` | Gateway only | Y (QStash / schedules) | **Yes** (v1 `needsApproval: true`) | No | Outbound notifications; v2 align with reminder policy. |
 | `getJiraIssue` | `jira.ts` | Gateway (always in companion when registered) | N | No | Yes | Read Jira. |
@@ -37,7 +37,7 @@
 | `readFile` | `filesystem.ts` | Gateway, **not** on Vercel | N | No | Yes | `ALLOWED_FILE_ROOTS` env gates paths. |
 | `writeFile` | `filesystem.ts` | Gateway, **not** on Vercel | Y | **Yes** — overwrites/creates paths | No | Same root validation; v2 `file_write` with allowlist. |
 | `executeShell` | `shell.ts` | Gateway, **not** on Vercel | Y | **Yes** — arbitrary `exec` with pattern blocklist only | No | v2 should use allowlisted commands or sandbox; see V2_ARCH `shell`. |
-| `getBriefing` | `briefing.ts` | Gateway, **not** on Vercel | N | No | Yes | Aggregates context for briefing-style answers. |
+| `getBriefing` | `briefing.ts` | Gateway (all deployments) | N | No | Yes | Time + optional `workspace/user-context.md`; safe on Vercel when file absent. |
 | `submitProductOpportunity` | `submit-product-opportunity.ts` | Gateway only; **off** for local models | Y (GitHub Issue) | **Yes** — public issue surface | No | Tool description asks user consent; keep explicit approval in v2. |
 | `submitAgentTask` | `submit-agent-task.ts` | Gateway only; **off** for local models | Y (DB + optional GitHub) | **Yes** | No | Queues work for humans/agents; gateway-only today. |
 | `delegateTask` | `delegate-to-openclaw.ts` | Gateway **and** local Ollama when OpenClaw configured | Y (LAN gateway) | **Yes** — `delegationNeedsConfirmation` queues `PendingIntent` | No* | *OpenClaw `allowed_in_night` is product-specific; default deny until policy exists. |

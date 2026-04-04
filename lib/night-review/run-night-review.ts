@@ -2,8 +2,8 @@ import "server-only";
 
 import { generateObject } from "ai";
 import { Resend } from "resend";
-import { getChatModel, isLocalModel } from "@/lib/ai/models";
-import { assertOllamaReachable, getLanguageModel } from "@/lib/ai/providers";
+import { isLocalModel } from "@/lib/ai/models";
+import { assertOllamaReachable } from "@/lib/ai/providers";
 import {
   countMessagesForUserInWindow,
   getMessagesForUserInWindow,
@@ -25,6 +25,10 @@ import {
   getNightReviewModelId,
   getNightReviewTimezone,
 } from "@/lib/night-review/config";
+import {
+  getNightReviewChatModelProfile,
+  resolveNightReviewLanguageModel,
+} from "@/lib/night-review/night-review-model";
 import { runNightlyReview } from "@/lib/night-review/proposal-tier";
 import { nightReviewOutputSchema } from "@/lib/night-review/schema";
 import { loadNightWorkspaceFiles } from "@/lib/night-review/workspace";
@@ -88,6 +92,17 @@ export async function runNightReviewForUser(
   } = { outcome: "error" };
 
   try {
+    const resolvedModel = resolveNightReviewLanguageModel(
+      modelId,
+      getNightReviewChatModelProfile(modelId)?.ollamaOptions
+    );
+    if (!resolvedModel.ok) {
+      logCtx.outcome = "skipped";
+      logCtx.err = resolvedModel.reason;
+      return { skipped: true, reason: "model_not_configured" };
+    }
+    const languageModel = resolvedModel.model;
+
     const windowStart = new Date(payload.windowStart);
     const windowEnd = new Date(payload.windowEnd);
     const tz = getNightReviewTimezone();
@@ -138,9 +153,6 @@ export async function runNightReviewForUser(
       await assertOllamaReachable();
     }
 
-    const chatModel = getChatModel(modelId);
-    const model = getLanguageModel(modelId, chatModel?.ollamaOptions);
-
     const system = buildNightReviewSystemPrompt(workspace);
     const userContent = buildNightReviewUserContent({
       rollupText,
@@ -149,7 +161,7 @@ export async function runNightReviewForUser(
     });
 
     const { object } = await generateObject({
-      model,
+      model: languageModel,
       schema: nightReviewOutputSchema,
       system,
       prompt: userContent,

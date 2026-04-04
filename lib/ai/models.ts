@@ -12,6 +12,11 @@ export function isLocalModel(modelId: string): boolean {
   return modelId.startsWith("ollama/");
 }
 
+/** True for direct Gemini API models (prefix `gemini/`), as opposed to gateway-routed `google/…` ids. */
+export function isGeminiModel(modelId: string): boolean {
+  return modelId.startsWith("gemini/");
+}
+
 /**
  * Rough capability bucket for local Ollama weights (prompt copy only).
  * Parsed from tag names like `qwen2.5:3b` / `llama3.1:8b` when not set explicitly on {@link ChatModel}.

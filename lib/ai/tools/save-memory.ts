@@ -30,7 +30,6 @@ export function saveMemory({
         .optional()
         .describe("Optional structured data (tags, related IDs, dates)"),
     }),
-    needsApproval: true,
     execute: async (input) => {
       const chat = await getChatById({ id: chatId });
       const denial = chatOwnershipDenial(chat, userId);

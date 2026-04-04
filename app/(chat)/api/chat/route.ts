@@ -11,6 +11,14 @@ import { checkBotId } from "botid/server";
 import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
 import { auth } from "@/app/(auth)/auth";
+import type { FallbackTier } from "@/lib/ai/chat-fallback";
+import {
+  getFallbackGatewayModel,
+  getFallbackGeminiModel,
+  getFallbackTiers,
+  isChatFallbackEnabled,
+  isFallbackEligibleError,
+} from "@/lib/ai/chat-fallback";
 import { createModelMetricsStreamHooks } from "@/lib/ai/chat-stream-metrics";
 import { buildCompanionSystemPrompt } from "@/lib/ai/companion-prompt";
 import { buildLocalChatTitleFromUserMessage } from "@/lib/ai/local-title";
@@ -33,6 +41,7 @@ import type { RequestHints } from "@/lib/ai/prompts";
 import {
   assertOllamaReachable,
   getGatewayErrorStreamMessage,
+  getGeminiLanguageModel,
   getLanguageModel,
   getOllamaBaseUrl,
   getOllamaErrorStreamMessage,
@@ -288,9 +297,12 @@ export async function POST(request: Request) {
         })
       : convertedModelMessages;
 
-    if (isOllamaLocal) {
+    const fallbackEnabled = isOllamaLocal && isChatFallbackEnabled();
+    if (isOllamaLocal && !fallbackEnabled) {
       await assertOllamaReachable();
     }
+
+    let activeTier: FallbackTier = isOllamaLocal ? "ollama" : "gateway";
 
     const noActiveToolsForOrchestration = isReasoningModel && !supportsTools;
     const gatewayMultiAgentEligible =
@@ -469,41 +481,123 @@ export async function POST(request: Request) {
           ...(agentTaskEnabled ? (["submitAgentTask"] as const) : []),
         ];
 
-        const result = isOllamaLocal
-          ? streamText({
-              ...localCommonStreamArgs,
-              ...(openClawToolsBlock
-                ? {
-                    tools: openClawToolsBlock,
-                    experimental_activeTools: noActiveTools
-                      ? []
-                      : [...openClawToolNames],
-                  }
-                : {}),
-            })
-          : streamText({
-              ...gatewayCommonStreamArgs,
-              tools: {
-                ...baseTools,
-                ...companionTools,
-                ...gatewayExtraTools,
-                ...(openClawToolsBlock ?? {}),
-              },
-              experimental_activeTools: noActiveTools
-                ? []
-                : [
-                    ...baseToolNames,
-                    ...companionToolNames,
-                    ...gatewayExtraToolNames,
-                    ...openClawToolNames,
-                  ],
-            });
+        if (fallbackEnabled) {
+          try {
+            await assertOllamaReachable();
+          } catch (ollamaErr) {
+            if (isFallbackEligibleError(ollamaErr)) {
+              const tiers = getFallbackTiers();
+              if (tiers.length === 0) {
+                throw ollamaErr;
+              }
+              activeTier = tiers[0];
+            } else {
+              throw ollamaErr;
+            }
+          }
+        }
 
-        dataStream.merge(
-          result.toUIMessageStream({
-            sendReasoning: showThinking && (isReasoningModel || isOllamaLocal),
-          })
-        );
+        const escalatedFromLocal = activeTier !== "ollama" && isOllamaLocal;
+
+        if (escalatedFromLocal) {
+          const tierLabel = activeTier === "gemini" ? "Gemini" : "AI Gateway";
+          dataStream.write({
+            type: "data-fallback-notice",
+            data: `Local model unavailable; using ${tierLabel}.`,
+          });
+
+          const fallbackModelId =
+            activeTier === "gemini"
+              ? getFallbackGeminiModel()
+              : getFallbackGatewayModel();
+
+          const fallbackModel =
+            activeTier === "gemini"
+              ? getGeminiLanguageModel(fallbackModelId)
+              : getLanguageModel(fallbackModelId);
+
+          const escalationPrompt = buildCompanionSystemPrompt({
+            ownerName,
+            memories: recentMemories,
+            requestHints,
+            supportsTools: true,
+            productOpportunityEnabled: isProductOpportunityConfigured(),
+            agentTaskEnabled: true,
+          });
+
+          const fallbackResult = streamText({
+            model: fallbackModel,
+            system: escalationPrompt,
+            messages: convertedModelMessages,
+            stopWhen: stepCountIs(5),
+            experimental_telemetry: {
+              isEnabled: isProductionEnvironment,
+              functionId: "stream-text",
+            },
+            ...metricsHooks,
+            tools: {
+              ...baseTools,
+              ...companionTools,
+              ...gatewayExtraTools,
+              ...(openClawToolsBlock ?? {}),
+            },
+            experimental_activeTools: noActiveTools
+              ? []
+              : [
+                  ...baseToolNames,
+                  ...companionToolNames,
+                  ...gatewayExtraToolNames,
+                  ...openClawToolNames,
+                ],
+          });
+
+          dataStream.merge(
+            fallbackResult.toUIMessageStream({ sendReasoning: false })
+          );
+        } else if (isOllamaLocal) {
+          const result = streamText({
+            ...localCommonStreamArgs,
+            ...(openClawToolsBlock
+              ? {
+                  tools: openClawToolsBlock,
+                  experimental_activeTools: noActiveTools
+                    ? []
+                    : [...openClawToolNames],
+                }
+              : {}),
+          });
+
+          dataStream.merge(
+            result.toUIMessageStream({
+              sendReasoning:
+                showThinking && (isReasoningModel || isOllamaLocal),
+            })
+          );
+        } else {
+          const result = streamText({
+            ...gatewayCommonStreamArgs,
+            tools: {
+              ...baseTools,
+              ...companionTools,
+              ...gatewayExtraTools,
+              ...(openClawToolsBlock ?? {}),
+            },
+            experimental_activeTools: noActiveTools
+              ? []
+              : [
+                  ...baseToolNames,
+                  ...companionToolNames,
+                  ...gatewayExtraToolNames,
+                  ...openClawToolNames,
+                ],
+          });
+
+          dataStream.merge(
+            result.toUIMessageStream({
+              sendReasoning: showThinking && isReasoningModel,
+            })
+          );
+        }
 
         if (titlePromise) {
           const title = await titlePromise;
@@ -601,7 +695,7 @@ export async function POST(request: Request) {
         if (gatewayStreamMsg) {
           return gatewayStreamMsg;
         }
-        if (isOllamaLocal) {
+        if (activeTier === "ollama") {
           const streamMsg = getOllamaErrorStreamMessage(
             error,
             getOllamaBaseUrl()

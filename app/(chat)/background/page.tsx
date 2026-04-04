@@ -96,8 +96,8 @@ export default async function BackgroundActivityPage() {
               <dt className="text-muted-foreground">Scheduling</dt>
               <dd className="font-medium">
                 {nightReviewEnabled
-                  ? "Enabled (server must run cron or QStash)"
-                  : "Disabled (set NIGHT_REVIEW_ENABLED=1)"}
+                  ? "Enabled (cron → enqueue → QStash → run)"
+                  : "Off — set NIGHT_REVIEW_ENABLED=1 for local/preview; production defaults on unless set to 0"}
               </dd>
             </div>
             <div>

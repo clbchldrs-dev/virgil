@@ -31,6 +31,7 @@
     "virgil:preflight:strict": "tsx scripts/virgil-preflight.ts --strict"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.58",
     "@ai-sdk/provider": "^3.0.3",
     "@ai-sdk/react": "3.0.118",
     "@codemirror/lang-python": "^6.1.6",
