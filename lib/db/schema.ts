@@ -441,3 +441,93 @@ export const healthSnapshot = pgTable(
 );
 
 export type HealthSnapshot = InferSelectModel<typeof healthSnapshot>;
+
+/** Sophon daily command center: user-owned tasks for prioritization. */
+export const sophonTask = pgTable("SophonTask", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  status: varchar("status", { length: 24 }).notNull().default("open"),
+  source: varchar("source", { length: 24 }).notNull().default("manual"),
+  dueAt: timestamp("dueAt"),
+  effortFit: integer("effortFit").notNull().default(50),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type SophonTask = InferSelectModel<typeof sophonTask>;
+
+/** Per-habit staleness and cooldown for Sophon accountability ladder. */
+export const sophonHabitState = pgTable(
+  "SophonHabitState",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    habitKey: varchar("habitKey", { length: 128 }).notNull(),
+    lastReviewedAt: timestamp("lastReviewedAt"),
+    stalenessStage: integer("stalenessStage").notNull().default(0),
+    cooldownUntil: timestamp("cooldownUntil"),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    userHabitUnique: uniqueIndex("SophonHabitState_userId_habitKey_unique").on(
+      table.userId,
+      table.habitKey
+    ),
+  })
+);
+
+export type SophonHabitState = InferSelectModel<typeof sophonHabitState>;
+
+/** Audit log for Sophon automation / policy actions. */
+export const sophonActionLog = pgTable("SophonActionLog", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  actionType: varchar("actionType", { length: 64 }).notNull(),
+  riskLevel: varchar("riskLevel", { length: 16 }).notNull(),
+  mode: varchar("mode", { length: 16 }).notNull(),
+  metadata: jsonb("metadata")
+    .$type<Record<string, unknown>>()
+    .notNull()
+    .default({}),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type SophonActionLog = InferSelectModel<typeof sophonActionLog>;
+
+/** End-of-day review and calibration for Sophon adaptive load. */
+export const sophonDailyReview = pgTable(
+  "SophonDailyReview",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    reviewDate: date("reviewDate").notNull(),
+    wins: text("wins").array().notNull().default(sql`'{}'::text[]`),
+    misses: text("misses").array().notNull().default(sql`'{}'::text[]`),
+    carryForward: text("carryForward")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    calibration: jsonb("calibration")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    userReviewDateUnique: uniqueIndex(
+      "SophonDailyReview_userId_reviewDate_unique"
+    ).on(table.userId, table.reviewDate),
+  })
+);
+
+export type SophonDailyReview = InferSelectModel<typeof sophonDailyReview>;
