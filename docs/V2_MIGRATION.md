@@ -25,6 +25,14 @@ Two tracks are valid; pick one per environment and document it.
 
 Do **not** assume every deployment uses only one of these forever: the risk is maintaining **two** parallel migration scripts—gate by explicit operator choice (see [docs/V1_V2_RISK_AUDIT.md](V1_V2_RISK_AUDIT.md)).
 
+## Behavioral and goal state (v1 pivot vs v2 store)
+
+v1 may add structured goals via the **proactive pivot** track ([docs/tickets/2026-04-02-pivot-goals-layer-design.md](tickets/2026-04-02-pivot-goals-layer-design.md)) on top of **`GoalWeeklySnapshot`** and `Memory` — optimized for the Neon/Drizzle app.
+
+v2’s **authoritative behavioral store** for habits, streaks, project graph, and weekly schedule is specified in **[docs/V2_BEHAVIORAL_SPECS.md](V2_BEHAVIORAL_SPECS.md)** (SQLite-first on the Mac Mini, richer relations: `goal_entries`, `goal_dependencies`, `project_actions`, etc.). It is **not** required to duplicate that full schema in v1.
+
+**Avoid two sources of truth:** Until a bridge is defined, treat v2 behavioral tables as the system of record after cutover, or use explicit read-only sync from one side. Do not maintain parallel “goal intent” in both Neon and SQLite without an ADR.
+
 ## What's new in v2
 
 - Tool execution (Virgil can act, not just advise)

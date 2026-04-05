@@ -4,6 +4,19 @@ Significant, stable choices for Virgil. New entries go at the **top** (reverse c
 
 ---
 
+## 2026-04-04 — v2 behavioral specs SSOT; v1 pivot goals remain separate — Accepted
+
+**Context:** v1 proactive pivot may introduce `Goal` / check-ins alongside `GoalWeeklySnapshot` ([docs/tickets/2026-04-02-pivot-goals-layer-design.md](tickets/2026-04-02-pivot-goals-layer-design.md)). v2 planning added a richer behavioral domain (habits, projects, schedule) for the Python backend.
+
+**Decision:**
+
+1. **SSOT for v2 behavioral requirements:** [docs/V2_BEHAVIORAL_SPECS.md](V2_BEHAVIORAL_SPECS.md) and HTTP route sketches in [docs/V2_BEHAVIORAL_API.md](V2_BEHAVIORAL_API.md). Linked from [docs/PROJECT.md](PROJECT.md) and [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md).
+2. **Do not merge** v1 pivot schema with v2 behavioral tables in documentation until an explicit bridge or migration ADR exists. Relationship narrative: [docs/V2_MIGRATION.md](V2_MIGRATION.md) § Behavioral and goal state.
+
+**Consequences:** Implementers can add pivot goals in v1 without implying the v2 SQLite-first model is already in Neon; v2 Python work can proceed from the behavioral specs without conflicting the pivot ticket’s optional `Goal` table design.
+
+---
+
 ## 2026-04-04 — Local trim-context: middle-phase drops + tool structural preservation — Accepted
 
 **Context:** Under fixed `maxContextTokens`, long threads keep `first`, a greedy middle segment, and a recent tail. Middle reduction could drop user turns before plain assistant turns, or strip tool-call/tool-result structure when compressing messages.

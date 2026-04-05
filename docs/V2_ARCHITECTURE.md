@@ -4,6 +4,8 @@
 > This document is the single source of truth for v2 design decisions.
 > See docs/V2_MIGRATION.md for how v1 transitions to v2.
 
+**Behavioral domain (SPEC):** Goals/habits, project graph, weekly schedule proposals, and morning briefing payload are specified in [docs/V2_BEHAVIORAL_SPECS.md](V2_BEHAVIORAL_SPECS.md). HTTP route sketches: [docs/V2_BEHAVIORAL_API.md](V2_BEHAVIORAL_API.md). Not implemented until the Python backend ships these modules.
+
 ---
 
 # Virgil v2.1 — Cursor Implementation Prompt
@@ -403,6 +405,8 @@ class NightController:
 
 All night tasks must be idempotent. If the process crashes at 3am and restarts, re-running the same tasks produces the same result without corruption.
 
+**Behavioral features (planned):** When implemented, night mode also runs streak evaluation for habits, staleness evaluation for projects (see [V2_BEHAVIORAL_SPECS.md](V2_BEHAVIORAL_SPECS.md)), generates ntfy alerts, and assembles the structured morning briefing payload. Weekly schedule proposal generation is part of the same document.
+
 ### 6. Skills/Plugin System (`skills/`)
 
 Modular capabilities that can be added without modifying core code.
@@ -521,6 +525,8 @@ FastAPI on port 8741. Same endpoints as previous version plus:
 - `POST /tools/{name}/approve` — Approve a pending tool execution.
 - `GET /skills` — List loaded skills and their health.
 - `GET /night/report` — Last night's evaluation and consolidation reports.
+
+**Behavioral REST routes (planned):** Goals, projects, and schedule endpoints are specified in [V2_BEHAVIORAL_API.md](V2_BEHAVIORAL_API.md) and [V2_BEHAVIORAL_SPECS.md](V2_BEHAVIORAL_SPECS.md). They are a companion surface to chat — see [V2_API_CONTRACT.md](V2_API_CONTRACT.md) for `POST /chat` parity.
 
 **CORS:** Allow the Vercel frontend origin. Configure via `FRONTEND_ORIGIN` env var.
 

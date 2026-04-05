@@ -4,6 +4,7 @@ import {
   createUIMessageStream,
   createUIMessageStreamResponse,
   generateId,
+  MissingToolResultsError,
   stepCountIs,
   streamText,
 } from "ai";
@@ -81,6 +82,11 @@ import {
   updateMessage,
 } from "@/lib/db/queries";
 import type { DBMessage } from "@/lib/db/schema";
+import {
+  agentIngestLog,
+  summarizeModelMessageRoles,
+  summarizeUiMessagesToolState,
+} from "@/lib/debug/agent-ingest-log";
 import { VirgilError } from "@/lib/errors";
 import { isProductOpportunityConfigured } from "@/lib/github/product-opportunity-issue";
 import { isOpenClawConfigured } from "@/lib/integrations/openclaw-config";
@@ -287,7 +293,46 @@ export async function POST(request: Request) {
               ...(isOllamaLocal ? { localModelClass } : {}),
             });
 
-    const convertedModelMessages = await convertToModelMessages(uiMessages);
+    // #region agent log
+    {
+      const uiTool = summarizeUiMessagesToolState(uiMessages);
+      agentIngestLog({
+        location: "app/(chat)/api/chat/route.ts:pre-convert",
+        message: "uiMessages tool snapshot before convertToModelMessages",
+        hypothesisId: "H1",
+        data: {
+          chatId: id,
+          isToolApprovalFlow,
+          isOllamaLocal,
+          ...uiTool,
+        },
+      });
+    }
+    // #endregion
+
+    let convertedModelMessages: Awaited<
+      ReturnType<typeof convertToModelMessages>
+    >;
+    try {
+      convertedModelMessages = await convertToModelMessages(uiMessages);
+    } catch (convertErr: unknown) {
+      // #region agent log
+      if (MissingToolResultsError.isInstance(convertErr)) {
+        agentIngestLog({
+          location: "app/(chat)/api/chat/route.ts:convertToModelMessages",
+          message: "MissingToolResultsError during convertToModelMessages",
+          hypothesisId: "H1",
+          data: {
+            chatId: id,
+            toolCallIds: convertErr.toolCallIds,
+            uiTool: summarizeUiMessagesToolState(uiMessages),
+          },
+        });
+      }
+      // #endregion
+      throw convertErr;
+    }
+
     const systemTokenEstimate = estimateTokens(systemPromptText);
     const modelMessages = isOllamaLocal
       ? trimMessagesForBudget({
@@ -296,6 +341,24 @@ export async function POST(request: Request) {
           maxContextTokens: modelConfig?.maxContextTokens ?? 2048,
         })
       : convertedModelMessages;
+
+    // #region agent log
+    {
+      const mm = summarizeModelMessageRoles(
+        modelMessages as { role: string; content: unknown }[]
+      );
+      agentIngestLog({
+        location: "app/(chat)/api/chat/route.ts:post-trim",
+        message: "modelMessages roles after trim (local) or passthrough",
+        hypothesisId: "H2",
+        data: {
+          chatId: id,
+          isOllamaLocal,
+          ...mm,
+        },
+      });
+    }
+    // #endregion
 
     const fallbackEnabled = isOllamaLocal && isChatFallbackEnabled();
     if (isOllamaLocal && !fallbackEnabled) {
@@ -682,6 +745,19 @@ export async function POST(request: Request) {
         }
       },
       onError: (error) => {
+        // #region agent log
+        if (MissingToolResultsError.isInstance(error)) {
+          agentIngestLog({
+            location: "app/(chat)/api/chat/route.ts:onError",
+            message: "MissingToolResultsError in UI message stream",
+            hypothesisId: "H5",
+            data: {
+              chatId: id,
+              toolCallIds: error.toolCallIds,
+            },
+          });
+        }
+        // #endregion
         logChatApiException("Chat UI message stream error", error, {});
         if (
           error instanceof Error &&

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/app/(auth)/auth";
+import { approveMemoriesForUser } from "@/lib/db/queries";
 import {
-  approveMemoriesForUser,
   getJob,
   updateJobStatus,
-} from "@/lib/db/queries";
+} from "@/lib/db/query-modules/background-jobs";
 
+/** PROMPT 3: POST /api/jobs/[jobId]/approve */
 const bodySchema = z.object({
   memoryIds: z.array(z.string().uuid()),
 });

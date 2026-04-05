@@ -1,7 +1,12 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
-import { getJobMetrics, listDistinctJobKinds } from "@/lib/db/queries";
+import {
+  getJobMetrics,
+  listDistinctJobKinds,
+} from "@/lib/db/query-modules/background-jobs";
+
+/** PROMPT 3 / PROMPT 8: GET /api/metrics/job-slas */
 
 const DEVICE_PROFILE = process.env.DEVICE_PROFILE ?? "Local";
 
@@ -29,12 +34,10 @@ export async function GET(request: NextRequest) {
     const results: Record<
       string,
       {
-        wallTimeMs: {
-          p50: number;
-          p95: number;
-          p99: number;
-          mean: number;
-        };
+        p50Ms: number;
+        p95Ms: number;
+        p99Ms: number;
+        meanMs: number;
         sampleCount: number;
         successRate: number;
         deviceProfile: string;
@@ -47,12 +50,10 @@ export async function GET(request: NextRequest) {
       try {
         const metrics = await getJobMetrics(jobKind);
         results[jobKind] = {
-          wallTimeMs: {
-            p50: metrics.p50Ms,
-            p95: metrics.p95Ms,
-            p99: metrics.p99Ms,
-            mean: metrics.meanMs,
-          },
+          p50Ms: metrics.p50Ms,
+          p95Ms: metrics.p95Ms,
+          p99Ms: metrics.p99Ms,
+          meanMs: metrics.meanMs,
           sampleCount: metrics.sampleCount,
           successRate: metrics.successRate,
           deviceProfile: DEVICE_PROFILE,
@@ -60,7 +61,10 @@ export async function GET(request: NextRequest) {
         };
       } catch {
         results[jobKind] = {
-          wallTimeMs: { p50: 0, p95: 0, p99: 0, mean: 0 },
+          p50Ms: 0,
+          p95Ms: 0,
+          p99Ms: 0,
+          meanMs: 0,
           sampleCount: 0,
           successRate: 1,
           deviceProfile: DEVICE_PROFILE,

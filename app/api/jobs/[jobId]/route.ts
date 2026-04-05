@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
+import { getMemoriesBySourceJobId } from "@/lib/db/queries";
 import {
   cancelJob,
   getJob,
   getJobAuditTrail,
-  getMemoriesBySourceJobId,
-} from "@/lib/db/queries";
+} from "@/lib/db/query-modules/background-jobs";
 
+/** PROMPT 3: GET/DELETE /api/jobs/[jobId] */
 type RouteContext = { params: Promise<{ jobId: string }> };
 
 export async function GET(_request: Request, context: RouteContext) {

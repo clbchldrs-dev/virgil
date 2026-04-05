@@ -2,7 +2,7 @@
 
 **Status:** Grounding doc for v2 Python backend and Next.js adapter work. **Not** a shipped HTTP spec for production until both sides implement it.
 
-**Related:** [V2_MIGRATION.md](V2_MIGRATION.md) (step 3), [V2_TOOL_MAP.md](V2_TOOL_MAP.md) (companion tools), [V2_ARCHITECTURE.md](V2_ARCHITECTURE.md) § API Server, ticket [T1](tickets/2026-04-01-v2-t1-api-contract-for-python-backend.md), [V1_V2_RISK_AUDIT.md](V1_V2_RISK_AUDIT.md).
+**Related:** [V2_MIGRATION.md](V2_MIGRATION.md) (step 3), [V2_TOOL_MAP.md](V2_TOOL_MAP.md) (companion tools), [V2_ARCHITECTURE.md](V2_ARCHITECTURE.md) § API Server, ticket [T1](tickets/2026-04-01-v2-t1-api-contract-for-python-backend.md), [V1_V2_RISK_AUDIT.md](V1_V2_RISK_AUDIT.md). **Behavioral REST routes** (goals, projects, schedule) are specified separately in [V2_BEHAVIORAL_API.md](V2_BEHAVIORAL_API.md) — not part of the chat/SSE contract below.
 
 **Source of truth for v1 behavior:** `app/(chat)/api/chat/route.ts`, `app/(chat)/api/chat/schema.ts`, `lib/errors.ts`, `app/(auth)/auth.ts`.
 
@@ -211,3 +211,9 @@ Update this document when:
 - Stream format is pinned (e.g. “adapter emits AI SDK UI stream v6”).
 
 Pair major contract changes with a dated entry in [DECISIONS.md](DECISIONS.md).
+
+---
+
+## 8. Related: behavioral API (v2)
+
+Chat streaming is only one surface of the Python backend. Goals, projects, and weekly schedule endpoints are documented in **[V2_BEHAVIORAL_API.md](V2_BEHAVIORAL_API.md)** with domain requirements in **[V2_BEHAVIORAL_SPECS.md](V2_BEHAVIORAL_SPECS.md)**. Keep this file focused on `/chat` parity; extend `V2_BEHAVIORAL_API.md` when those routes are implemented.

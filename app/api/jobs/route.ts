@@ -2,11 +2,16 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/app/(auth)/auth";
 import { scheduleBackgroundJobProcessing } from "@/lib/background-jobs/schedule-job";
-import { createJob, listUserJobs } from "@/lib/db/queries";
+import {
+  createJob,
+  listUserJobs,
+} from "@/lib/db/query-modules/background-jobs";
 
+/** PROMPT 3: POST/GET /api/jobs — body userId (if present) must match session. */
 const postBodySchema = z.object({
   kind: z.string().min(1).max(64),
-  input: z.record(z.string(), z.unknown()),
+  input: z.record(z.string(), z.unknown()).default({}),
+  userId: z.string().uuid().optional(),
 });
 
 export async function POST(request: Request) {
@@ -25,6 +30,13 @@ export async function POST(request: Request) {
   const parsed = postBodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
+  }
+
+  if (
+    parsed.data.userId !== undefined &&
+    parsed.data.userId !== session.user.id
+  ) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
   try {
@@ -55,6 +67,10 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const rawStatus = searchParams.get("status");
   const status = rawStatus && rawStatus.length > 0 ? rawStatus : undefined;
+  const queryUserId = searchParams.get("userId");
+  if (queryUserId !== null && queryUserId !== session.user.id) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
 
   try {
     const jobs = await listUserJobs(session.user.id, status);

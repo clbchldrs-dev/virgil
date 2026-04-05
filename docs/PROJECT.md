@@ -50,6 +50,8 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 | Archived Cursor prompts / pre-ship sketches | [archive/README.md](archive/README.md) |
 | Enhancement backlog (E1–E11, …) and acceptance criteria | [docs/ENHANCEMENTS.md](ENHANCEMENTS.md) |
 | v2 architecture plan (June 2026 target, not in development) | [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md) |
+| v2 behavioral specs (goals, projects, schedule, briefing — SPEC, not implemented) | [docs/V2_BEHAVIORAL_SPECS.md](V2_BEHAVIORAL_SPECS.md) |
+| v2 behavioral HTTP API (companion to chat contract) | [docs/V2_BEHAVIORAL_API.md](V2_BEHAVIORAL_API.md) |
 | Hardware decisions (v2 host, inference tiers, retired gear) | [docs/HARDWARE.md](HARDWARE.md) |
 | v1 → v2 migration path and what carries forward | [docs/V2_MIGRATION.md](V2_MIGRATION.md) |
 | v2 chat / SSE / auth API contract (v1 vs Python adapter) | [docs/V2_API_CONTRACT.md](V2_API_CONTRACT.md) |

@@ -639,6 +639,8 @@ Same flows as [Scheduled jobs on the host (no Vercel Cron)](#scheduled-jobs-on-t
 
 Always verify behavior that could silently hurt the local path.
 
+After a pull that changes `package.json` or the lockfile, run **`pnpm install`** so new packages (for example `@ai-sdk/google`) are present in `node_modules` before **`pnpm check`**, **`pnpm run type-check`**, or **`pnpm test:unit`** — otherwise TypeScript may fail with “Cannot find module” for newly added dependencies.
+
 High-value checks:
 
 - `pnpm stable:check` — `pnpm check` + `pnpm run type-check` + `pnpm test:unit` (fast stability gate)
@@ -685,6 +687,7 @@ When `AGENT_TASK_TRIAGE_ENABLED=1`, a cron job (`GET /api/agent-tasks/enqueue`, 
 Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](docs/DECISIONS.md)**.
 
 - **v1 vs v2 deployment tracks (2026-04-03 ADR):** v1 hosted stack (Vercel + Neon or Supabase + Upstash Redis/QStash + Resend + Blob) vs planned v2 Mac mini + Ollama + Python backend; v2 data **either** Postgres-on-home (migration parity) **or** SQLite/Mem0 greenfield — [docs/PROJECT.md](docs/PROJECT.md), [docs/V2_MIGRATION.md](docs/V2_MIGRATION.md), [docs/V1_V2_RISK_AUDIT.md](docs/V1_V2_RISK_AUDIT.md).
+- **v2 behavioral specs (2026-04-04 ADR):** goals/habits, project graph, weekly schedule, and briefing payload are specified for the future Python backend in [docs/V2_BEHAVIORAL_SPECS.md](docs/V2_BEHAVIORAL_SPECS.md); HTTP route sketches in [docs/V2_BEHAVIORAL_API.md](docs/V2_BEHAVIORAL_API.md). Distinct from v1 pivot `Goal` / `GoalWeeklySnapshot` design — see [docs/V2_MIGRATION.md](docs/V2_MIGRATION.md) § Behavioral and goal state.
 - **Bespoke single-owner** product intent: [docs/OWNER_PRODUCT_VISION.md](docs/OWNER_PRODUCT_VISION.md) (2026-03-31 ADR). Commercial multi-tenant SaaS is not a design goal for this repo. Personal-assistant-only surface (business/front-desk paths removed 2026-04). Local models default; gateway optional. Optional gateway multi-agent orchestration via env (see `lib/ai/orchestration/`).
 - **Target architecture (owner intent):** Virgil as **brain** (this repo); **Agent Zero** as preferred external **executor** on a home **Mac mini (~48 GB unified memory)**; bridge **not shipped** — see [docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md) and [docs/DECISIONS.md](docs/DECISIONS.md).
 - Postgres FTS for recall (no casual vector DB). QStash for reminders. Docker Compose defaults include **bundled Ollama** + health-gated **`virgil-app`** (see `docker-compose.yml`); host-Ollama layout in `docker-compose.host-ollama.yml`.

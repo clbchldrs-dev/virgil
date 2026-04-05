@@ -2,7 +2,7 @@ import "server-only";
 
 import { and, asc, eq, gte } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { updateJobStatus } from "@/lib/db/queries";
+import { updateJobStatus } from "@/lib/db/query-modules/background-jobs";
 import { backgroundJob } from "@/lib/db/schema";
 import { processBackgroundJobById } from "./process-job";
 
@@ -31,10 +31,7 @@ export async function processQueue(): Promise<never> {
       }
 
       if (pendingJob.kind === "nightly_review") {
-        const alreadyRan = await checkNightlyAlreadyRan(
-          pendingJob.userId,
-          pendingJob.createdAt
-        );
+        const alreadyRan = await checkNightlyAlreadyRan(pendingJob.userId);
         if (alreadyRan) {
           await updateJobStatus(
             pendingJob.id,
@@ -54,11 +51,9 @@ export async function processQueue(): Promise<never> {
   }
 }
 
-async function checkNightlyAlreadyRan(
-  userId: string,
-  jobCreatedAt: Date
-): Promise<boolean> {
-  const today = new Date(jobCreatedAt);
+/** PROMPT 4: calendar day in server local TZ (not the pending job’s createdAt date). */
+async function checkNightlyAlreadyRan(userId: string): Promise<boolean> {
+  const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const [completedNightly] = await db
