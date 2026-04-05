@@ -2,19 +2,20 @@
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { motion, useReducedMotion } from "framer-motion";
-import { memo, useEffect, useState } from "react";
-import { getPersonalizedLeftEmptySuggestion } from "@/app/(chat)/empty-chat-suggestion-actions";
+import { useRouter } from "next/navigation";
+import { memo, useEffect, useMemo, useState } from "react";
+import useSWR from "swr";
 import {
   type ChatEmptySuggestion,
-  CRYPTIC_FALLBACK_LEFT_SUGGESTIONS,
-  DARK_SOULS_RIGHT_SUGGESTIONS,
+  EMPTY_STATE_RANDOM_PROMPT_POOL,
   firstSuggestion,
   MIDDLE_CONTINUE_SUGGESTION,
   pickRandom,
 } from "@/lib/empty-suggestion-pools";
 import type { ChatMessage } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, fetcher } from "@/lib/utils";
 import { Suggestion } from "../ai-elements/suggestion";
+import { useSidebar } from "../ui/sidebar";
 import type { VisibilityType } from "./visibility-selector";
 
 type SuggestedActionsProps = {
@@ -23,64 +24,113 @@ type SuggestedActionsProps = {
   selectedVisibilityType: VisibilityType;
 };
 
-function useEmptyChatSuggestions(): [
-  ChatEmptySuggestion,
-  ChatEmptySuggestion,
-  ChatEmptySuggestion,
-] {
-  const [left, setLeft] = useState<ChatEmptySuggestion>(() =>
-    firstSuggestion(CRYPTIC_FALLBACK_LEFT_SUGGESTIONS)
-  );
-  const [right, setRight] = useState<ChatEmptySuggestion>(() =>
-    firstSuggestion(DARK_SOULS_RIGHT_SUGGESTIONS)
-  );
+type InboxCounts = { night: number; jobs: number; proposals: number };
 
-  useEffect(() => {
-    setRight(pickRandom(DARK_SOULS_RIGHT_SUGGESTIONS));
-  }, []);
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const INBOX_URL = `${basePath}/api/chat/empty-state-inbox`;
 
-  useEffect(() => {
-    let cancelled = false;
-    getPersonalizedLeftEmptySuggestion().then((m) => {
-      if (!cancelled) {
-        setLeft(m);
-      }
-    });
-    return () => {
-      cancelled = true;
+function buildLeftFromInbox(data: InboxCounts): {
+  lines: readonly [string, string];
+  ariaLabel: string;
+  title: string;
+} {
+  const { night, jobs, proposals } = data;
+  const tokens: { label: string; count: number }[] = [];
+  if (night > 0) {
+    tokens.push({ label: "Night", count: night });
+  }
+  if (jobs > 0) {
+    tokens.push({ label: "Jobs", count: jobs });
+  }
+  if (proposals > 0) {
+    tokens.push({ label: "Pending", count: proposals });
+  }
+
+  const ariaLabel = `Background inbox: ${night} night insight(s), ${jobs} active job(s), ${proposals} proposal(s). Opens background activity.`;
+  const title = `Night ${night} · Jobs ${jobs} · Pending ${proposals}`;
+
+  if (tokens.length === 0) {
+    return {
+      lines: ["Quiet", ""],
+      ariaLabel:
+        "No night insights, background jobs, or proposals awaiting review. Open background activity.",
+      title,
     };
-  }, []);
+  }
 
-  return [left, MIDDLE_CONTINUE_SUGGESTION, right];
+  return {
+    lines: [
+      tokens.map((t) => t.label).join(" · "),
+      tokens.map((t) => String(t.count)).join(" · "),
+    ] as const,
+    ariaLabel,
+    title,
+  };
 }
 
 function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
-  const [left, middle, right] = useEmptyChatSuggestions();
+  const router = useRouter();
+  const { setOpenMobile } = useSidebar();
   const prefersReducedMotion = useReducedMotion();
+
+  const { data: inbox = { night: 0, jobs: 0, proposals: 0 } } =
+    useSWR<InboxCounts>(INBOX_URL, fetcher, {
+      fallbackData: { night: 0, jobs: 0, proposals: 0 },
+    });
+
+  const leftDisplay = useMemo(() => buildLeftFromInbox(inbox), [inbox]);
+
+  const [right, setRight] = useState<ChatEmptySuggestion>(() =>
+    firstSuggestion(EMPTY_STATE_RANDOM_PROMPT_POOL)
+  );
+
+  useEffect(() => {
+    setRight(pickRandom(EMPTY_STATE_RANDOM_PROMPT_POOL));
+  }, []);
 
   const slots = [
     {
       key: "empty-sugg-left",
-      item: left,
+      kind: "inbox" as const,
+      lines: leftDisplay.lines,
+      uppercaseLine: true,
       translate: "md:translate-y-4",
       animIndex: 0,
-      uppercaseLine: true,
+      suggestion: "",
+      ariaLabel: leftDisplay.ariaLabel,
+      title: leftDisplay.title,
     },
     {
       key: "empty-sugg-mid",
-      item: middle,
+      kind: "continue" as const,
+      item: MIDDLE_CONTINUE_SUGGESTION,
+      uppercaseLine: false,
       translate: "md:-translate-y-2",
       animIndex: 1,
-      uppercaseLine: false,
+      ariaLabel: "Start new chat",
+      title: undefined as string | undefined,
     },
     {
       key: "empty-sugg-right",
+      kind: "prompt" as const,
       item: right,
+      uppercaseLine: true,
       translate: "md:translate-y-4",
       animIndex: 2,
-      uppercaseLine: true,
+      ariaLabel: "Suggested conversation starter",
+      title: undefined as string | undefined,
     },
   ] as const;
+
+  const navigateBackground = () => {
+    setOpenMobile(false);
+    router.push(`${basePath}/background`);
+  };
+
+  const navigateHome = () => {
+    setOpenMobile(false);
+    router.push(`${basePath}/`);
+  };
 
   return (
     <div
@@ -123,20 +173,36 @@ function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
               }
             >
               <Suggestion
+                aria-label={slot.ariaLabel}
                 className="inline-flex h-auto min-h-0 w-full flex-col items-center gap-0 whitespace-normal rounded-sm border border-border/50 px-2 py-2 text-center text-[12px] leading-[1.15] text-muted-foreground transition-all duration-150 hover:text-foreground hover:shadow-[var(--shadow-card)] md:text-[13px]"
                 data-suggestion-pill="true"
                 onClick={(suggestion) => {
+                  if (slot.kind === "inbox") {
+                    navigateBackground();
+                    return;
+                  }
+                  if (slot.kind === "continue") {
+                    navigateHome();
+                    return;
+                  }
                   window.history.pushState(
                     {},
                     "",
-                    `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`
+                    `${basePath}/chat/${chatId}`
                   );
                   sendMessage({
                     role: "user",
                     parts: [{ type: "text", text: suggestion }],
                   });
                 }}
-                suggestion={slot.item.prompt}
+                suggestion={
+                  slot.kind === "prompt"
+                    ? slot.item.prompt
+                    : slot.kind === "continue"
+                      ? slot.item.prompt
+                      : ""
+                }
+                title={slot.title}
               >
                 <span
                   className={cn(
@@ -144,11 +210,24 @@ function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
                     slot.uppercaseLine && "uppercase"
                   )}
                 >
-                  {slot.item.lines[0]}
+                  {slot.kind === "inbox"
+                    ? slot.lines[0]
+                    : slot.kind === "continue"
+                      ? slot.item.lines[0]
+                      : slot.item.lines[0]}
                 </span>
-                {slot.item.lines[1].length > 0 ? (
+                {(slot.kind === "inbox"
+                  ? slot.lines[1]
+                  : slot.kind === "continue"
+                    ? slot.item.lines[1]
+                    : slot.item.lines[1]
+                ).length > 0 ? (
                   <span className="mt-0.5 block text-balance opacity-90">
-                    {slot.item.lines[1]}
+                    {slot.kind === "inbox"
+                      ? slot.lines[1]
+                      : slot.kind === "continue"
+                        ? slot.item.lines[1]
+                        : slot.item.lines[1]}
                   </span>
                 ) : null}
               </Suggestion>

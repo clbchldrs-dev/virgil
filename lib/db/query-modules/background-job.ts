@@ -3,6 +3,7 @@ import "server-only";
 import {
   and,
   asc,
+  count,
   desc,
   eq,
   type InferInsertModel,
@@ -355,6 +356,33 @@ export async function listBackgroundJobsForUser({
       .limit(Math.min(limit, 100));
   } catch (_error) {
     throw new VirgilError("bad_request:database", "Failed to list jobs");
+  }
+}
+
+const ACTIVE_JOB_STATUSES = ["pending", "running", "approving"] as const;
+
+/** Jobs still in flight (queued, running, or awaiting approval). */
+export async function countActiveBackgroundJobsForUser({
+  userId,
+}: {
+  userId: string;
+}): Promise<number> {
+  try {
+    const [row] = await db
+      .select({ c: count() })
+      .from(backgroundJob)
+      .where(
+        and(
+          eq(backgroundJob.userId, userId),
+          inArray(backgroundJob.status, [...ACTIVE_JOB_STATUSES])
+        )
+      );
+    return Number(row?.c ?? 0);
+  } catch (_error) {
+    throw new VirgilError(
+      "bad_request:database",
+      "Failed to count active background jobs"
+    );
   }
 }
 

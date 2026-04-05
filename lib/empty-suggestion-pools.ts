@@ -25,10 +25,9 @@ export function firstSuggestion<T>(items: readonly T[]): T {
   return item;
 }
 
-/** Middle pill: single label; second line empty (hidden in UI). */
+/** Middle pill: navigates to `/` for a fresh chat (prompt unused). */
 export const MIDDLE_CONTINUE_SUGGESTION: ChatEmptySuggestion = {
-  prompt:
-    "Continue from where we are. No recap—just the next useful move forward.",
+  prompt: "",
   lines: ["Continue", ""],
 };
 
@@ -143,6 +142,12 @@ export const DARK_SOULS_RIGHT_SUGGESTIONS: ChatEmptySuggestion[] = [
       "What would the Crestfallen Warrior say about my week? Dramatic, bleak, funny.",
     lines: ["HEH", "another round"],
   },
+];
+
+/** Right pill: random chip from former left (cryptic) + right (soulslike) pools. */
+export const EMPTY_STATE_RANDOM_PROMPT_POOL: ChatEmptySuggestion[] = [
+  ...CRYPTIC_FALLBACK_LEFT_SUGGESTIONS,
+  ...DARK_SOULS_RIGHT_SUGGESTIONS,
 ];
 
 /** Left pill: video-game defeat / continue screen energy (preview, legacy). */

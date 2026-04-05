@@ -12,6 +12,21 @@ This document **scopes owner intent** for where the product is headed. It does *
 
 ---
 
+## Device surfaces (planned)
+
+Smart home and mobile devices are **contact surfaces**—places the owner meets Virgil—not only endpoints to control. Group them by **role** so v2 can specify auth, latency, refresh cadence, and phase per channel.
+
+| Role | Definition | Examples | Direction |
+|------|------------|----------|-----------|
+| **Compute node** | Runs inference or services. Not user-facing. | Mac mini (Ollama, services), Pocket Lab (heavy inference), Vercel (hosted app) | N/A |
+| **Output surface** | Displays or speaks Virgil-generated content. User glances or listens; no input beyond dismiss. | Google Nest Hub (dashboard), smart speaker (TTS briefing), wall tablet (goal/calendar display), phone (ntfy push) | Virgil → device |
+| **Input source** | Sends context or commands to Virgil. | Phone (chat UI, share target, ingest API), voice via STT (future), Home Assistant automations triggering `/api/ingest`, Apple Watch (health ingest) | Device → Virgil |
+| **Bidirectional** | Both input and output. | Phone (chat + ntfy), Nest Hub with voice (display + STT, future), Home Assistant (sensors in, device control out) | Both |
+
+> The v1 codebase supports input sources (chat, `/api/ingest`, `/api/health/ingest`, share target) and one output channel (Resend email via digest/reminders/night review). v2 adds ntfy as a second output channel and Home Assistant as a bidirectional surface. Voice (STT → Virgil → TTS) is a future layer that promotes speakers and hubs from output-only to bidirectional. Each surface should be specced with: auth model, latency tolerance, update frequency, and which v2 phase it ships in.
+
+---
+
 ## 2. Two-layer model: Virgil vs Agent Zero
 
 | Layer | Role | Technology (target) |

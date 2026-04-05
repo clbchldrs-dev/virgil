@@ -413,6 +413,24 @@ Compiled from planning sessions, April 2026. **$0 recurring** unless noted; one-
 |------|------|
 | **Home Assistant (self-hosted)** | Unified device abstraction (`tools/home_assistant.py`). |
 
+### Contact surfaces (interaction, not just control)
+
+| Surface | Role | Protocol / integration | v2 phase | Notes |
+|---------|------|------------------------|----------|-------|
+| **Phone (chat UI)** | Bidirectional | HTTPS (existing Next.js app) | Phase 1 (exists) | Primary interaction surface. PWA share target ships in v1. |
+| **Phone (ntfy push)** | Output | ntfy.sh HTTP POST | Phase 1 | Nudges, streak alerts, briefing delivery. Interruptive. |
+| **Phone (Pushover)** | Output | Pushover API (optional) | Phase 1 | Richer notifications; ~$5 one-time. |
+| **Google Nest Hub / smart display** | Output → bidirectional | Home Assistant dashboard OR lightweight polling endpoint; future STT/TTS for voice | Phase 2 (display), Phase 3 (voice) | Kitchen/office ambient: today's goals, next event, last health snapshot. Voice input requires STT pipeline (Whisper or Google STT). |
+| **Smart speaker (Google Home, HomePod)** | Output → bidirectional | pychromecast / googlehomepush (TTS); future STT for input | Phase 2 (TTS cast), Phase 3 (voice input) | Morning briefing, evening check-in prompt. Output-only until voice pipeline ships. |
+| **Wall tablet / kiosk** | Output | Browser pointed at a Virgil dashboard route or Home Assistant panel | Phase 2 | Always-on display; no input beyond touch-to-dismiss. Refresh via polling or SSE. |
+| **Home Assistant (automations)** | Bidirectional | HA REST API or MQTT; Virgil → `tools/home_assistant.py`; HA → `POST /api/ingest` via HA automations/webhooks | Phase 2 | Sensors (motion, presence, door) as context signals. Virgil controls lights, scenes, etc. via HA. |
+| **Apple Watch (health)** | Input | `POST /api/health/ingest` (Bearer, exists in v1) | Phase 1 (exists) | Needs iOS companion app to bridge HealthKit → HTTP. |
+| **Email (inbound)** | Input | Resend receiving webhook (exists in v1) | Phase 1 (exists) | Forward interesting content to Virgil's receiving address. |
+
+> **Phase mapping rationale:** Phase 1 covers channels that already have v1 routes or use simple HTTP push (ntfy). Phase 2 adds surfaces that require Home Assistant integration or a new dashboard route but no new inference pipeline. Phase 3 adds voice I/O (STT + TTS loop), which depends on a local Whisper instance or cloud STT and is the most complex surface to ship reliably.
+
+> **Auth model per surface:** Phone and email use existing session or Bearer auth. Home Assistant surfaces use a shared long-lived token between Virgil and HA (similar to `OPENCLAW_URL` pattern — env secret, allowlisted origin). Smart displays in kiosk mode should use a read-only dashboard token with no write access. Voice input requires speaker identification or a physical "Virgil, ..." wake word to prevent unintended activation.
+
 ### Observability
 
 | Item | Role |

@@ -86,9 +86,9 @@ test.describe("Suggested Actions", () => {
     const count = await suggestions.count();
 
     if (count > 0) {
-      await suggestions.first().click();
+      // Right pill sends a starter message and navigates to /chat/:id; left is inbox, middle is new chat.
+      await suggestions.last().click();
 
-      // Should redirect after clicking suggestion
       await expect(page).toHaveURL(CHAT_URL_REGEX, { timeout: 10_000 });
     }
   });

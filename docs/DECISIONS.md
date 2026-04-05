@@ -22,6 +22,23 @@ Significant, stable choices for Virgil. New entries go at the **top** (reverse c
 
 ---
 
+## 2026-04-05 — Device surfaces as contact channels (documentation, not implementation) — Accepted
+
+**Context:** v2 specs mentioned Home Assistant and pychromecast in passing (one row each in V2_BEHAVIORAL_SPECS.md §5) but did not distinguish output surfaces, input sources, and bidirectional channels. The owner intends smart home devices (Nest Hub, speakers, wall tablets, HA automations) as primary contact surfaces — not just controlled endpoints. ntfy was the only interruptive push channel specced.
+
+**Decision:**
+
+1. **TARGET_ARCHITECTURE.md** now defines a device taxonomy: compute nodes, output surfaces, input sources, and bidirectional devices.
+2. **V2_BEHAVIORAL_SPECS.md §5** now includes a "Contact surfaces" table with per-surface protocol, v2 phase, and auth model notes.
+3. **V2_ARCHITECTURE.md** adds `home_assistant` to the tool inventory and scopes Phase 2–3 device tools.
+4. **No code ships from this decision.** Implementation follows the phase mapping when v2 development begins (June 2026 target).
+
+**Consequences:** v2 implementers have a clear surface inventory to build against. Phase 2 work (HA integration, dashboard route, TTS cast) can be scoped into tickets when the Python backend exists. Voice (Phase 3) is explicitly deferred past initial v2 launch.
+
+**Links:** [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md), [docs/V2_BEHAVIORAL_SPECS.md](V2_BEHAVIORAL_SPECS.md), [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md)
+
+---
+
 ## 2026-04-05 — Ghost of Virgil: hosted-primary v1 posture, local resilience, lanes — Accepted
 
 **Context:** v1 shipped with a **tool-capable default** in code (`DEFAULT_CHAT_MODEL` = gateway id in `lib/ai/models.ts`) while docs still described “local-first.” Local Ollama chat intentionally registers **few tools** (optional OpenClaw only) to protect small models. Operators want **maximum usefulness on free/hobby infra** with **local Ollama** as **resilience** (user choice, outage, policy), not as the primary tool surface.

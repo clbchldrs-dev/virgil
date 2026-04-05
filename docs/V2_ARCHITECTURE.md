@@ -331,9 +331,12 @@ class ToolRegistry:
 | `jira_comment` | Post a comment on a Jira ticket | No | Yes |
 | `jira_transition` | Move a ticket to a new status | Yes | No |
 | `notify` | Send push notification via ntfy.sh | No | Yes |
+| `home_assistant` | Read sensors, control devices via Home Assistant REST API | **Yes** — device control is mutating | No (until scoped) |
 | `file_write` | Write to `~/virgil-output/` | No | Yes |
 | `shell` | Run allowlisted commands only | Yes | No |
 | `web_fetch` | Fetch a URL, return text summary | No | Yes |
+
+*Inventory note:* `home_assistant` aligns with **Phase 2** Home Assistant contact surfaces in [V2_BEHAVIORAL_SPECS.md](V2_BEHAVIORAL_SPECS.md); it is listed here for the permission model (approval + night gating), not as a day-one Phase 1 ship item.
 
 **Security model:**
 - Shell commands are restricted to `ALLOWED_SHELL_COMMANDS` in config. Any command not on the list is rejected before execution.
@@ -650,3 +653,5 @@ dev = ["pytest", "pytest-asyncio", "ruff"]
 - **Tool approval UI:** Interactive tool approval in the Next.js chat interface.
 - **Mobile push refinement:** Rich notifications with action buttons (approve/reject tool calls from phone).
 - **Self-modifying skills:** Virgil can create new skills during night mode based on patterns it detects in usage. Human review required before activation.
+
+**Device surface tools (Phase 2–3):** `ha_sensor_read` (read HA entity states as context — e.g., presence, temperature), `ha_device_control` (set scenes, lights, locks — requires approval), `tts_cast` (send TTS audio to a named speaker via pychromecast), `dashboard_push` (update a named dashboard widget — e.g., goal progress card). Voice input (`stt_listen`) is Phase 3 and requires a separate STT service (local Whisper or cloud).

@@ -48,7 +48,7 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 | Project intent and this handoff | **This file** (`docs/PROJECT.md`) |
 | Bespoke single-owner product intent (fitness v1, data tiers, voice) | [docs/OWNER_PRODUCT_VISION.md](OWNER_PRODUCT_VISION.md) |
 | Optional pruning inventory (historical; major business paths removed 2026-04) | [docs/PRUNING_CANDIDATES.md](PRUNING_CANDIDATES.md) |
-| Target architecture (brain vs executor, hardware, Agent Zero — **scoped intent**) | [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) |
+| Target architecture (brain vs executor, hardware, device surface taxonomy, Agent Zero — **scoped intent**) | [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) |
 | Coding rules, file pointers, hosted-primary / resilience rules, review checklists | [AGENTS.md](../AGENTS.md) |
 | Traceable architecture decisions | [docs/DECISIONS.md](DECISIONS.md) |
 | Stability track (verification phases, `pnpm stable:check`) | [docs/STABILITY_TRACK.md](STABILITY_TRACK.md) — Phase B (Vercel), C (security), D (cron/QStash) runbooks; resume [docs/STABLE_STOP_HANDOFF.md](STABLE_STOP_HANDOFF.md) |
