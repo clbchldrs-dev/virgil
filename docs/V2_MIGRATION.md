@@ -47,12 +47,16 @@ v2’s **authoritative behavioral store** for habits, streaks, project graph, an
 See `workspace/v2-eval/README.md` for what v1 is collecting to inform v2 development. Known v1 friction points for v2 are listed in [docs/V1_V2_RISK_AUDIT.md](V1_V2_RISK_AUDIT.md).
 
 **Execution plan:** [docs/tickets/2026-04-01-v2-groundwork-overview.md](tickets/2026-04-01-v2-groundwork-overview.md) — two-sprint ticket set (API contract, tool map, chat instrumentation, memory blueprint, night parity, traces, cost telemetry, persona SSOT).
+Groundwork artifacts:
+- [docs/V2_MEMORY_MIGRATION.md](V2_MEMORY_MIGRATION.md)
+- [docs/V2_NIGHT_PARITY.md](V2_NIGHT_PARITY.md)
+- [docs/V2_COST_TELEMETRY.md](V2_COST_TELEMETRY.md)
 
 ## Migration steps (execute in June 2026)
 
 1. Stand up Python backend on Mac Mini M4 Pro (Ollama + Python 3.11+)
 2. Port persona from [`docs/VIRGIL_PERSONA.md`](VIRGIL_PERSONA.md) → v2 `persona.md` (then diff against prompt builders if needed)
 3. Wire Next.js frontend to Python backend API — **contract SSOT:** [docs/V2_API_CONTRACT.md](V2_API_CONTRACT.md) (v1 `POST /api/chat` behavior, target `POST /chat` + Bearer, stream and error shapes, security and gap list).
-4. Migrate relevant Postgres data to SQLite memory layer
+4. Migrate relevant Postgres data to SQLite memory layer using [docs/V2_MEMORY_MIGRATION.md](V2_MEMORY_MIGRATION.md)
 5. Validate tool execution, night mode, and skills framework — map v1 tools with [docs/V2_TOOL_MAP.md](V2_TOOL_MAP.md) and v2 `tools/` registry in [V2_ARCHITECTURE.md](V2_ARCHITECTURE.md).
 6. Decommission v1 backend (keep frontend)

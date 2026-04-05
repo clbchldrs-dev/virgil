@@ -52,7 +52,7 @@ Set `V2_EVAL_LOGGING=true` (see [docs/tickets/2026-04-01-v2-groundwork-overview.
 
 Each line includes: `timestamp`, `chatId`, `requestedModelId`, `model` / `effectiveModelId` (executed model after fallback), `fallbackTier` (`ollama` | `gemini` | `gateway`), `promptVariant` (`full` | `slim` | `compact`), `isOllamaLocal`, `localModelClass` (local only), `userMessageLength`, `responseLength`, `toolsUsed`, `recentMemoryRowsInPrompt` (count of Memory rows injected into the system prompt), `recallMemoryInvoked`, `saveMemoryInvoked`. Use this file for aggregate routing and recall-quality analysis, not for storing conversation text.
 
-- `traces.jsonl` — `V2_TRACE_LOGGING=true` (planned)
-- `costs.jsonl` — optional cost stub (planned)
+- `traces.jsonl` — `V2_TRACE_LOGGING=true` (decision-trace stub aligned to v2 fields; best-effort token fields)
+- `costs.jsonl` — `V2_EVAL_LOGGING=true` or `V2_COST_LOGGING=true` (gateway/gemini token usage rows when usage metadata is available)
 
 Do not commit these files; they may contain conversation metadata.
