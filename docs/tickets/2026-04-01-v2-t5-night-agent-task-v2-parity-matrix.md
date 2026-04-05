@@ -1,7 +1,7 @@
 # V2-T5 — Night review / digest / agent tasks vs v2 night mode (parity matrix)
 
 **Track:** V2 groundwork — [overview](2026-04-01-v2-groundwork-overview.md)  
-**Status:** Not started
+**Status:** Done — [docs/V2_NIGHT_PARITY.md](../V2_NIGHT_PARITY.md)
 
 ## Problem
 

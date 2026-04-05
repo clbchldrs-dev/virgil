@@ -1,7 +1,7 @@
 # V2-T6 — Decision trace JSONL (v2 trace shape stub)
 
 **Track:** V2 groundwork — [overview](2026-04-01-v2-groundwork-overview.md)  
-**Status:** Not started
+**Status:** Done — `lib/v2-eval/trace-log.ts` + `V2_TRACE_LOGGING` route wiring
 
 ## Problem
 

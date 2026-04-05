@@ -29,7 +29,9 @@
     "warmup:ollama": "pnpm exec tsx scripts/warmup-ollama-cli.ts",
     "launch:desktop": "bash packaging/launch-virgil.sh",
     "virgil:preflight": "tsx scripts/virgil-preflight.ts",
-    "virgil:preflight:strict": "tsx scripts/virgil-preflight.ts --strict"
+    "virgil:preflight:strict": "tsx scripts/virgil-preflight.ts --strict",
+    "digital-self:dev": "pnpm -C digital-self dev",
+    "digital-self:test": "pnpm -C digital-self test"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.58",
