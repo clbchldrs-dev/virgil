@@ -16,7 +16,7 @@ Sophon lives in this repository as a related but bounded workspace.
 
 ## Current scope
 
-- Design-first and scaffolding phase.
+- Design-first and incremental implementation phase.
 - Primary design spec: `docs/superpowers/specs/2026-04-05-sophon-daily-command-center-design.md`.
 
 ## Working conventions
@@ -25,3 +25,10 @@ Sophon lives in this repository as a related but bounded workspace.
 - Put Sophon-specific tests in `sophon/tests/`.
 - Put Sophon docs in `sophon/docs/`.
 - Keep cross-project integration notes in top-level `docs/` when needed.
+
+## Implemented v1 core (current)
+
+- `src/types.ts` — candidate/ranked item contracts.
+- `src/config.ts` — deterministic scoring constants.
+- `src/priority-matrix.ts` — adaptive focus-count and deterministic ranking.
+- `tests/priority-matrix.test.ts` — core behavior checks.
