@@ -58,6 +58,7 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 | Voice / persona SSOT (v1) | [docs/VIRGIL_PERSONA.md](VIRGIL_PERSONA.md); worksheet [personality/Virgil_personality_synthesis.md](personality/Virgil_personality_synthesis.md); regenerate DOCX from Markdown via [scripts/README-personality-docx.md](../scripts/README-personality-docx.md) (output is gitignored) |
 | Optional phase-1 onboarding (timeline / quick start) | [QUICK_START.txt](../QUICK_START.txt), [VIRGIL_PHASE1_SETUP.md](../VIRGIL_PHASE1_SETUP.md), [VIRGIL_READY_TO_BUILD.md](../VIRGIL_READY_TO_BUILD.md) |
 | Optional OpenClaw LAN execution | [openclaw-bridge.md](openclaw-bridge.md) |
+| Sophon daily command center (Option B v1) | `app/(chat)/api/sophon/daily/route.ts`, `lib/sophon/`, [docs/superpowers/specs/2026-04-05-sophon-daily-command-center-design.md](superpowers/specs/2026-04-05-sophon-daily-command-center-design.md) |
 | Archived Cursor prompts / pre-ship sketches | [archive/README.md](archive/README.md) |
 | Enhancement backlog (E1–E11, …) and acceptance criteria | [docs/ENHANCEMENTS.md](ENHANCEMENTS.md) |
 | v2 architecture plan (June 2026 target, not in development) | [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md) |
