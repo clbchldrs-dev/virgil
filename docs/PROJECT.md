@@ -44,7 +44,7 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 | Security tool inventory + cron/QStash auth matrix | [docs/security/tool-inventory.md](security/tool-inventory.md) |
 | Security hardening backlog (Phases A–D) | [docs/superpowers/plans/2026-03-29-security-hardening-agents.md](superpowers/plans/2026-03-29-security-hardening-agents.md) |
 | Exploratory long-form plans and specs | [docs/superpowers/](superpowers/) — drafts; not SSOT for shipped app behavior unless promoted elsewhere |
-| Voice / persona SSOT (v1; filled at T8) | [docs/VIRGIL_PERSONA.md](VIRGIL_PERSONA.md); worksheet [personality/Virgil_personality_synthesis.md](personality/Virgil_personality_synthesis.md); regenerate DOCX from Markdown via [scripts/README-personality-docx.md](../scripts/README-personality-docx.md) (output is gitignored) |
+| Voice / persona SSOT (v1) | [docs/VIRGIL_PERSONA.md](VIRGIL_PERSONA.md); worksheet [personality/Virgil_personality_synthesis.md](personality/Virgil_personality_synthesis.md); regenerate DOCX from Markdown via [scripts/README-personality-docx.md](../scripts/README-personality-docx.md) (output is gitignored) |
 | Optional phase-1 onboarding (timeline / quick start) | [QUICK_START.txt](../QUICK_START.txt), [VIRGIL_PHASE1_SETUP.md](../VIRGIL_PHASE1_SETUP.md), [VIRGIL_READY_TO_BUILD.md](../VIRGIL_READY_TO_BUILD.md) |
 | Optional OpenClaw LAN execution | [openclaw-bridge.md](openclaw-bridge.md) |
 | Archived Cursor prompts / pre-ship sketches | [archive/README.md](archive/README.md) |

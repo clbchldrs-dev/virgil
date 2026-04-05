@@ -1,9 +1,14 @@
 /**
- * Future integration points (calendar, git signals, journal file).
- * All default off — set to "1" to enable when implemented.
+ * Integration gates (calendar, health ingest, git signals, journal file).
+ * All default off — set to "1" to enable.
  */
 export function isVirgilCalendarIntegrationEnabled(): boolean {
   return process.env.VIRGIL_CALENDAR_INTEGRATION === "1";
+}
+
+/** Bearer ingest from iOS/watchOS HealthKit companion. */
+export function isVirgilHealthIngestEnabled(): boolean {
+  return process.env.VIRGIL_HEALTH_INGEST_ENABLED === "1";
 }
 
 export function isVirgilGitSignalsEnabled(): boolean {

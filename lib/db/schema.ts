@@ -1,4 +1,5 @@
 import type { InferSelectModel } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   boolean,
   date,
@@ -205,6 +206,57 @@ export const goalWeeklySnapshot = pgTable(
 
 export type GoalWeeklySnapshot = InferSelectModel<typeof goalWeeklySnapshot>;
 
+/** Cadence goals (E11 Phase 2); weekly rollups stay on {@link goalWeeklySnapshot}. */
+export const goal = pgTable(
+  "Goal",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    category: varchar("category", { length: 32 }).notNull(),
+    description: text("description"),
+    targetCadence: varchar("targetCadence", { length: 32 }),
+    status: varchar("status", { length: 32 }).notNull().default("active"),
+    lastTouchedAt: timestamp("lastTouchedAt").notNull().defaultNow(),
+    streakCurrent: integer("streakCurrent").notNull().default(0),
+    streakBest: integer("streakBest").notNull().default(0),
+    blockers: text("blockers").array().notNull().default(sql`'{}'::text[]`),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    userStatusIdx: index("Goal_userId_status_idx").on(
+      table.userId,
+      table.status
+    ),
+  })
+);
+
+export type Goal = InferSelectModel<typeof goal>;
+
+export const goalCheckIn = pgTable(
+  "GoalCheckIn",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    goalId: uuid("goalId")
+      .notNull()
+      .references(() => goal.id, { onDelete: "cascade" }),
+    checkedInAt: timestamp("checkedInAt").notNull().defaultNow(),
+    notes: text("notes"),
+    source: varchar("source", { length: 32 }).notNull().default("manual"),
+  },
+  (table) => ({
+    goalCheckedIdx: index("GoalCheckIn_goalId_checkedInAt_idx").on(
+      table.goalId,
+      table.checkedInAt
+    ),
+  })
+);
+
+export type GoalCheckIn = InferSelectModel<typeof goalCheckIn>;
+
 export const blockerIncident = pgTable("BlockerIncident", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   userId: uuid("userId")
@@ -360,3 +412,32 @@ export const pendingIntent = pgTable("PendingIntent", {
 });
 
 export type PendingIntent = InferSelectModel<typeof pendingIntent>;
+
+/** Batched HealthKit / Apple Watch metrics POSTed by a native companion app. */
+export const healthSnapshot = pgTable(
+  "HealthSnapshot",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    periodStart: timestamp("periodStart", { withTimezone: true }).notNull(),
+    periodEnd: timestamp("periodEnd", { withTimezone: true }).notNull(),
+    source: varchar("source", { length: 64 }).notNull().default("apple-health"),
+    payload: jsonb("payload")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    createdAt: timestamp("createdAt", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    userCreatedIdx: index("HealthSnapshot_userId_createdAt_idx").on(
+      table.userId,
+      table.createdAt
+    ),
+  })
+);
+
+export type HealthSnapshot = InferSelectModel<typeof healthSnapshot>;

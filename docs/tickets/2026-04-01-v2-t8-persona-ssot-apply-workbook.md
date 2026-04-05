@@ -1,7 +1,7 @@
 # V2-T8 — Persona SSOT (`VIRGIL_PERSONA.md`) + prompt code sync
 
 **Track:** V2 groundwork — [overview](2026-04-01-v2-groundwork-overview.md)  
-**Status:** Blocked on human — complete [personality workbook](../personality/Virgil_personality_synthesis.md) first
+**Status:** Done (2026-04-05) — [`docs/VIRGIL_PERSONA.md`](../VIRGIL_PERSONA.md) + worksheet Part I filled; prompts aligned with existing advisor stance
 
 ## Problem
 

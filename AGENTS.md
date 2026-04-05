@@ -586,13 +586,21 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `VIRGIL_CHAT_FALLBACK` | No | No | Set to `1` to enable Ollama → Gemini → Gateway cascade on local model failure |
 | `VIRGIL_FALLBACK_GEMINI_MODEL` | No | No | Gemini model for fallback (default `gemini-2.5-flash`). Bare Google model name, no prefix. |
 | `VIRGIL_FALLBACK_GATEWAY_MODEL` | No | No | Gateway model for last-resort fallback (default `deepseek/deepseek-v3.2`) |
-| `MEM0_API_KEY` | No | No | Enables Mem0 semantic memory; without it, recall uses Postgres FTS only |
+| `EMBEDDING_MODEL` | No | No | Ollama embedding model tag for `Memory` vectors (default `nomic-embed-text`); uses `OLLAMA_BASE_URL` |
+| `EMBEDDING_DIMENSIONS` | No | No | Vector width; must match migration `vector(N)` (default `768`) |
+| `MEM0_API_KEY` | No | No | Optional Mem0 layer; **on-Postgres** `recallMemory` tries pgvector, then FTS, then Mem0 when configured |
 | `MEM0_MONTHLY_SEARCH_LIMIT` | No | No | Monthly cap on mem0 search API calls; falls back to Postgres FTS when exhausted (default `1000`) |
 | `MEM0_MONTHLY_ADD_LIMIT` | No | No | Optional monthly cap on mem0 **add** (write) calls when `REDIS_URL` is set; when exhausted, mem0 writes are skipped (omit env for unlimited) |
 | `MEM0_DISABLE_LOCAL_SYNC` | No | No | Set to `1` to skip post-turn Mem0 batch ingest for **local Ollama** chats only (cloud path unchanged) |
 | `MEMORY_PROMPT_WINDOW_DAYS` | No | No | Days of `Memory` history considered for the chat system prompt (default `30`; max `365`) |
 | `MEMORY_PROMPT_FETCH_LIMIT` | No | No | Max `Memory` rows loaded into the prompt pipeline per request (default `80`; max `200`) |
-| `VIRGIL_CALENDAR_INTEGRATION` | No | No | Reserved: set to `1` when read-only calendar sync is implemented |
+| `VIRGIL_CALENDAR_INTEGRATION` | No | No | Set to `1` for read-only **Google Calendar** (`primary`). Requires `GOOGLE_CALENDAR_*` below. Routes: `GET /api/calendar/status`, `GET /api/calendar/events?timeMin=&timeMax=` (session auth). |
+| `GOOGLE_CALENDAR_CLIENT_ID` | With calendar | Same | OAuth client ID (Google Cloud Console). |
+| `GOOGLE_CALENDAR_CLIENT_SECRET` | With calendar | Same | OAuth client secret. |
+| `GOOGLE_CALENDAR_REFRESH_TOKEN` | With calendar | Same | Long-lived refresh token with scope `https://www.googleapis.com/auth/calendar.readonly` (obtain via OAuth consent / device flow; store like any secret). |
+| `VIRGIL_HEALTH_INGEST_ENABLED` | No | No | Set to `1` to allow `POST /api/health/ingest` (Bearer `VIRGIL_HEALTH_INGEST_SECRET`). For Apple Watch: native iOS/watchOS app reads HealthKit and POSTs batches. |
+| `VIRGIL_HEALTH_INGEST_SECRET` | When ingest on | Same | Shared secret; treat like `CRON_SECRET` (high privilege — rotates snapshots for `VIRGIL_HEALTH_INGEST_USER_ID`). |
+| `VIRGIL_HEALTH_INGEST_USER_ID` | When ingest on | Same | Postgres `User.id` UUID that receives all ingested rows (single-owner pattern). |
 | `VIRGIL_GIT_SIGNALS` | No | No | Reserved: set to `1` when Git/Vercel commit signals for study momentum are implemented |
 | `VIRGIL_JOURNAL_FILE_PARSE` | No | No | Reserved: set to `1` when optional journaling file parse is implemented |
 | `GITHUB_REPOSITORY` | No | No | `owner/repo` — enables `submitProductOpportunity` (gateway models); see [docs/github-product-opportunity.md](docs/github-product-opportunity.md) |

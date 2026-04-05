@@ -2,7 +2,7 @@
 
 **Parent:** Phase 1 of [proactive-pivot-epic](2026-04-02-proactive-pivot-epic.md)
 **ADR:** [DECISIONS.md](../DECISIONS.md) — 2026-04-02 (hybrid: FTS baseline, pgvector in same Postgres, FTS retained as fallback)
-**Status:** Design only — not in development
+**Status:** Implemented (E11 Phase 1) — migration `0010_memory_embedding.sql`, `lib/ai/embeddings.ts`, recall order in `lib/ai/tools/recall-memory.ts`
 
 ## Goal
 

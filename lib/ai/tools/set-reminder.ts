@@ -62,6 +62,51 @@ export function setReminder({
         (deliverTime.getTime() - now.getTime()) / 1000
       );
 
+      // #region agent log
+      {
+        const rawUrl = process.env.QSTASH_URL;
+        let qstashHost: string | null = null;
+        if (rawUrl) {
+          try {
+            qstashHost = new URL(rawUrl).hostname;
+          } catch {
+            qstashHost = "invalid_url";
+          }
+        }
+        fetch(
+          "http://127.0.0.1:7838/ingest/7925a257-7797-4a8d-9c5b-1a308b2155f1",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Debug-Session-Id": "7813dc",
+            },
+            body: JSON.stringify({
+              sessionId: "7813dc",
+              hypothesisId: "H5",
+              location: "lib/ai/tools/set-reminder.ts:pre-publish",
+              message: "QStash env before publishJSON",
+              data: {
+                hasQstashUrl: Boolean(rawUrl),
+                qstashHost,
+                delaySeconds,
+                baseUrlHost: (() => {
+                  try {
+                    return new URL(getBaseUrl()).hostname;
+                  } catch {
+                    return "invalid";
+                  }
+                })(),
+              },
+              timestamp: Date.now(),
+            }),
+          }
+        ).catch(() => {
+          /* debug ingest optional */
+        });
+      }
+      // #endregion
+
       await getQStash().publishJSON({
         url: `${getBaseUrl()}/api/reminders`,
         body: {

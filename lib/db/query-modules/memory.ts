@@ -1,6 +1,12 @@
 import "server-only";
 
 import { and, count, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
+import {
+  embedText,
+  MEMORY_VECTOR_DIMENSIONS,
+  vectorLiteralForPg,
+} from "@/lib/ai/embeddings";
+import { agentIngestLogSession308ef5 } from "@/lib/debug/agent-ingest-log";
 import { VirgilError } from "@/lib/errors";
 import { client, db } from "../client";
 import { type Memory, memory } from "../schema";
@@ -8,6 +14,95 @@ import { type Memory, memory } from "../schema";
 const proposalNotDismissedClause = sql`(coalesce((${memory.metadata}->>'reviewDecision'), 'pending') <> 'dismissed')`;
 
 // --- Memory (companion assistant) ---
+
+export async function embedAndStoreMemoryVector(
+  memoryId: string,
+  content: string
+): Promise<void> {
+  const vec = await embedText(content);
+  if (!vec || vec.length !== MEMORY_VECTOR_DIMENSIONS) {
+    return;
+  }
+  const literal = vectorLiteralForPg(vec);
+  await client.unsafe(
+    `UPDATE "Memory" SET "embedding" = $1::vector(${MEMORY_VECTOR_DIMENSIONS}), "updatedAt" = now() WHERE "id" = $2::uuid`,
+    [literal, memoryId]
+  );
+}
+
+export async function searchMemoriesByVector({
+  userId,
+  queryVector,
+  kind,
+  limit = 8,
+}: {
+  userId: string;
+  queryVector: number[];
+  kind?: "note" | "fact" | "goal" | "opportunity";
+  limit?: number;
+}): Promise<Memory[]> {
+  if (queryVector.length !== MEMORY_VECTOR_DIMENSIONS) {
+    return [];
+  }
+  const literal = vectorLiteralForPg(queryVector);
+  try {
+    if (kind) {
+      return await client.unsafe<Memory[]>(
+        `SELECT "id", "userId", "chatId", "kind", "tier", "content", "metadata", "proposedAt", "approvedAt", "appliedAt", "createdAt", "updatedAt"
+         FROM "Memory"
+         WHERE "userId" = $1::uuid
+           AND "embedding" IS NOT NULL
+           AND "kind" = $4::varchar
+         ORDER BY "embedding" <=> $2::vector(${MEMORY_VECTOR_DIMENSIONS})
+         LIMIT $3`,
+        [userId, literal, limit, kind]
+      );
+    }
+    return await client.unsafe<Memory[]>(
+      `SELECT "id", "userId", "chatId", "kind", "tier", "content", "metadata", "proposedAt", "approvedAt", "appliedAt", "createdAt", "updatedAt"
+       FROM "Memory"
+       WHERE "userId" = $1::uuid
+         AND "embedding" IS NOT NULL
+       ORDER BY "embedding" <=> $2::vector(${MEMORY_VECTOR_DIMENSIONS})
+       LIMIT $3`,
+      [userId, literal, limit]
+    );
+  } catch (error) {
+    // #region agent log
+    const err = error as { message?: string; code?: string };
+    agentIngestLogSession308ef5({
+      runId: "verify",
+      hypothesisId: "H3-H5",
+      location: "memory.ts:searchMemoriesByVector:catch",
+      message: "Vector memory search failed (swallowed)",
+      data: {
+        hasKind: Boolean(kind),
+        pgMessage: err.message?.slice(0, 500),
+        pgCode: err.code,
+      },
+    });
+    // #endregion
+    return [];
+  }
+}
+
+export async function searchMemoriesByVectorFromQueryText({
+  userId,
+  query,
+  kind,
+  limit = 8,
+}: {
+  userId: string;
+  query: string;
+  kind?: "note" | "fact" | "goal" | "opportunity";
+  limit?: number;
+}): Promise<Memory[]> {
+  const queryVector = await embedText(query);
+  if (!queryVector || queryVector.length !== MEMORY_VECTOR_DIMENSIONS) {
+    return [];
+  }
+  return searchMemoriesByVector({ userId, queryVector, kind, limit });
+}
 
 export async function saveMemoryRecord({
   userId,
@@ -45,6 +140,11 @@ export async function saveMemoryRecord({
         appliedAt: appliedAt ?? null,
       })
       .returning();
+    if (created) {
+      embedAndStoreMemoryVector(created.id, created.content).catch(() => {
+        /* fire-and-forget embedding; failures are non-blocking */
+      });
+    }
     return created;
   } catch (_error) {
     throw new VirgilError("bad_request:database", "Failed to save memory");
@@ -91,26 +191,51 @@ export async function searchMemories({
       return [];
     }
 
-    const tsquery = sanitized.split(/\s+/).filter(Boolean).join(" & ");
-
-    const params: (string | number)[] = [userId, tsquery, limit];
+    const params: (string | number)[] = [userId, sanitized, limit];
     let kindClause = "";
     if (kind) {
       params.push(kind);
       kindClause = `AND "kind" = $${params.length}`;
     }
 
+    // #region agent log
+    agentIngestLogSession308ef5({
+      runId: "verify",
+      hypothesisId: "H1",
+      location: "memory.ts:searchMemories:before-fts",
+      message: "FTS plainto_tsquery params",
+      data: {
+        sanitizedLen: sanitized.length,
+        sanitizedPreview: sanitized.slice(0, 120),
+        wordCount: sanitized.split(/\s+/).filter(Boolean).length,
+      },
+    });
+    // #endregion
     const result = await client.unsafe<Memory[]>(
       `SELECT "id", "userId", "chatId", "kind", "tier", "content", "metadata", "proposedAt", "approvedAt", "appliedAt", "createdAt", "updatedAt"
        FROM "Memory"
        WHERE "userId" = $1 ${kindClause}
-         AND "tsv" @@ to_tsquery('english', $2)
-       ORDER BY ts_rank("tsv", to_tsquery('english', $2)) DESC
+         AND "tsv" @@ plainto_tsquery('english', $2)
+       ORDER BY ts_rank("tsv", plainto_tsquery('english', $2)) DESC
        LIMIT $3`,
       params
     );
     return result;
-  } catch (_error) {
+  } catch (error) {
+    // #region agent log
+    const err = error as { message?: string; code?: string; detail?: string };
+    agentIngestLogSession308ef5({
+      runId: "verify",
+      hypothesisId: "H1-H2-H4",
+      location: "memory.ts:searchMemories:catch",
+      message: "FTS search failed",
+      data: {
+        pgMessage: err.message?.slice(0, 500),
+        pgCode: err.code,
+        pgDetail: err.detail?.slice(0, 200),
+      },
+    });
+    // #endregion
     throw new VirgilError("bad_request:database", "Failed to search memories");
   }
 }

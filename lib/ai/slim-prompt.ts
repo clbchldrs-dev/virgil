@@ -1,3 +1,6 @@
+/**
+ * Local Ollama slim/compact companion prompts. Voice SSOT: `docs/VIRGIL_PERSONA.md`.
+ */
 import type { LocalModelClass } from "@/lib/ai/models";
 import type { Memory } from "@/lib/db/schema";
 
@@ -41,14 +44,18 @@ export function buildCompactCompanionPrompt({
   ownerName,
   memories,
   localModelClass = "7b",
+  goalContextAppendix = "",
 }: {
   ownerName: string | null;
   memories: SlimMemory[];
   /** `3b`: shorter imperative copy; `7b`: slightly more room for structure. */
   localModelClass?: LocalModelClass;
+  goalContextAppendix?: string;
 }) {
   const name = ownerName ?? "there";
   const selectedMemories = selectSlimMemories(memories, 6);
+  const goalBlock =
+    goalContextAppendix.length > 0 ? ` ${goalContextAppendix}` : "";
   const memoryBlock =
     selectedMemories.length > 0
       ? ` Context: ${selectedMemories.map((m) => m.content).join(" | ")}`
@@ -60,7 +67,7 @@ export function buildCompactCompanionPrompt({
   return [
     `Virgil — personal assistant for ${name}. Honest, concise, proactive, not sycophantic. Dry earnest tone; light wit OK if it helps; for fitness/goals prefer goal-vs-actual deltas over praise.`,
     "Avoid hollow productivity: do not invent bids, quotes, or external facts — say what is missing and one real next step.",
-    `Local model: memory may be trimmed; no saveMemory/recallMemory.${classHint}${memoryBlock}`,
+    `Local model: memory may be trimmed; no saveMemory/recallMemory.${classHint}${goalBlock}${memoryBlock}`,
   ].join("\n");
 }
 
@@ -68,10 +75,12 @@ export function buildSlimCompanionPrompt({
   ownerName,
   memories,
   localModelClass = "7b",
+  goalContextAppendix = "",
 }: {
   ownerName: string | null;
   memories: SlimMemory[];
   localModelClass?: LocalModelClass;
+  goalContextAppendix?: string;
 }) {
   const parts: string[] = [];
   const name = ownerName ?? "there";
@@ -122,6 +131,10 @@ export function buildSlimCompanionPrompt({
         .map((memory) => `- ${memory.content}`)
         .join("\n")}`
     );
+  }
+
+  if (goalContextAppendix.length > 0) {
+    parts.push(goalContextAppendix);
   }
 
   return parts.join("\n\n");

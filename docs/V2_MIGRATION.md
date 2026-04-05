@@ -3,7 +3,7 @@
 ## What carries forward from v1
 
 - **Chat UI and auth system** — The Next.js frontend becomes the UI layer for v2's Python backend.
-- **Personality work** — `lib/ai/companion-prompt.ts` and `lib/ai/slim-prompt.ts` seed v2's `persona.md`.
+- **Personality work** — v1 voice SSOT is [`docs/VIRGIL_PERSONA.md`](VIRGIL_PERSONA.md); TypeScript builders implement it (`lib/ai/companion-prompt.ts`, `lib/ai/slim-prompt.ts`, `lib/ai/goal-guidance-prompt.ts`). Port to v2's `persona.md` from that file, not only from raw prompt strings.
 - **Tool architecture** — `lib/ai/tools/` (one tool per file) maps to v2's `tools/` directory pattern.
 - **Agent task pipeline** — `lib/agent-tasks/` is the conceptual ancestor of v2's night mode.
 - **Docker Compose setup** — Adaptable for v2's Python services.
@@ -51,7 +51,7 @@ See `workspace/v2-eval/README.md` for what v1 is collecting to inform v2 develop
 ## Migration steps (execute in June 2026)
 
 1. Stand up Python backend on Mac Mini M4 Pro (Ollama + Python 3.11+)
-2. Port persona from companion-prompt.ts → persona.md
+2. Port persona from [`docs/VIRGIL_PERSONA.md`](VIRGIL_PERSONA.md) → v2 `persona.md` (then diff against prompt builders if needed)
 3. Wire Next.js frontend to Python backend API — **contract SSOT:** [docs/V2_API_CONTRACT.md](V2_API_CONTRACT.md) (v1 `POST /api/chat` behavior, target `POST /chat` + Bearer, stream and error shapes, security and gap list).
 4. Migrate relevant Postgres data to SQLite memory layer
 5. Validate tool execution, night mode, and skills framework — map v1 tools with [docs/V2_TOOL_MAP.md](V2_TOOL_MAP.md) and v2 `tools/` registry in [V2_ARCHITECTURE.md](V2_ARCHITECTURE.md).

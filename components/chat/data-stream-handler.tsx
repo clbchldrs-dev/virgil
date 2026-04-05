@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import { initialArtifactData, useArtifact } from "@/hooks/use-artifact";
@@ -25,6 +26,10 @@ export function DataStreamHandler() {
     setDataStream([]);
 
     for (const delta of newDeltas) {
+      if (delta.type === "data-fallback-notice") {
+        toast.message(delta.data);
+        continue;
+      }
       if (delta.type === "data-model-metrics") {
         setLastMetrics(delta.data);
         continue;

@@ -1,3 +1,6 @@
+/**
+ * Gateway / hosted companion system prompt. Voice SSOT: `docs/VIRGIL_PERSONA.md`.
+ */
 import { buildGoalGuidancePromptAppendix } from "@/lib/ai/goal-guidance-prompt";
 import type { LocalModelClass } from "@/lib/ai/models";
 import type { Memory } from "@/lib/db/schema";
@@ -33,6 +36,7 @@ export function buildCompanionSystemPrompt({
   productOpportunityEnabled = false,
   agentTaskEnabled = false,
   localModelClass,
+  goalContextAppendix = "",
 }: {
   ownerName: string | null;
   memories: Memory[];
@@ -47,6 +51,8 @@ export function buildCompanionSystemPrompt({
    * {@link LocalModelClass} — same buckets as slim/compact; gateway omits this.
    */
   localModelClass?: LocalModelClass;
+  /** Active goals block (from pivot-goal-context) when non-empty */
+  goalContextAppendix?: string;
 }): string {
   const parts: string[] = [];
 
@@ -96,6 +102,10 @@ Anti-sycophancy: you are not here to be liked; you are here to be useful. Do not
       .map((m) => `[${m.kind}] ${m.content}`)
       .join("\n");
     parts.push(`Recent context from memory:\n${memoryContext}`);
+  }
+
+  if (goalContextAppendix.length > 0) {
+    parts.push(goalContextAppendix);
   }
 
   const locationHint = getRequestPromptFromHints(requestHints);

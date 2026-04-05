@@ -5,6 +5,8 @@ export * from "./query-modules/chat-meta-and-streams";
 export * from "./query-modules/chats";
 export * from "./query-modules/documents";
 export * from "./query-modules/goal-guidance";
+export * from "./query-modules/goals";
+export * from "./query-modules/health-snapshot";
 export * from "./query-modules/memory";
 export * from "./query-modules/messages-and-votes";
 export * from "./query-modules/night-review";

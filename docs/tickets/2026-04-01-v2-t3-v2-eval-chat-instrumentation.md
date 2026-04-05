@@ -1,7 +1,7 @@
 # V2-T3 — v2-eval chat instrumentation (`logInteraction` wiring)
 
 **Track:** V2 groundwork — [overview](2026-04-01-v2-groundwork-overview.md)  
-**Status:** Not started
+**Status:** Done
 
 ## Problem
 

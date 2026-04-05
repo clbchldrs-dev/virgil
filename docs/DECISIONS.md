@@ -4,6 +4,22 @@ Significant, stable choices for Virgil. New entries go at the **top** (reverse c
 
 ---
 
+## 2026-04-05 — v1 persona SSOT (`docs/VIRGIL_PERSONA.md`) + code sync policy — Accepted
+
+**Context:** Voice rules lived only in TypeScript (`companion-prompt.ts`, `slim-prompt.ts`, `goal-guidance-prompt.ts`). v2 groundwork ticket **T8** required a human-readable contract and reduced drift for migration.
+
+**Decision:**
+
+1. **[`docs/VIRGIL_PERSONA.md`](VIRGIL_PERSONA.md)** is the authoritative v1 persona spec (identity, always/never, local vs hosted, fitness/goals summary, tool behavior, sync policy).
+2. Prompt builders **implement** that spec; intentional voice changes start in `VIRGIL_PERSONA.md`, then TypeScript, then `pnpm stable:check` / [`tests/unit/local-context.test.ts`](../tests/unit/local-context.test.ts) as needed.
+3. The personality worksheet [`docs/personality/Virgil_personality_synthesis.md`](personality/Virgil_personality_synthesis.md) Part I is filled and cross-links the SSOT; historical excerpts in Parts B–D are illustrative.
+
+**Consequences:** v2 can port `persona.md` from a single Markdown file; contributors have one place to read before editing prompts.
+
+**Links:** [docs/tickets/2026-04-01-v2-t8-persona-ssot-apply-workbook.md](tickets/2026-04-01-v2-t8-persona-ssot-apply-workbook.md), [docs/V2_MIGRATION.md](V2_MIGRATION.md)
+
+---
+
 ## 2026-04-04 — v2 behavioral specs SSOT; v1 pivot goals remain separate — Accepted
 
 **Context:** v1 proactive pivot may introduce `Goal` / check-ins alongside `GoalWeeklySnapshot` ([docs/tickets/2026-04-02-pivot-goals-layer-design.md](tickets/2026-04-02-pivot-goals-layer-design.md)). v2 planning added a richer behavioral domain (habits, projects, schedule) for the Python backend.
@@ -112,6 +128,42 @@ Use when adding a decision:
 **Consequences:** Pivot work documents this stack in the epic ticket; v2 memory blueprint ticket ([T4](tickets/2026-04-01-v2-t4-memory-migration-blueprint.md)) must be updated if `memory_embeddings` or related tables ship.
 
 **Links:** [docs/tickets/2026-04-02-proactive-pivot-epic.md](tickets/2026-04-02-proactive-pivot-epic.md)
+
+---
+
+## 2026-04-04 — E11 Phase 1: recallMemory ordering (pgvector, FTS, Mem0) — Accepted
+
+**Context:** [docs/tickets/2026-04-04-pgvector-memory-design.md](tickets/2026-04-04-pgvector-memory-design.md) ships `Memory.embedding` with Ollama `/api/embeddings` and refines the 2026-04-02 hybrid recall ADR.
+
+**Decision:** For the `recallMemory` tool, try results in this order: **(1)** pgvector similarity on rows with a stored embedding (same Postgres as FTS), **(2)** Postgres FTS on `Memory.tsv`, **(3)** Mem0 when `MEM0_API_KEY` is set. Writes embed via `saveMemoryRecord` (fire-and-forget). Chat route does not duplicate embedding for Mem0-style conversation sync; pgvector searches `Memory` rows only.
+
+**Consequences:** Operators need Postgres with the `vector` extension (Neon, Supabase, local pgvector). `pnpm db:backfill-embeddings` fills null embeddings. Dimension defaults to **768** (`nomic-embed-text`); changing it requires a new migration.
+
+**Links:** [docs/tickets/2026-04-02-proactive-pivot-epic.md](tickets/2026-04-02-proactive-pivot-epic.md)
+
+---
+
+## 2026-04-04 — E11 Phase 2: structured goals (`Goal` + `GoalCheckIn`, option A1) — Accepted
+
+**Context:** [docs/tickets/2026-04-02-pivot-goals-layer-design.md](tickets/2026-04-02-pivot-goals-layer-design.md) compares extending `GoalWeeklySnapshot` vs new tables. Weekly rollup stays authoritative for week-keyed metrics.
+
+**Decision:** Add **`Goal`** and **`GoalCheckIn`** tables (cadence goals, streaks, blockers) alongside existing **`GoalWeeklySnapshot`**. Gateway chat exposes `listGoals` and `checkInGoal` tools; active goals are summarized in the system prompt when present. `GoalWeeklySnapshot` remains the time-series SSOT for weekly metrics.
+
+**Consequences:** Stale-goal polling for future nudges uses `Goal.lastTouchedAt` / check-ins per pivot design; Phase 3 events layer builds on this schema only after the agentic-scope ADR below.
+
+**Links:** [docs/tickets/2026-04-02-pivot-goals-layer-design.md](tickets/2026-04-02-pivot-goals-layer-design.md)
+
+---
+
+## 2026-04-04 — Agentic scope gate (before pivot Phase 3 events/nudges) — Accepted
+
+**Context:** “Agentic” can mean **suggest-only nudges** (aligned with Virgil’s honest, approval-oriented posture) or **autonomous side effects** (tools, writes, external calls without a human confirm step). Phase 3 in [docs/PIVOT_EVENTS_AND_NUDGES.md](PIVOT_EVENTS_AND_NUDGES.md) touches delivery topology and persisted notifications.
+
+**Decision:** **Default v1 posture:** notifications and scheduled nudges are **suggest-only** — they surface in app/chat and may request confirmation before any mutating tool runs. **Autonomous execution** (running tools or external actions without explicit user approval in-product) requires a separate ADR, explicit idempotency/audit, and is **not** the default path implied by QStash nudges alone.
+
+**Consequences:** Implement Phase 3 event/nudge **delivery and persistence** only after this gate; any auto-execute path is out of scope until specified.
+
+**Links:** [docs/PIVOT_EVENTS_AND_NUDGES.md](PIVOT_EVENTS_AND_NUDGES.md), [docs/tickets/2026-04-02-proactive-pivot-epic.md](tickets/2026-04-02-proactive-pivot-epic.md)
 
 ---
 

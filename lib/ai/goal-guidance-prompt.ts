@@ -1,6 +1,7 @@
 /**
  * Gateway companion appendix: goal-guidance I/O templates and mem0 discipline.
  * Local Ollama has no saveMemory/recallMemory — see slim companion prompt.
+ * Voice SSOT: `docs/VIRGIL_PERSONA.md` § Fitness and goals.
  */
 export function buildGoalGuidancePromptAppendix(): string {
   return `Goal guidance (weekly priorities, blockers, mem0 budget):

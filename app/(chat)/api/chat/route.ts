@@ -38,6 +38,7 @@ import {
   mergePlannerOutlineIntoSystemPrompt,
   runPlannerOutline,
 } from "@/lib/ai/orchestration/multi-agent";
+import { formatActiveGoalsForPrompt } from "@/lib/ai/pivot-goal-context";
 import type { RequestHints } from "@/lib/ai/prompts";
 import {
   assertOllamaReachable,
@@ -53,14 +54,17 @@ import {
   buildSlimCompanionPrompt,
 } from "@/lib/ai/slim-prompt";
 import { approveOpenClawIntent } from "@/lib/ai/tools/approve-openclaw-intent";
+import { checkInGoal } from "@/lib/ai/tools/check-in-goal";
 import {
   getCompanionToolNames,
   getCompanionTools,
 } from "@/lib/ai/tools/companion";
 import { createDocument } from "@/lib/ai/tools/create-document";
+import { createGoal } from "@/lib/ai/tools/create-goal";
 import { delegateTaskToOpenClaw } from "@/lib/ai/tools/delegate-to-openclaw";
 import { editDocument } from "@/lib/ai/tools/edit-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
+import { listGoals } from "@/lib/ai/tools/list-goals";
 import { recallMemory } from "@/lib/ai/tools/recall-memory";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { saveMemory } from "@/lib/ai/tools/save-memory";
@@ -102,6 +106,13 @@ import {
   generateUUID,
   getTextFromMessage,
 } from "@/lib/utils";
+import { extractToolNamesFromUIMessages } from "@/lib/v2-eval/extract-tools-from-ui-messages";
+import type {
+  FallbackTierLogged,
+  PromptVariantLogged,
+} from "@/lib/v2-eval/interaction-log";
+import { logInteraction } from "@/lib/v2-eval/interaction-log";
+import { getLastUserAndAssistantTextLengths } from "@/lib/v2-eval/turn-text-lengths";
 import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
@@ -158,7 +169,8 @@ export async function POST(request: Request) {
       return new VirgilError("forbidden:api").toResponse();
     }
 
-    const chatModel = (await isAllowedChatModelId(selectedChatModel))
+    const selectedModelAllowed = await isAllowedChatModelId(selectedChatModel);
+    const chatModel = selectedModelAllowed
       ? selectedChatModel
       : DEFAULT_CHAT_MODEL;
     isOllamaRequest = isLocalModel(chatModel);
@@ -252,10 +264,12 @@ export async function POST(request: Request) {
     }
 
     const modelConfig = getChatModelWithLocalFallback(chatModel);
-    const { capabilities, recentMemories } = await loadChatPromptContext({
-      userId: session.user.id,
-      chatModel,
-    });
+    const { capabilities, recentMemories, activeGoals } =
+      await loadChatPromptContext({
+        userId: session.user.id,
+        chatModel,
+      });
+    const goalContextAppendix = formatActiveGoalsForPrompt(activeGoals);
     const isReasoningModel = capabilities?.reasoning === true;
     const supportsTools = capabilities?.tools === true;
     const promptSupportsTools = supportsTools && !isOllamaLocal;
@@ -276,12 +290,14 @@ export async function POST(request: Request) {
             ownerName,
             memories: recentMemories,
             localModelClass,
+            goalContextAppendix,
           })
         : isOllamaLocal && promptVariant === "slim"
           ? buildSlimCompanionPrompt({
               ownerName,
               memories: recentMemories,
               localModelClass,
+              goalContextAppendix,
             })
           : buildCompanionSystemPrompt({
               ownerName,
@@ -290,6 +306,7 @@ export async function POST(request: Request) {
               supportsTools: promptSupportsTools,
               productOpportunityEnabled,
               agentTaskEnabled,
+              goalContextAppendix,
               ...(isOllamaLocal ? { localModelClass } : {}),
             });
 
@@ -367,6 +384,20 @@ export async function POST(request: Request) {
 
     let activeTier: FallbackTier = isOllamaLocal ? "ollama" : "gateway";
 
+    const v2EvalStreamMetrics: {
+      effectiveModelId: string;
+      fallbackTier: FallbackTierLogged;
+      effectivePromptVariant: PromptVariantLogged;
+    } = {
+      effectiveModelId: chatModel,
+      fallbackTier: isOllamaLocal ? "ollama" : "gateway",
+      effectivePromptVariant: isOllamaLocal
+        ? promptVariant === "compact"
+          ? "compact"
+          : "slim"
+        : "full",
+    };
+
     const noActiveToolsForOrchestration = isReasoningModel && !supportsTools;
     const gatewayMultiAgentEligible =
       !isOllamaLocal &&
@@ -377,6 +408,13 @@ export async function POST(request: Request) {
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
+        if (!selectedModelAllowed) {
+          dataStream.write({
+            type: "data-fallback-notice",
+            data: `"${selectedChatModel}" is not available on this server — using ${chatModel} instead. For local models, the Next.js server must reach Ollama at OLLAMA_BASE_URL (discovered tags require a running Ollama that lists them).`,
+          });
+        }
+
         const ollamaLanguageOptions = isOllamaLocal
           ? {
               ...modelConfig?.ollamaOptions,
@@ -488,6 +526,9 @@ export async function POST(request: Request) {
           saveMemory: saveMemory({ userId: session.user.id, chatId: id }),
           recallMemory: recallMemory({ userId: session.user.id }),
           setReminder: setReminder({ userId: session.user.id, chatId: id }),
+          listGoals: listGoals({ userId: session.user.id }),
+          createGoal: createGoal({ userId: session.user.id }),
+          checkInGoal: checkInGoal({ userId: session.user.id }),
           ...getCompanionTools(),
         };
 
@@ -495,6 +536,9 @@ export async function POST(request: Request) {
           "saveMemory",
           "recallMemory",
           "setReminder",
+          "listGoals",
+          "createGoal",
+          "checkInGoal",
           ...getCompanionToolNames(),
         ] as const;
 
@@ -544,6 +588,57 @@ export async function POST(request: Request) {
           ...(agentTaskEnabled ? (["submitAgentTask"] as const) : []),
         ];
 
+        const mergedGatewayToolKeys = Object.keys({
+          ...baseTools,
+          ...companionTools,
+          ...gatewayExtraTools,
+          ...(openClawToolsBlock ?? {}),
+        });
+        const activeToolNamesForStream = noActiveTools
+          ? []
+          : [
+              ...baseToolNames,
+              ...companionToolNames,
+              ...gatewayExtraToolNames,
+              ...openClawToolNames,
+            ];
+        // #region agent log
+        fetch(
+          "http://127.0.0.1:7838/ingest/7925a257-7797-4a8d-9c5b-1a308b2155f1",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Debug-Session-Id": "7813dc",
+            },
+            body: JSON.stringify({
+              sessionId: "7813dc",
+              hypothesisId: "H1-H3",
+              location: "app/(chat)/api/chat/route.ts:pre-stream-tools",
+              message:
+                "Tool registration vs active list (getBriefing / QStash prep)",
+              data: {
+                chatModel,
+                isOllamaLocal,
+                supportsTools,
+                promptSupportsTools,
+                isReasoningModel,
+                noActiveTools,
+                hasGetBriefingInMergedKeys:
+                  mergedGatewayToolKeys.includes("getBriefing"),
+                hasGetBriefingInActiveNames:
+                  activeToolNamesForStream.includes("getBriefing"),
+                mergedToolCount: mergedGatewayToolKeys.length,
+                activeToolCount: activeToolNamesForStream.length,
+              },
+              timestamp: Date.now(),
+            }),
+          }
+        ).catch(() => {
+          /* debug ingest optional */
+        });
+        // #endregion
+
         if (fallbackEnabled) {
           try {
             await assertOllamaReachable();
@@ -574,6 +669,11 @@ export async function POST(request: Request) {
               ? getFallbackGeminiModel()
               : getFallbackGatewayModel();
 
+          v2EvalStreamMetrics.effectiveModelId = fallbackModelId;
+          v2EvalStreamMetrics.fallbackTier =
+            activeTier === "gemini" ? "gemini" : "gateway";
+          v2EvalStreamMetrics.effectivePromptVariant = "full";
+
           const fallbackModel =
             activeTier === "gemini"
               ? getGeminiLanguageModel(fallbackModelId)
@@ -586,6 +686,7 @@ export async function POST(request: Request) {
             supportsTools: true,
             productOpportunityEnabled: isProductOpportunityConfigured(),
             agentTaskEnabled: true,
+            goalContextAppendix,
           });
 
           const fallbackResult = streamText({
@@ -742,6 +843,29 @@ export async function POST(request: Request) {
           } catch {
             /* non-critical */
           }
+        }
+
+        if (finishedMessages.length > 0) {
+          const toolsUsed = extractToolNamesFromUIMessages(finishedMessages);
+          const { userMessageLength, responseLength } =
+            getLastUserAndAssistantTextLengths(finishedMessages);
+          await logInteraction({
+            timestamp: new Date().toISOString(),
+            model: v2EvalStreamMetrics.effectiveModelId,
+            requestedModelId: chatModel,
+            userMessageLength,
+            responseLength,
+            toolsUsed,
+            chatId: id,
+            promptVariant: v2EvalStreamMetrics.effectivePromptVariant,
+            isOllamaLocal,
+            localModelClass: isOllamaLocal ? localModelClass : null,
+            recentMemoryRowsInPrompt: recentMemories.length,
+            recallMemoryInvoked: toolsUsed.includes("recallMemory"),
+            saveMemoryInvoked: toolsUsed.includes("saveMemory"),
+            effectiveModelId: v2EvalStreamMetrics.effectiveModelId,
+            fallbackTier: v2EvalStreamMetrics.fallbackTier,
+          });
         }
       },
       onError: (error) => {

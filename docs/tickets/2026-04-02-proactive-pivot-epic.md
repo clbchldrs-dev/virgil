@@ -21,7 +21,7 @@ Move from **reactive chat only** toward **proactive** awareness: semantic recall
 | Phase | Theme | Branch name (suggested) | Depends on | Notes |
 |-------|--------|-------------------------|------------|--------|
 | 1 | Vector memory (pgvector + Ollama embeddings) | `feat/pivot-vector-memory` | ADR at ship time | Pause until migration + tests; FTS fallback required per DECISIONS |
-| 2 | Goal-state tracker + tools | `feat/pivot-goal-tracker` | Goals design ticket | Extend `GoalWeeklySnapshot`; add `Goal` / `GoalCheckIn` per design doc |
+| 2 | Goal-state tracker + tools | `feat/pivot-goal-tracker` | Goals design ticket | **Shipped:** `Goal` / `GoalCheckIn` tables, `listGoals` / `createGoal` / `checkInGoal` tools, prompt context via `formatActiveGoalsForPrompt` |
 | 3 | Event bus + notifications | `feat/pivot-events-nudges` | Phase 2 for stale goals | QStash/cron-first; Redis Streams optional LAN — see PIVOT_EVENTS_AND_NUDGES |
 | 4 | Intent classifier + prompt assembler | `feat/pivot-intent-prompts` | Phase 2–3 MVP | Rule-based v1; feature flag; keep slim/compact until parity |
 | 5 | Cascading models | `feat/pivot-model-router` | Phase 4 | Defer until intent stable; respect user model override in preferences |

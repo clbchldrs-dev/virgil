@@ -64,6 +64,14 @@ ollama pull qwen2.5:7b-instruct
 
 Hosted models remain available, but the default direction of the project is local-first.
 
+### Troubleshooting local models
+
+Local inference uses **Ollama**, but the **Next.js server** opens that HTTP connection (`OLLAMA_BASE_URL`), not your browser. If hosted models work while local ones fail, the server usually cannot reach Ollama (wrong URL, Ollama not running, or you are on a **deployed** host such as Vercel where `127.0.0.1` is the server, not your laptop).
+
+- **Docker:** Default Compose uses the bundled `ollama` service. If Ollama runs on the host instead (e.g. GPU), use [`docker-compose.host-ollama.yml`](docker-compose.host-ollama.yml) and set `OLLAMA_BASE_URL` (often `http://host.docker.internal:11434` on Docker Desktop).
+- **Quick probe** (from the same machine or container as the app): `curl -sS "${OLLAMA_BASE_URL:-http://127.0.0.1:11434}/api/tags"` should return JSON listing models.
+- **Smoke test:** `pnpm ollama:smoke` (optionally with a preset id) exercises the same path as chat.
+
 ## V2 Python backend (planned)
 
 A v2 architecture targeting June 2026 replaces the Node.js backend with a headless Python service on a **Mac Mini M4 Pro** (48GB unified memory, 2TB SSD). The Next.js frontend stays on Vercel.

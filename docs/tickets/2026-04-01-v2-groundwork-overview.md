@@ -37,7 +37,7 @@ flowchart LR
 |--------|------|---------|
 | T1 | [2026-04-01-v2-t1-api-contract-for-python-backend.md](2026-04-01-v2-t1-api-contract-for-python-backend.md) | `docs/V2_API_CONTRACT.md` — chat/SSE/auth/errors vs current Next behavior (**done**) |
 | T2 | [2026-04-01-v2-t2-tool-inventory-and-v2-mapping.md](2026-04-01-v2-t2-tool-inventory-and-v2-mapping.md) | `docs/V2_TOOL_MAP.md` — every v1 tool → v2 registry fields (approval, local/gateway) (**done**) |
-| T3 | [2026-04-01-v2-t3-v2-eval-chat-instrumentation.md](2026-04-01-v2-t3-v2-eval-chat-instrumentation.md) | Wire + extend `logInteraction`; stable JSONL for routing/tool analysis |
+| T3 | [2026-04-01-v2-t3-v2-eval-chat-instrumentation.md](2026-04-01-v2-t3-v2-eval-chat-instrumentation.md) | Wire + extend `logInteraction`; stable JSONL for routing/tool analysis (**done**) |
 | T4 | [2026-04-01-v2-t4-memory-migration-blueprint.md](2026-04-01-v2-t4-memory-migration-blueprint.md) | `docs/V2_MEMORY_MIGRATION.md` — schema, kinds, metadata, export strategy |
 
 **Sprint 2 (observability + persona):** parity docs and logs that match v2 night/traces/budget/persona plans.
@@ -47,11 +47,11 @@ flowchart LR
 | T5 | [2026-04-01-v2-t5-night-agent-task-v2-parity-matrix.md](2026-04-01-v2-t5-night-agent-task-v2-parity-matrix.md) | `docs/V2_NIGHT_PARITY.md` — night review / digest / agent triage vs v2 night tasks |
 | T6 | [2026-04-01-v2-t6-decision-trace-jsonl.md](2026-04-01-v2-t6-decision-trace-jsonl.md) | Optional `V2_TRACE_LOGGING` JSONL aligned to v2 trace shape |
 | T7 | [2026-04-01-v2-t7-gateway-cost-telemetry.md](2026-04-01-v2-t7-gateway-cost-telemetry.md) | Document + optional log of token usage for gateway path (budget calibration) |
-| T8 | [2026-04-01-v2-t8-persona-ssot-apply-workbook.md](2026-04-01-v2-t8-persona-ssot-apply-workbook.md) | `docs/VIRGIL_PERSONA.md` + prompt code sync **after** personality workbook is filled |
+| T8 | [2026-04-01-v2-t8-persona-ssot-apply-workbook.md](2026-04-01-v2-t8-persona-ssot-apply-workbook.md) | `docs/VIRGIL_PERSONA.md` + prompt code sync (**done** 2026-04-05) |
 
 ## Dependencies
 
-- **T8** blocks on **human**: completed [docs/personality/Virgil_personality_synthesis.md](../personality/Virgil_personality_synthesis.md) worksheet (or explicit “use current code as SSOT” decision).
+- **T8** — completed: [docs/VIRGIL_PERSONA.md](../VIRGIL_PERSONA.md) + [personality worksheet Part I](../personality/Virgil_personality_synthesis.md) filled.
 - **T6/T7** are easier if **T3** lands first (shared patterns for opt-in JSONL under `workspace/v2-eval/`).
 - **T1** and **T2** can start in parallel.
 

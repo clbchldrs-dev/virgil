@@ -1,9 +1,12 @@
 import type { InferUITool, UIMessage } from "ai";
 import { z } from "zod";
 import type { ArtifactKind } from "@/components/chat/artifact";
+import type { checkInGoal } from "./ai/tools/check-in-goal";
 import type { createDocument } from "./ai/tools/create-document";
+import type { createGoal } from "./ai/tools/create-goal";
 import type { editDocument } from "./ai/tools/edit-document";
 import type { getWeather } from "./ai/tools/get-weather";
+import type { listGoals } from "./ai/tools/list-goals";
 import type { recallMemory } from "./ai/tools/recall-memory";
 import type { requestSuggestions } from "./ai/tools/request-suggestions";
 import type { saveMemory } from "./ai/tools/save-memory";
@@ -32,6 +35,9 @@ export type ChatTools = {
     ReturnType<typeof submitProductOpportunity>
   >;
   submitAgentTask: InferUITool<ReturnType<typeof submitAgentTask>>;
+  listGoals: InferUITool<ReturnType<typeof listGoals>>;
+  createGoal: InferUITool<ReturnType<typeof createGoal>>;
+  checkInGoal: InferUITool<ReturnType<typeof checkInGoal>>;
 };
 
 /** Last completed assistant turn; emitted as `data-model-metrics` from the chat API. */

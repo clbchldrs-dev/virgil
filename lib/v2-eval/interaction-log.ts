@@ -19,16 +19,30 @@ const LOG_PATH = path.join(
   "interactions.jsonl"
 );
 
+export type PromptVariantLogged = "full" | "slim" | "compact";
+
+export type FallbackTierLogged = "ollama" | "gemini" | "gateway" | "none";
+
+export type LocalModelClassLogged = "3b" | "7b";
+
 export type InteractionRecord = {
   timestamp: string;
+  /** Model id used for inference (after fallback). */
   model: string;
+  /** Model id from the chat picker (before fallback). */
+  requestedModelId: string;
   userMessageLength: number;
   responseLength: number;
   toolsUsed: string[];
-  // Add these manually when reviewing:
-  // nudgeHit?: boolean;       // Did the user act on a nudge?
-  // wasUseful?: boolean;      // Was the response actually helpful?
-  // shouldHaveUsedTool?: string; // Tool that should have been invoked
+  chatId: string;
+  promptVariant: PromptVariantLogged;
+  isOllamaLocal: boolean;
+  localModelClass?: LocalModelClassLogged | null;
+  recentMemoryRowsInPrompt: number;
+  recallMemoryInvoked: boolean;
+  saveMemoryInvoked: boolean;
+  effectiveModelId: string;
+  fallbackTier: FallbackTierLogged;
 };
 
 export async function logInteraction(record: InteractionRecord): Promise<void> {

@@ -59,8 +59,8 @@ const rows: Row[] = [
     key: "OLLAMA_BASE_URL",
     ok: true,
     note: process.env.OLLAMA_BASE_URL
-      ? `Set (${process.env.OLLAMA_BASE_URL})`
-      : "Optional; defaults to http://127.0.0.1:11434 for local Ollama.",
+      ? `Set (${process.env.OLLAMA_BASE_URL}) — must be reachable from the Next.js process, not from the browser alone.`
+      : "Optional; defaults to http://127.0.0.1:11434. The Next server must reach Ollama here. On Vercel, localhost Ollama on your laptop is not reachable unless you point OLLAMA_BASE_URL at a network-exposed host.",
   },
 ];
 
