@@ -413,6 +413,110 @@ export const pendingIntent = pgTable("PendingIntent", {
 
 export type PendingIntent = InferSelectModel<typeof pendingIntent>;
 
+export const sophonTask = pgTable(
+  "SophonTask",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    status: varchar("status", { length: 24 }).notNull().default("open"),
+    source: varchar("source", { length: 24 }).notNull().default("manual"),
+    dueAt: timestamp("dueAt"),
+    effortFit: integer("effortFit").notNull().default(50),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    userDueIdx: index("SophonTask_userId_dueAt_idx").on(
+      table.userId,
+      table.dueAt
+    ),
+  })
+);
+
+export type SophonTask = InferSelectModel<typeof sophonTask>;
+
+export const sophonHabitState = pgTable(
+  "SophonHabitState",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    habitKey: varchar("habitKey", { length: 128 }).notNull(),
+    lastReviewedAt: timestamp("lastReviewedAt"),
+    stalenessStage: integer("stalenessStage").notNull().default(0),
+    cooldownUntil: timestamp("cooldownUntil"),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    userHabitUnique: uniqueIndex("SophonHabitState_userId_habitKey_unique").on(
+      table.userId,
+      table.habitKey
+    ),
+  })
+);
+
+export type SophonHabitState = InferSelectModel<typeof sophonHabitState>;
+
+export const sophonActionLog = pgTable(
+  "SophonActionLog",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    actionType: varchar("actionType", { length: 64 }).notNull(),
+    riskLevel: varchar("riskLevel", { length: 16 }).notNull(),
+    mode: varchar("mode", { length: 16 }).notNull(),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    userCreatedIdx: index("SophonActionLog_userId_createdAt_idx").on(
+      table.userId,
+      table.createdAt
+    ),
+  })
+);
+
+export type SophonActionLog = InferSelectModel<typeof sophonActionLog>;
+
+export const sophonDailyReview = pgTable(
+  "SophonDailyReview",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    reviewDate: date("reviewDate").notNull(),
+    wins: text("wins").array().notNull().default(sql`'{}'::text[]`),
+    misses: text("misses").array().notNull().default(sql`'{}'::text[]`),
+    carryForward: text("carryForward")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    calibration: jsonb("calibration")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    userReviewDateUnique: uniqueIndex(
+      "SophonDailyReview_userId_reviewDate_unique"
+    ).on(table.userId, table.reviewDate),
+  })
+);
+
+export type SophonDailyReview = InferSelectModel<typeof sophonDailyReview>;
+
 /** Batched HealthKit / Apple Watch metrics POSTed by a native companion app. */
 export const healthSnapshot = pgTable(
   "HealthSnapshot",
