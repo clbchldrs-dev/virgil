@@ -6,14 +6,20 @@ import {
   getMemoryPromptFetchLimit,
   getMemoryPromptSince,
 } from "@/lib/chat/memory-prompt-config";
-import { getRecentMemories, listActiveGoalsForUser } from "@/lib/db/queries";
-import type { Goal, Memory } from "@/lib/db/schema";
+import {
+  getRecentMemories,
+  listActiveGoalsForUser,
+  listHealthSnapshotsForUser,
+} from "@/lib/db/queries";
+import type { Goal, HealthSnapshot, Memory } from "@/lib/db/schema";
 import { agentIngestLogSession308ef5 } from "@/lib/debug/agent-ingest-log";
 
 export type ChatPromptContextLoad = {
   capabilities: ModelCapabilities;
   recentMemories: Memory[];
   activeGoals: Goal[];
+  /** Up to 3 health batches from the last 7 days (for gateway / full companion prompt only). */
+  recentHealthSnapshots: HealthSnapshot[];
 };
 
 /**
@@ -35,14 +41,22 @@ export async function loadChatPromptContext({
 }): Promise<ChatPromptContextLoad> {
   const capabilities = await getCapabilitiesForModel(chatModel);
 
-  const [memoriesOutcome, goalsOutcome] = await Promise.allSettled([
-    getRecentMemories({
-      userId,
-      since: getMemoryPromptSince(),
-      limit: getMemoryPromptFetchLimit(),
-    }),
-    listActiveGoalsForUser({ userId, limit: 12 }),
-  ]);
+  const healthSince = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const [memoriesOutcome, goalsOutcome, healthOutcome] =
+    await Promise.allSettled([
+      getRecentMemories({
+        userId,
+        since: getMemoryPromptSince(),
+        limit: getMemoryPromptFetchLimit(),
+      }),
+      listActiveGoalsForUser({ userId, limit: 12 }),
+      listHealthSnapshotsForUser({
+        userId,
+        limit: 3,
+        createdAfter: healthSince,
+      }),
+    ]);
 
   let recentMemories: Memory[] = [];
   if (memoriesOutcome.status === "fulfilled") {
@@ -72,9 +86,24 @@ export async function loadChatPromptContext({
     });
   }
 
+  let recentHealthSnapshots: HealthSnapshot[] = [];
+  if (healthOutcome.status === "fulfilled") {
+    recentHealthSnapshots = healthOutcome.value;
+  } else {
+    agentIngestLogSession308ef5({
+      hypothesisId: "prompt-ctx-health",
+      location: "load-prompt-context.ts:listHealthSnapshotsForUser",
+      message: "listHealthSnapshotsForUser rejected",
+      data: {
+        errorMessage: rejectionMessage(healthOutcome.reason).slice(0, 500),
+      },
+    });
+  }
+
   return {
     capabilities,
     recentMemories,
     activeGoals,
+    recentHealthSnapshots,
   };
 }

@@ -235,6 +235,8 @@ Use any standard Postgres provider. Two tested options:
 2. Go to **API Keys** → **Create API Key** (full access or sending only).
 3. Copy the key and paste into `.env.local` after `RESEND_API_KEY=`.
 
+**Inbound email → Memory (optional):** Configure a Resend **Webhook** for `email.received` pointing at `POST /api/ingest/email`. Copy the **Svix signing secret** into `RESEND_WEBHOOK_SECRET`. The webhook payload is metadata-only; the handler loads plain/HTML text via the [Receiving API](https://resend.com/docs/api-reference/emails/retrieve-received-email) with `RESEND_API_KEY`. **Receiving requires a verified domain** (or a Resend-managed receiving hostname). Sandbox `onboarding@resend.dev` is for **outbound** tests; do not assume unverified addresses can receive arbitrary mail. Set `VIRGIL_EMAIL_INGEST_ENABLED=1`, `VIRGIL_EMAIL_INGEST_ALLOWED_FROM` (comma-separated senders), and reuse `VIRGIL_INGEST_USER_ID` for the target `Memory` owner.
+
 ### 1.8 `CRON_SECRET`
 
 1. Run: `openssl rand -base64 32`
@@ -616,8 +618,15 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `VIRGIL_HEALTH_INGEST_ENABLED` | No | No | Set to `1` to allow `POST /api/health/ingest` (Bearer `VIRGIL_HEALTH_INGEST_SECRET`). For Apple Watch: native iOS/watchOS app reads HealthKit and POSTs batches. |
 | `VIRGIL_HEALTH_INGEST_SECRET` | When ingest on | Same | Shared secret; treat like `CRON_SECRET` (high privilege — rotates snapshots for `VIRGIL_HEALTH_INGEST_USER_ID`). |
 | `VIRGIL_HEALTH_INGEST_USER_ID` | When ingest on | Same | Postgres `User.id` UUID that receives all ingested rows (single-owner pattern). |
+| `VIRGIL_INGEST_ENABLED` | No | No | Set to `1` for `POST /api/ingest` (Bearer `VIRGIL_INGEST_SECRET` → `VIRGIL_INGEST_USER_ID`). |
+| `VIRGIL_INGEST_SECRET` | When general ingest on | Same | High-privilege bearer for scripted context capture. |
+| `VIRGIL_INGEST_USER_ID` | When general ingest on | Same | Postgres `User.id` UUID for bearer ingest + email ingest + optional journal cron. |
+| `RESEND_WEBHOOK_SECRET` | When inbound email on | Same | Svix signing secret from Resend **Webhooks** (verify `POST /api/ingest/email`). |
+| `VIRGIL_EMAIL_INGEST_ENABLED` | No | No | Set to `1` for Resend `email.received` → Memory (requires `RESEND_WEBHOOK_SECRET`, `RESEND_API_KEY`, allowlist). |
+| `VIRGIL_EMAIL_INGEST_ALLOWED_FROM` | When email ingest on | Same | Comma-separated sender emails (lowercased match). |
 | `VIRGIL_GIT_SIGNALS` | No | No | Reserved: set to `1` when Git/Vercel commit signals for study momentum are implemented |
-| `VIRGIL_JOURNAL_FILE_PARSE` | No | No | Reserved: set to `1` when optional journaling file parse is implemented |
+| `VIRGIL_JOURNAL_FILE_PARSE` | No | No | Set to `1` for `GET/POST /api/journal/parse` (Bearer `CRON_SECRET`); uses `NIGHT_REVIEW_MODEL`. On Vercel, POST JSON `{ "content": "…" }` instead of filesystem. |
+| `VIRGIL_JOURNAL_FILE_PATH` | No | No | Markdown path (default `workspace/journal/today.md`); relative paths resolve from repo cwd. |
 | `GITHUB_REPOSITORY` | No | No | `owner/repo` — enables `submitProductOpportunity` (gateway models); see [docs/github-product-opportunity.md](docs/github-product-opportunity.md) |
 | `GITHUB_PRODUCT_OPPORTUNITY_TOKEN` or `GITHUB_TOKEN` | No | No | PAT with `issues: write` on that repo |
 | `GITHUB_PRODUCT_OPPORTUNITY_LABELS` | No | No | Optional comma-separated issue labels |

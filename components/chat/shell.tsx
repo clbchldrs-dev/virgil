@@ -1,6 +1,8 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +33,8 @@ import { MultimodalInput } from "./multimodal-input";
 import { OpenClawPendingBanner } from "./openclaw-pending-banner";
 
 export function ChatShell() {
+  const searchParams = useSearchParams();
+
   const {
     chatId,
     messages,
@@ -66,6 +70,21 @@ export function ChatShell() {
 
   const stopRef = useRef(stop);
   stopRef.current = stop;
+
+  useEffect(() => {
+    if (searchParams.get("virgilToast") !== "share_saved") {
+      return;
+    }
+    toast.success("Saved shared content to memory");
+    const next = new URL(window.location.href);
+    next.searchParams.delete("virgilToast");
+    const qs = next.searchParams.toString();
+    window.history.replaceState(
+      {},
+      "",
+      `${next.pathname}${qs ? `?${qs}` : ""}`
+    );
+  }, [searchParams]);
 
   const prevChatIdRef = useRef(chatId);
   useEffect(() => {

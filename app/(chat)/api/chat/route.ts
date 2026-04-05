@@ -269,7 +269,7 @@ export async function POST(request: Request) {
     }
 
     const modelConfig = getChatModelWithLocalFallback(chatModel);
-    const { capabilities, recentMemories, activeGoals } =
+    const { capabilities, recentMemories, activeGoals, recentHealthSnapshots } =
       await loadChatPromptContext({
         userId: session.user.id,
         chatModel,
@@ -307,6 +307,7 @@ export async function POST(request: Request) {
           : buildCompanionSystemPrompt({
               ownerName,
               memories: recentMemories,
+              recentHealthSnapshots: isOllamaLocal ? [] : recentHealthSnapshots,
               requestHints,
               supportsTools: promptSupportsTools,
               productOpportunityEnabled,
@@ -609,42 +610,44 @@ export async function POST(request: Request) {
               ...gatewayExtraToolNames,
               ...openClawToolNames,
             ];
-        // #region agent log
-        fetch(
-          "http://127.0.0.1:7838/ingest/7925a257-7797-4a8d-9c5b-1a308b2155f1",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Debug-Session-Id": "7813dc",
-            },
-            body: JSON.stringify({
-              sessionId: "7813dc",
-              hypothesisId: "H1-H3",
-              location: "app/(chat)/api/chat/route.ts:pre-stream-tools",
-              message:
-                "Tool registration vs active list (getBriefing / QStash prep)",
-              data: {
-                chatModel,
-                isOllamaLocal,
-                supportsTools,
-                promptSupportsTools,
-                isReasoningModel,
-                noActiveTools,
-                hasGetBriefingInMergedKeys:
-                  mergedGatewayToolKeys.includes("getBriefing"),
-                hasGetBriefingInActiveNames:
-                  activeToolNamesForStream.includes("getBriefing"),
-                mergedToolCount: mergedGatewayToolKeys.length,
-                activeToolCount: activeToolNamesForStream.length,
+        if (process.env.NODE_ENV === "development") {
+          // #region agent log
+          fetch(
+            "http://127.0.0.1:7838/ingest/7925a257-7797-4a8d-9c5b-1a308b2155f1",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Debug-Session-Id": "7813dc",
               },
-              timestamp: Date.now(),
-            }),
-          }
-        ).catch(() => {
-          /* debug ingest optional */
-        });
-        // #endregion
+              body: JSON.stringify({
+                sessionId: "7813dc",
+                hypothesisId: "H1-H3",
+                location: "app/(chat)/api/chat/route.ts:pre-stream-tools",
+                message:
+                  "Tool registration vs active list (getBriefing / QStash prep)",
+                data: {
+                  chatModel,
+                  isOllamaLocal,
+                  supportsTools,
+                  promptSupportsTools,
+                  isReasoningModel,
+                  noActiveTools,
+                  hasGetBriefingInMergedKeys:
+                    mergedGatewayToolKeys.includes("getBriefing"),
+                  hasGetBriefingInActiveNames:
+                    activeToolNamesForStream.includes("getBriefing"),
+                  mergedToolCount: mergedGatewayToolKeys.length,
+                  activeToolCount: activeToolNamesForStream.length,
+                },
+                timestamp: Date.now(),
+              }),
+            }
+          ).catch(() => {
+            /* debug ingest optional */
+          });
+          // #endregion
+        }
 
         if (fallbackEnabled) {
           try {
@@ -689,6 +692,7 @@ export async function POST(request: Request) {
           const escalationPrompt = buildCompanionSystemPrompt({
             ownerName,
             memories: recentMemories,
+            recentHealthSnapshots,
             requestHints,
             supportsTools: true,
             productOpportunityEnabled: isProductOpportunityConfigured(),

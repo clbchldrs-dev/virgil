@@ -4,9 +4,34 @@
 import { buildGoalGuidancePromptAppendix } from "@/lib/ai/goal-guidance-prompt";
 import { buildVirgilLaneGuidanceBlock } from "@/lib/ai/lanes";
 import type { LocalModelClass } from "@/lib/ai/models";
-import type { Memory } from "@/lib/db/schema";
+import type { HealthSnapshot, Memory } from "@/lib/db/schema";
 import type { RequestHints } from "./prompts";
 import { artifactsPrompt, getRequestPromptFromHints } from "./prompts";
+
+const HEALTH_SNAPSHOT_PROMPT_MAX_CHARS = 900;
+
+function formatHealthSnapshotsForPrompt(snapshots: HealthSnapshot[]): string {
+  if (snapshots.length === 0) {
+    return "";
+  }
+  const lines: string[] = [];
+  for (const s of snapshots) {
+    const start = new Date(s.periodStart).toISOString().slice(0, 10);
+    const end = new Date(s.periodEnd).toISOString().slice(0, 10);
+    const payload = s.payload ?? {};
+    const keys = Object.keys(payload);
+    const keyStr =
+      keys.length <= 8
+        ? keys.join(", ")
+        : `${keys.slice(0, 8).join(", ")} +${keys.length - 8}`;
+    lines.push(`- ${s.source} (${start}–${end}): keys ${keyStr}`);
+  }
+  const block = `Recent health data (ingested metrics; not a diagnosis):\n${lines.join("\n")}`;
+  if (block.length <= HEALTH_SNAPSHOT_PROMPT_MAX_CHARS) {
+    return block;
+  }
+  return `${block.slice(0, HEALTH_SNAPSHOT_PROMPT_MAX_CHARS - 1)}…`;
+}
 
 const companionToolGuidance = `You also have access to tools for interacting with the user's local environment and external services.
 
@@ -32,6 +57,7 @@ Calendar:
 export function buildCompanionSystemPrompt({
   ownerName,
   memories,
+  recentHealthSnapshots = [],
   requestHints,
   supportsTools,
   productOpportunityEnabled = false,
@@ -41,6 +67,8 @@ export function buildCompanionSystemPrompt({
 }: {
   ownerName: string | null;
   memories: Memory[];
+  /** Last few HealthKit-style batches (gateway / full prompt only). */
+  recentHealthSnapshots?: HealthSnapshot[];
   requestHints: RequestHints;
   supportsTools: boolean;
   /** Gateway + GitHub env: enables submitProductOpportunity tool guidance */
@@ -103,6 +131,11 @@ Anti-sycophancy: you are not here to be liked; you are here to be useful. Do not
       .map((m) => `[${m.kind}] ${m.content}`)
       .join("\n");
     parts.push(`Recent context from memory:\n${memoryContext}`);
+  }
+
+  const healthBlock = formatHealthSnapshotsForPrompt(recentHealthSnapshots);
+  if (healthBlock.length > 0) {
+    parts.push(healthBlock);
   }
 
   if (goalContextAppendix.length > 0) {

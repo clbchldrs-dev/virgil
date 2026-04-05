@@ -31,8 +31,13 @@ LLM-invoked tools live under [`lib/ai/tools/`](../../lib/ai/tools/). Server-side
 | `/api/night-review/enqueue` | GET | `Authorization: Bearer $CRON_SECRET` |
 | `/api/night-review/run` | POST | **QStash** `upstash-signature` + `QSTASH_*` signing keys |
 | `/api/reminders` | POST | **QStash** signature (same pattern) |
+| `/api/ingest` | POST | `Authorization: Bearer $VIRGIL_INGEST_SECRET` + `VIRGIL_INGEST_ENABLED=1` |
+| `/api/journal/parse` | GET, POST | `Authorization: Bearer $CRON_SECRET` + `VIRGIL_JOURNAL_FILE_PARSE=1` (POST body variant for journal text on serverless) |
+| `/api/ingest/email` | POST | **Svix** webhook headers + `RESEND_WEBHOOK_SECRET` + `VIRGIL_EMAIL_INGEST_ENABLED=1` |
 
 Self-hosted cron: [AGENTS.md](../../AGENTS.md#scheduled-jobs-on-the-host-no-vercel-cron). No sensitive work without these checks.
+
+**Session-authenticated ingress:** `POST /api/ingest/share` (PWA Web Share Target) requires a signed-in **non-guest** user; writes `Memory` for that user only.
 
 ---
 

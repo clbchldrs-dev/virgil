@@ -1,6 +1,6 @@
 import "server-only";
 
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte } from "drizzle-orm";
 import { VirgilError } from "@/lib/errors";
 import { db } from "../client";
 import { healthSnapshot } from "../schema";
@@ -41,16 +41,25 @@ export async function insertHealthSnapshot({
 export async function listHealthSnapshotsForUser({
   userId,
   limit = 20,
+  createdAfter,
 }: {
   userId: string;
   limit?: number;
+  /** When set, only snapshots with `createdAt` at or after this instant are returned. */
+  createdAfter?: Date;
 }) {
   try {
     const cap = Math.min(Math.max(1, limit), 100);
+    const whereClause = createdAfter
+      ? and(
+          eq(healthSnapshot.userId, userId),
+          gte(healthSnapshot.createdAt, createdAfter)
+        )
+      : eq(healthSnapshot.userId, userId);
     return await db
       .select()
       .from(healthSnapshot)
-      .where(eq(healthSnapshot.userId, userId))
+      .where(whereClause)
       .orderBy(desc(healthSnapshot.createdAt))
       .limit(cap);
   } catch (_error) {

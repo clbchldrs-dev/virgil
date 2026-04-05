@@ -104,6 +104,36 @@ export async function searchMemoriesByVectorFromQueryText({
   return searchMemoriesByVector({ userId, queryVector, kind, limit });
 }
 
+export async function memoryExistsWithSourceDateAndContent({
+  userId,
+  content,
+  source,
+  date,
+}: {
+  userId: string;
+  content: string;
+  source: string;
+  date: string;
+}): Promise<boolean> {
+  try {
+    const rows = await db
+      .select({ id: memory.id })
+      .from(memory)
+      .where(
+        and(
+          eq(memory.userId, userId),
+          eq(memory.content, content),
+          sql`(${memory.metadata}->>'source') = ${source}`,
+          sql`(${memory.metadata}->>'date') = ${date}`
+        )
+      )
+      .limit(1);
+    return rows.length > 0;
+  } catch (_error) {
+    return false;
+  }
+}
+
 export async function saveMemoryRecord({
   userId,
   chatId,

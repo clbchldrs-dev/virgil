@@ -4,6 +4,24 @@ Significant, stable choices for Virgil. New entries go at the **top** (reverse c
 
 ---
 
+## 2026-04-05 — Context ingress channels (ingest, share, journal file, inbound email) — Accepted
+
+**Context:** Single-owner deployments need low-friction ways to add `Memory` rows and surface Apple Health batches in chat **without** bloating slim/compact local prompts.
+
+**Decision:**
+
+1. **`POST /api/ingest`** (Bearer `VIRGIL_INGEST_SECRET` → `VIRGIL_INGEST_USER_ID`) accepts a small Zod schema; `metadata` includes `source` and `ingestType`; embedding follows `saveMemoryRecord` (Ollama when configured).
+2. **PWA share target** posts multipart to **`/api/ingest/share`** under the **session** user (not the bearer owner id).
+3. **Journal file parse** (`VIRGIL_JOURNAL_FILE_PARSE`) reads `VIRGIL_JOURNAL_FILE_PATH` (default `workspace/journal/today.md`) or accepts **POST body** `content` for serverless; cron uses `GET /api/journal/parse` + `CRON_SECRET`; model selection matches **`NIGHT_REVIEW_MODEL`**.
+4. **Inbound email** (`VIRGIL_EMAIL_INGEST_ENABLED`) verifies **Svix** (`RESEND_WEBHOOK_SECRET`), loads bodies via Resend **Receiving API**, allowlists `VIRGIL_EMAIL_INGEST_ALLOWED_FROM`, writes to **`VIRGIL_INGEST_USER_ID`**.
+5. **Health snapshots** in the system prompt: up to **3** rows in the last **7** days, **hosted + fallback escalation only** (empty on local Ollama primary path).
+
+**Consequences:** More `Memory` rows and occasional Gemini/Ollama calls for journal parse; operators must configure Resend **receiving** on a **verified domain** (sandbox senders are limited).
+
+**Links:** [docs/security/tool-inventory.md](security/tool-inventory.md), [AGENTS.md](../AGENTS.md) env table
+
+---
+
 ## 2026-04-05 — Ghost of Virgil: hosted-primary v1 posture, local resilience, lanes — Accepted
 
 **Context:** v1 shipped with a **tool-capable default** in code (`DEFAULT_CHAT_MODEL` = gateway id in `lib/ai/models.ts`) while docs still described “local-first.” Local Ollama chat intentionally registers **few tools** (optional OpenClaw only) to protect small models. Operators want **maximum usefulness on free/hobby infra** with **local Ollama** as **resilience** (user choice, outage, policy), not as the primary tool surface.
