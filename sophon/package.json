@@ -1,0 +1,11 @@
+{
+  "name": "sophon",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --import tsx tests/**/*.test.ts"
+  },
+  "devDependencies": {
+    "tsx": "4.19.3"
+  }
+}
