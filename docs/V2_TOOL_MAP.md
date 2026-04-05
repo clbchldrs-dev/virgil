@@ -11,7 +11,7 @@
 | Path | Tools |
 |------|--------|
 | **Local Ollama** (`isOllamaLocal`) | Only OpenClaw tools **if** `OPENCLAW_*` is configured: `delegateTask`, `approveOpenClawIntent`. Otherwise **no** tools are passed to `streamText`. |
-| **Gateway (hosted) models** | `baseTools` + `companionTools` + optional `submitProductOpportunity` / `submitAgentTask` + optional OpenClaw block. `experimental_activeTools` may be empty when the model is “reasoning” without tool support. |
+| **Gateway (hosted) models** | `baseTools` + `companionTools` + optional `submitProductOpportunity` / `submitAgentTask` + optional OpenClaw block. `baseTools` includes **`fetchUrl`** (allowlisted HTTP GET). `experimental_activeTools` may be empty when the model is “reasoning” without tool support. |
 | **Companion subset on Vercel** | `getCompanionTools()` omits `readFile`, `writeFile`, `executeShell`, `getBriefing` when `VERCEL` is set — only Jira + calendar universal tools remain in the companion object. |
 
 ---
@@ -23,6 +23,7 @@
 | v1_tool_name | source_file | v1_registration | mutates_external_state | v2_requires_approval (proposal) | v2_allowed_in_night (proposal) | v2_notes |
 |--------------|-------------|-----------------|-------------------------|----------------------------------|-----------------------------------|----------|
 | `getWeather` | `get-weather.ts` | Gateway only | N | No | Yes | Read-only forecast; safe for nudges. |
+| `fetchUrl` | `fetch-url.ts` | Gateway only | N | No | Yes | Allowlisted GET; v2 **`web_fetch`** analogue; extend `AGENT_FETCH_ALLOWLIST_HOSTS`. |
 | `createDocument` | `create-document.ts` | Gateway only | Y (DB + Blob) | **Yes** | No | Creates artifact-backed document; v2 `file_write`-class gate. |
 | `editDocument` | `edit-document.ts` | Gateway only | Y | **Yes** | No | Mutates document content stream. |
 | `updateDocument` | `update-document.ts` | Gateway only | Y | **Yes** | No | Persists document updates. |
@@ -39,8 +40,8 @@
 | `executeShell` | `shell.ts` | Gateway, **not** on Vercel | Y | **Yes** — arbitrary `exec` with pattern blocklist only | No | v2 should use allowlisted commands or sandbox; see V2_ARCH `shell`. |
 | `getBriefing` | `briefing.ts` | Gateway (all deployments) | N | No | Yes | Time + optional `workspace/user-context.md`; safe on Vercel when file absent. |
 | `submitProductOpportunity` | `submit-product-opportunity.ts` | Gateway only; **off** for local models | Y (GitHub Issue) | **Yes** — public issue surface | No | Tool description asks user consent; keep explicit approval in v2. |
-| `submitAgentTask` | `submit-agent-task.ts` | Gateway only; **off** for local models | Y (DB + optional GitHub) | **Yes** | No | Queues work for humans/agents; gateway-only today. |
-| `delegateTask` | `delegate-to-openclaw.ts` | Gateway **and** local Ollama when OpenClaw configured | Y (LAN gateway) | **Yes** — `delegationNeedsConfirmation` queues `PendingIntent` | No* | *OpenClaw `allowed_in_night` is product-specific; default deny until policy exists. |
+| `submitAgentTask` | `submit-agent-task.ts` | Gateway only; **off** for local models | Y (DB + optional GitHub) | **Yes** | No | Queues work for humans/agents; optional **`lane`** in `metadata` (default `code`). |
+| `delegateTask` | `delegate-to-openclaw.ts` | Gateway **and** local Ollama when OpenClaw configured | Y (LAN gateway) | **Yes** — `delegationNeedsConfirmation` queues `PendingIntent` | No* | Optional **`lane`** + `virgilLane` in intent params (Ghost ADR). *OpenClaw `allowed_in_night` is product-specific; default deny until policy exists. |
 | `approveOpenClawIntent` | `approve-openclaw-intent.ts` | Same as `delegateTask` | Y (sends queued intent) | N (this **is** the approval step) | No | v2 “approve pending execution” analogue. |
 
 ---
@@ -70,7 +71,7 @@
 | `notify` | No single v1 tool; reminders via `setReminder` (QStash). |
 | `file_write` | `writeFile` (filesystem) + artifact writes inside document tools. |
 | `shell` | `executeShell`. |
-| `web_fetch` | **Not** a v1 chat tool today (fetch exists elsewhere in app if at all). **Gap** for parity. |
+| `web_fetch` | **`fetchUrl`** in v1 (`lib/ai/tools/fetch-url.ts`) — allowlisted GET only. |
 
 ---
 
@@ -85,6 +86,7 @@
 | `create-document.ts` | Tool: `createDocument` |
 | `delegate-to-openclaw.ts` | Tool: `delegateTask` |
 | `edit-document.ts` | Tool: `editDocument` |
+| `fetch-url.ts` | Tool: `fetchUrl` |
 | `filesystem.ts` | Tools: `readFile`, `writeFile` |
 | `get-weather.ts` | Tool: `getWeather` |
 | `jira.ts` | Tools: `getJiraIssue`, `searchJiraIssues`, `updateJiraIssue` |

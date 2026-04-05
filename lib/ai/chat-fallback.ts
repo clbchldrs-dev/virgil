@@ -68,3 +68,26 @@ export function isFallbackEligibleError(error: unknown): boolean {
     /status\s+code:\s*404/.test(text)
   );
 }
+
+const DEFAULT_GATEWAY_FALLBACK_OLLAMA_MODEL = "ollama/qwen2.5:7b-instruct";
+
+/** When the selected chat model is a gateway model and it fails pre-stream, retry once with local Ollama. */
+export function isGatewayFallbackToOllamaEnabled(): boolean {
+  const v = process.env.VIRGIL_GATEWAY_FALLBACK_OLLAMA?.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
+export function getDefaultGatewayFallbackOllamaModelId(): string {
+  return (
+    process.env.DEFAULT_GATEWAY_FALLBACK_OLLAMA_MODEL?.trim() ||
+    DEFAULT_GATEWAY_FALLBACK_OLLAMA_MODEL
+  );
+}
+
+/**
+ * Errors that justify a one-shot gateway → Ollama retry (pre-stream).
+ * Reuses transport-style signals from {@link isFallbackEligibleError}.
+ */
+export function isGatewayFallbackEligibleError(error: unknown): boolean {
+  return isFallbackEligibleError(error);
+}

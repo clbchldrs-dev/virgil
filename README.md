@@ -1,18 +1,19 @@
 # Virgil
 
-Virgil is a local-first personal AI assistant built to get the most useful behavior possible out of lightweight models.
+Virgil is a personal AI assistant with a **hosted-primary** default (AI Gateway tool-capable models) and **local Ollama** as a strong option for privacy, cost, or resilience.
 
 The project is optimized for:
 
-- low recurring cost
-- strong local-model performance on 3B/7B-class models
-- honest, proactive assistance instead of bloated prompts or hosted-model dependence
+- capable **default** chat (full tools on gateway / non-Ollama path)
+- **free/hobby-tier** infra when deployed (see [docs/free-tier-feature-map.md](docs/free-tier-feature-map.md))
+- honest, proactive assistance without sycophancy
+- **local Ollama** with slim prompts when you pick it or when gateway fallback is enabled
 - optional gateway-only multi-agent planning (`VIRGIL_MULTI_AGENT_ENABLED`) when you want an extra orchestration pass
 
 ## What Virgil does
 
-- Runs locally with Ollama by default
-- Supports hosted models through AI Gateway when you want them
+- Defaults to **hosted models** via AI Gateway (see `DEFAULT_CHAT_MODEL` in `lib/ai/models.ts`)
+- Runs **local Ollama** when you select it in the model picker (slimmer tools on that path by design)
 - Stores chat history, memories, and reminders in Postgres
 - Uses Redis for rate limits and stream support
 - Can run as a normal local dev app or as a one-command Docker stack

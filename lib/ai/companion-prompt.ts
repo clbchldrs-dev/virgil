@@ -2,6 +2,7 @@
  * Gateway / hosted companion system prompt. Voice SSOT: `docs/VIRGIL_PERSONA.md`.
  */
 import { buildGoalGuidancePromptAppendix } from "@/lib/ai/goal-guidance-prompt";
+import { buildVirgilLaneGuidanceBlock } from "@/lib/ai/lanes";
 import type { LocalModelClass } from "@/lib/ai/models";
 import type { Memory } from "@/lib/db/schema";
 import type { RequestHints } from "./prompts";
@@ -26,7 +27,7 @@ Jira tools:
 - If the user references a ticket by number alone, infer the project prefix from context or memory if possible.
 
 Calendar:
-- listCalendarEvents is available but requires OAuth setup. If it returns an error, let the user know the integration isn't configured yet.`;
+- listCalendarEvents reads the primary Google Calendar when VIRGIL_CALENDAR_INTEGRATION=1 and Google OAuth env vars are set. On success you get timed events (and all-day flags); on error, explain the error or hint field plainly.`;
 
 export function buildCompanionSystemPrompt({
   ownerName,
@@ -114,6 +115,7 @@ Anti-sycophancy: you are not here to be liked; you are here to be useful. Do not
   }
 
   if (supportsTools) {
+    parts.push(buildVirgilLaneGuidanceBlock());
     parts.push(companionToolGuidance);
     parts.push(artifactsPrompt);
     parts.push(buildGoalGuidancePromptAppendix());
@@ -121,7 +123,7 @@ Anti-sycophancy: you are not here to be liked; you are here to be useful. Do not
 
   if (productOpportunityEnabled) {
     parts.push(
-      "Product feedback (optional): If the user wants Virgil itself to improve, you may use submitProductOpportunity to open a GitHub issue for the owner. Only after they agree. Ideas must fit local-first, low-cost, small-model-friendly work — not generic feature dumps. Prefer one focused issue per agreed suggestion."
+      "Product feedback (optional): If the user wants Virgil itself to improve, you may use submitProductOpportunity to open a GitHub issue for the owner. Only after they agree. Ideas must fit single-owner, cost-aware, iterable work — not generic feature dumps. Prefer one focused issue per agreed suggestion."
     );
   }
 

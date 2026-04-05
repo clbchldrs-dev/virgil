@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { virgilLaneIdSchema } from "@/lib/ai/lanes";
 import {
   countOpenClawBacklogForUser,
   queuePendingIntent,
@@ -32,6 +33,11 @@ export function delegateTaskToOpenClaw({
         .string()
         .min(8)
         .describe("What should be done, in plain language"),
+      lane: virgilLaneIdSchema
+        .optional()
+        .describe(
+          "Delegation lane: use **home** for OpenClaw (default); **chat**/**code**/**research** if tagging a mixed flow for logging"
+        ),
       skill: z
         .string()
         .optional()
@@ -42,15 +48,17 @@ export function delegateTaskToOpenClaw({
         .describe("Skill-specific parameters when you know them"),
       urgent: z.boolean().optional().describe("When true, use high priority"),
     }),
-    execute: async ({ description, skill, params, urgent }) => {
+    execute: async ({ description, lane, skill, params, urgent }) => {
       const skills = await getCachedOpenClawSkillNames();
       const resolvedSkill =
         skill?.trim() ||
         matchSkillFromDescription(description, skills) ||
         "generic-task";
+      const resolvedLane = lane ?? "home";
       const mergedParams: Record<string, unknown> = {
         ...(params ?? {}),
         description,
+        virgilLane: resolvedLane,
       };
       const explicitDestructive =
         params !== undefined &&

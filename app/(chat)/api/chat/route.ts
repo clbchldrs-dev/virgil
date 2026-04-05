@@ -14,11 +14,14 @@ import { createResumableStreamContext } from "resumable-stream";
 import { auth } from "@/app/(auth)/auth";
 import type { FallbackTier } from "@/lib/ai/chat-fallback";
 import {
+  getDefaultGatewayFallbackOllamaModelId,
   getFallbackGatewayModel,
   getFallbackGeminiModel,
   getFallbackTiers,
   isChatFallbackEnabled,
   isFallbackEligibleError,
+  isGatewayFallbackEligibleError,
+  isGatewayFallbackToOllamaEnabled,
 } from "@/lib/ai/chat-fallback";
 import { createModelMetricsStreamHooks } from "@/lib/ai/chat-stream-metrics";
 import { buildCompanionSystemPrompt } from "@/lib/ai/companion-prompt";
@@ -29,6 +32,7 @@ import {
   getChatModelWithLocalFallback,
   getResolvedLocalModelClass,
   isLocalModel,
+  resolveRuntimeModelId,
 } from "@/lib/ai/models";
 import { isAllowedChatModelId } from "@/lib/ai/ollama-discovery";
 import {
@@ -63,6 +67,7 @@ import { createDocument } from "@/lib/ai/tools/create-document";
 import { createGoal } from "@/lib/ai/tools/create-goal";
 import { delegateTaskToOpenClaw } from "@/lib/ai/tools/delegate-to-openclaw";
 import { editDocument } from "@/lib/ai/tools/edit-document";
+import { fetchUrl } from "@/lib/ai/tools/fetch-url";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { listGoals } from "@/lib/ai/tools/list-goals";
 import { recallMemory } from "@/lib/ai/tools/recall-memory";
@@ -496,6 +501,7 @@ export async function POST(request: Request) {
 
         const baseTools = {
           getWeather,
+          fetchUrl: fetchUrl(),
           createDocument: createDocument({
             session,
             dataStream,
@@ -516,6 +522,7 @@ export async function POST(request: Request) {
 
         const baseToolNames = [
           "getWeather",
+          "fetchUrl",
           "createDocument",
           "editDocument",
           "updateDocument",
@@ -738,29 +745,121 @@ export async function POST(request: Request) {
             })
           );
         } else {
-          const result = streamText({
-            ...gatewayCommonStreamArgs,
-            tools: {
-              ...baseTools,
-              ...companionTools,
-              ...gatewayExtraTools,
-              ...(openClawToolsBlock ?? {}),
-            },
-            experimental_activeTools: noActiveTools
-              ? []
-              : [
-                  ...baseToolNames,
-                  ...companionToolNames,
-                  ...gatewayExtraToolNames,
-                  ...openClawToolNames,
-                ],
-          });
+          const gatewayTools = {
+            ...baseTools,
+            ...companionTools,
+            ...gatewayExtraTools,
+            ...(openClawToolsBlock ?? {}),
+          };
+          const gatewayActiveTools = noActiveTools
+            ? []
+            : [
+                ...baseToolNames,
+                ...companionToolNames,
+                ...gatewayExtraToolNames,
+                ...openClawToolNames,
+              ];
 
-          dataStream.merge(
-            result.toUIMessageStream({
-              sendReasoning: showThinking && isReasoningModel,
-            })
-          );
+          const mergeGatewayStream = () => {
+            const result = streamText({
+              ...gatewayCommonStreamArgs,
+              tools: gatewayTools,
+              experimental_activeTools: gatewayActiveTools,
+            });
+            dataStream.merge(
+              result.toUIMessageStream({
+                sendReasoning: showThinking && isReasoningModel,
+              })
+            );
+          };
+
+          try {
+            mergeGatewayStream();
+          } catch (gatewayErr: unknown) {
+            if (
+              !isGatewayFallbackToOllamaEnabled() ||
+              !isGatewayFallbackEligibleError(gatewayErr)
+            ) {
+              throw gatewayErr;
+            }
+
+            dataStream.write({
+              type: "data-fallback-notice",
+              data: "Hosted model unavailable; using local Ollama (limited tools).",
+            });
+
+            try {
+              await assertOllamaReachable();
+            } catch {
+              throw gatewayErr;
+            }
+
+            const fbModelId = getDefaultGatewayFallbackOllamaModelId();
+            const fbConfig = getChatModelWithLocalFallback(fbModelId);
+            const fbVariant = fbConfig?.promptVariant ?? "slim";
+            const fbLocalClass = getResolvedLocalModelClass(
+              fbModelId,
+              fbConfig
+            );
+            const fbSystem =
+              fbVariant === "compact"
+                ? buildCompactCompanionPrompt({
+                    ownerName,
+                    memories: recentMemories,
+                    localModelClass: fbLocalClass,
+                    goalContextAppendix,
+                  })
+                : buildSlimCompanionPrompt({
+                    ownerName,
+                    memories: recentMemories,
+                    localModelClass: fbLocalClass,
+                    goalContextAppendix,
+                  });
+            const fbSystemTokens = estimateTokens(fbSystem);
+            const fbMessages = trimMessagesForBudget({
+              messages: convertedModelMessages,
+              systemTokenCount: fbSystemTokens,
+              maxContextTokens: fbConfig?.maxContextTokens ?? 2048,
+            });
+            const fbOllamaOptions = {
+              ...fbConfig?.ollamaOptions,
+              ...(showThinking ? { think: true as const } : {}),
+            };
+
+            v2EvalStreamMetrics.effectiveModelId = fbModelId;
+            v2EvalStreamMetrics.fallbackTier = "ollama";
+            v2EvalStreamMetrics.effectivePromptVariant =
+              fbVariant === "compact" ? "compact" : "slim";
+
+            const fbResult = streamText({
+              model: getLanguageModel(
+                resolveRuntimeModelId(fbModelId),
+                fbOllamaOptions
+              ),
+              system: fbSystem,
+              messages: fbMessages,
+              stopWhen: stepCountIs(5),
+              experimental_telemetry: {
+                isEnabled: isProductionEnvironment,
+                functionId: "stream-text",
+              },
+              ...metricsHooks,
+              ...(openClawToolsBlock
+                ? {
+                    tools: openClawToolsBlock,
+                    experimental_activeTools: noActiveTools
+                      ? []
+                      : [...openClawToolNames],
+                  }
+                : {}),
+            });
+
+            dataStream.merge(
+              fbResult.toUIMessageStream({
+                sendReasoning: showThinking,
+              })
+            );
+          }
         }
 
         if (titlePromise) {

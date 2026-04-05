@@ -4,6 +4,22 @@ Significant, stable choices for Virgil. New entries go at the **top** (reverse c
 
 ---
 
+## 2026-04-05 — Ghost of Virgil: hosted-primary v1 posture, local resilience, lanes — Accepted
+
+**Context:** v1 shipped with a **tool-capable default** in code (`DEFAULT_CHAT_MODEL` = gateway id in `lib/ai/models.ts`) while docs still described “local-first.” Local Ollama chat intentionally registers **few tools** (optional OpenClaw only) to protect small models. Operators want **maximum usefulness on free/hobby infra** with **local Ollama** as **resilience** (user choice, outage, policy), not as the primary tool surface.
+
+**Decision:**
+
+1. **Primary path:** Default chat uses **AI Gateway / hosted tool-capable models** for full companion tools (memory, goals, documents, calendar, etc.). **LLM spend** is explicit (Gateway credits, optional `GOOGLE_GENERATIVE_AI_API_KEY`); infra stays on documented free tiers where possible — see [free-tier-feature-map.md](free-tier-feature-map.md).
+2. **Local Ollama:** **Fallback and choice** — slim prompts; **thin tool surface** unless a future env-gated experiment expands it. **`VIRGIL_CHAT_FALLBACK=1`** keeps **Ollama failure → Gemini → Gateway** (see separate ADR). Optional **`VIRGIL_GATEWAY_FALLBACK_OLLAMA=1`** adds **gateway failure → Ollama** when the user has a configured `DEFAULT_GATEWAY_FALLBACK_OLLAMA_MODEL` (see [AGENTS.md](../AGENTS.md) env table).
+3. **Delegation lanes:** Work is routed into **lanes** (`chat`, `home`, `code`, `research`) so the main model **delegates** to OpenClaw (`delegateTask`), repo agents (`submitAgentTask`), or stays inline — metadata on delegations and prompt guidance in `lib/ai/companion-prompt.ts` / `lib/ai/lanes.ts`. Optional **`VIRGIL_LANE_ROUTER=1`** may add a classifier pass later; off by default.
+
+**Consequences:** Agents optimize for **hosted-primary quality and safety** without blocking **offline/local** use. Review checklists weight **resilience and single-owner safety** over “never touch the local path.”
+
+**Links:** [docs/PROJECT.md](PROJECT.md), [docs/V2_TOOL_MAP.md](V2_TOOL_MAP.md) §1, [lib/ai/chat-fallback.ts](../lib/ai/chat-fallback.ts)
+
+---
+
 ## 2026-04-05 — v1 persona SSOT (`docs/VIRGIL_PERSONA.md`) + code sync policy — Accepted
 
 **Context:** Voice rules lived only in TypeScript (`companion-prompt.ts`, `slim-prompt.ts`, `goal-guidance-prompt.ts`). v2 groundwork ticket **T8** required a human-readable contract and reduced drift for migration.

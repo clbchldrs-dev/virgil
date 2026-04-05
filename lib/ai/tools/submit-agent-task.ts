@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { virgilLaneIdSchema } from "@/lib/ai/lanes";
 import { createAgentTask } from "@/lib/db/queries";
 import {
   anonymizedUserRef,
@@ -50,6 +51,11 @@ export function submitAgentTask({
         .array(z.string())
         .optional()
         .describe("Files likely relevant to this task"),
+      lane: virgilLaneIdSchema
+        .optional()
+        .describe(
+          "Delegation lane — use **code** (default for repo work) unless the task is clearly another lane"
+        ),
     }),
     needsApproval: true,
     execute: async (input) => {
@@ -88,6 +94,7 @@ export function submitAgentTask({
           }
         }
 
+        const lane = input.lane ?? "code";
         const task = await createAgentTask({
           userId,
           chatId,
@@ -100,6 +107,7 @@ export function submitAgentTask({
           metadata: {
             proposedApproach: input.proposedApproach,
             filePaths: input.filePaths,
+            lane,
           },
         });
 

@@ -1,5 +1,6 @@
 import equal from "fast-deep-equal";
-import { memo } from "react";
+import { Volume2Icon } from "lucide-react";
+import { memo, useRef } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { useCopyToClipboard } from "usehooks-ts";
@@ -26,6 +27,10 @@ export function PureMessageActions({
 }) {
   const { mutate } = useSWRConfig();
   const [_, copyToClipboard] = useCopyToClipboard();
+  const lastSpokenMessageIdRef = useRef<string | null>(null);
+  const ttsPublicEnabled =
+    process.env.NEXT_PUBLIC_VIRGIL_TTS_ENABLED === "1" ||
+    process.env.NEXT_PUBLIC_VIRGIL_TTS_ENABLED === "true";
 
   if (isLoading) {
     return null;
@@ -73,6 +78,32 @@ export function PureMessageActions({
     );
   }
 
+  const handleSpeak = () => {
+    if (!textFromParts) {
+      toast.error("There's no text to speak.");
+      return;
+    }
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      toast.error("Speech is not supported in this browser.");
+      return;
+    }
+    if (
+      window.speechSynthesis.speaking &&
+      lastSpokenMessageIdRef.current === message.id
+    ) {
+      window.speechSynthesis.cancel();
+      lastSpokenMessageIdRef.current = null;
+      return;
+    }
+    window.speechSynthesis.cancel();
+    lastSpokenMessageIdRef.current = message.id;
+    const utterance = new SpeechSynthesisUtterance(textFromParts);
+    utterance.onend = () => {
+      lastSpokenMessageIdRef.current = null;
+    };
+    window.speechSynthesis.speak(utterance);
+  };
+
   return (
     <Actions className="-ml-0.5 opacity-0 transition-opacity duration-150 group-hover/message:opacity-100">
       <Action
@@ -82,6 +113,17 @@ export function PureMessageActions({
       >
         <CopyIcon />
       </Action>
+
+      {ttsPublicEnabled ? (
+        <Action
+          className="text-muted-foreground/50 hover:text-foreground"
+          onClick={handleSpeak}
+          tooltip="Speak (browser)"
+          type="button"
+        >
+          <Volume2Icon size={14} />
+        </Action>
+      ) : null}
 
       <Action
         className="text-muted-foreground/50 hover:text-foreground"

@@ -1,38 +1,41 @@
-# AGENTS.md -- Virgil: Local-First Personal AI Assistant
+# AGENTS.md -- Virgil: Personal AI Assistant (hosted-primary, local resilient)
 
 This file is for AI agents working on this codebase. Read it before making changes. For project intent, documentation map, architecture overview, and **new-chat handoff**, start with [docs/PROJECT.md](docs/PROJECT.md).
 
 ## What This Is
 
-Virgil is a personal AI assistant built to run well on lightweight local models.
+Virgil is a **single-owner** personal assistant: **hosted, tool-capable models** are the **default** path in code (`DEFAULT_CHAT_MODEL` in `lib/ai/models.ts`); **local Ollama** remains a **first-class choice** for privacy, cost, or resilience, with a **slim tool surface** on the local branch by design.
 
 Default mode:
 
 - personal assistant
-- local-first
+- **hosted-primary** (full tools on gateway / non-Ollama chat)
+- **local Ollama** when selected or when gateway fallback-to-local is enabled
 - proactive but honest
-- cost-constrained by design
+- cost-aware (free/hobby infra; explicit LLM usage)
 
 Optional:
 
 - **Gateway-only** AutoGen-style orchestration: set `VIRGIL_MULTI_AGENT_ENABLED=1` to run a short internal planner pass before the main `streamText` (extra latency/cost; off by default). See `lib/ai/orchestration/`.
+- **Lane-based delegation:** prompt + tool metadata (`chat`, `home`, `code`, `research`) — see `lib/ai/lanes.ts` and [docs/DECISIONS.md](docs/DECISIONS.md) (Ghost of Virgil ADR).
 
 ## North Star
 
-Make Virgil as helpful as possible on 3B/7B-class local models without turning it into:
+Make Virgil as **capable and honest** as possible on the **default hosted path** without turning it into:
 
-- a hosted-model-first product
+- an unbounded recurring LLM bill (track Gateway / Gemini usage)
 - a bloated prompt stack
 - a flattering or sycophantic assistant
-- an expensive recurring service
+
+**Local Ollama** should stay **usable** for resilience and owner choice: slim prompts, trimmed context, and clear UX when tools are limited.
 
 ## Core Product Priorities
 
-1. Local-model usefulness
-2. Cost minimization
-3. Responsiveness and reliability
+1. **Hosted-primary** assistant quality (tools, reasoning, reliability)
+2. Cost awareness (free-tier infra; capped optional workers)
+3. **Local resilience** (Ollama when chosen or when gateway fails, if configured)
 4. Honest, proactive assistance
-5. Optional online deployment without changing the local-first default
+5. Optional self-hosted / Docker without forking product intent
 
 ## Personality Rules
 
@@ -56,8 +59,8 @@ If the user is wrong, unclear, or about to do something unhelpful, Virgil should
 ## Default Behavior
 
 - Personal assistant mode only (companion prompts and tools)
-- Local Ollama models are the default path
-- Hosted gateway models are optional and should stay secondary
+- **Default chat model** is a **gateway** id (`lib/ai/models.ts` → `DEFAULT_CHAT_MODEL`); the UI initializes to the same value
+- **Local Ollama** in the picker: full chat, but **fewer tools** registered (optional OpenClaw only unless experimental flags change) — see [docs/V2_TOOL_MAP.md](docs/V2_TOOL_MAP.md) §1
 
 ## Architecture Notes
 
@@ -92,17 +95,17 @@ If the user is wrong, unclear, or about to do something unhelpful, Virgil should
 - `lib/github/agent-task-issue.ts` — GitHub REST helper for `submitAgentTask` (agent task issues)
 - `lib/agent-tasks/` — background triage worker, config, schema, and prompts for agent task processing
 
-## Local-First Rules
+## Hosted-primary and resilience rules
 
 When choosing between two approaches, prefer the one that:
 
-1. improves quality on local 3B/7B models
-2. reduces or stabilizes prompt/context size
-3. avoids extra inference calls
-4. keeps recurring cost flat
+1. improves **default (hosted) chat** quality, safety, and tool correctness
+2. preserves **local Ollama** as a **working fallback** (clear errors, trim context, optional gateway→local fallback when enabled)
+3. avoids **unnecessary** extra inference calls (e.g. lane router off by default)
+4. keeps **infra** recurring cost predictable (document quota consumers — [docs/free-tier-feature-map.md](docs/free-tier-feature-map.md))
 5. preserves Virgil's voice and honesty
 
-If a change helps large hosted models but makes the local path worse, assume it is the wrong default until proven otherwise.
+If a change **breaks** local-only operators (Docker, LAN Ollama) or **weakens** single-owner safety (auth, approval gates), treat that as a regression unless an ADR says otherwise.
 
 ## Docker And Online Use
 
@@ -131,7 +134,7 @@ Online deployment should stay lightweight:
 - Keep changes focused; do not refactor unrelated areas
 - Prefer programmatic helpers over extra model calls when "good enough" is sufficient
 - Keep local prompts short and high-signal
-- Preserve existing abstractions unless they materially hurt the local-first goal
+- Preserve existing abstractions unless they materially hurt **hosted-primary quality** or **local resilience**
 
 ## File Conventions
 
@@ -250,6 +253,14 @@ Scheduled **night review** uses a larger model to analyze the last 24 hours of c
 6. **Optional email** when there are findings: set **`NIGHT_REVIEW_EMAIL_ON_FINDINGS=1`** (requires `RESEND_API_KEY`). **In-app:** `GET /api/memories/night-review?days=14` (authenticated) returns recent night-review memories for a “Night insights” UI.
 7. **Tool egress:** HTTP from tools uses **`AGENT_FETCH_ALLOWLIST_HOSTS`** (comma-separated hostnames); default allows Open-Meteo hosts used by weather. Extend the list when adding new fetch-based tools.
 8. **Quota:** each eligible user costs **one QStash message per night** in addition to reminders. The free tier is **500 messages/day** on Upstash.
+
+### 1.10 Google Calendar (read-only, optional)
+
+Lets Virgil read the **primary** calendar for **one** Google account via OAuth credentials in env (single-owner pattern — not per-user Google login).
+
+1. Follow **[docs/google-calendar-integration.md](docs/google-calendar-integration.md)** — enable Calendar API, OAuth consent with scope `https://www.googleapis.com/auth/calendar.readonly`, create a client, obtain a **refresh token**, set env vars.
+2. Set **`VIRGIL_CALENDAR_INTEGRATION=1`** plus **`GOOGLE_CALENDAR_CLIENT_ID`**, **`GOOGLE_CALENDAR_CLIENT_SECRET`**, **`GOOGLE_CALENDAR_REFRESH_TOKEN`** in `.env.local` (and production env when deployed).
+3. **Chat:** `listCalendarEvents` runs on **tool-capable gateway** (and fallback) paths — not on the default **local Ollama** chat branch. **REST:** `GET /api/calendar/status` and `GET /api/calendar/events` while signed in (non-guest) verify wiring without chat.
 
 ### Step 1 sanity check
 
@@ -584,8 +595,12 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `AGENT_FETCH_ALLOWLIST_HOSTS` | No      | No                 | Comma-separated hostnames for tool `fetch` (defaults include Open-Meteo) |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | No | No | Direct Gemini API key (personal plan). Enables Gemini as chat fallback tier and night-review model. Get a key at https://aistudio.google.com/apikey |
 | `VIRGIL_CHAT_FALLBACK` | No | No | Set to `1` to enable Ollama → Gemini → Gateway cascade on local model failure |
+| `VIRGIL_GATEWAY_FALLBACK_OLLAMA` | No | No | Set to `1` to retry **once** with local Ollama when a **gateway** chat request fails with an eligible error (requires reachable Ollama) |
+| `DEFAULT_GATEWAY_FALLBACK_OLLAMA_MODEL` | No | No | Ollama model id for gateway→local fallback (default `ollama/qwen2.5:7b-instruct`) |
 | `VIRGIL_FALLBACK_GEMINI_MODEL` | No | No | Gemini model for fallback (default `gemini-2.5-flash`). Bare Google model name, no prefix. |
 | `VIRGIL_FALLBACK_GATEWAY_MODEL` | No | No | Gateway model for last-resort fallback (default `deepseek/deepseek-v3.2`) |
+| `VIRGIL_LANE_ROUTER` | No | No | Reserved: set to `1` when an optional lane-classifier pass is implemented (off by default) |
+| `NEXT_PUBLIC_VIRGIL_TTS_ENABLED` | No | No | Set to `1` to show **Speak** (browser Web Speech) controls in chat UI |
 | `EMBEDDING_MODEL` | No | No | Ollama embedding model tag for `Memory` vectors (default `nomic-embed-text`); uses `OLLAMA_BASE_URL` |
 | `EMBEDDING_DIMENSIONS` | No | No | Vector width; must match migration `vector(N)` (default `768`) |
 | `MEM0_API_KEY` | No | No | Optional Mem0 layer; **on-Postgres** `recallMemory` tries pgvector, then FTS, then Mem0 when configured |
@@ -594,10 +609,10 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `MEM0_DISABLE_LOCAL_SYNC` | No | No | Set to `1` to skip post-turn Mem0 batch ingest for **local Ollama** chats only (cloud path unchanged) |
 | `MEMORY_PROMPT_WINDOW_DAYS` | No | No | Days of `Memory` history considered for the chat system prompt (default `30`; max `365`) |
 | `MEMORY_PROMPT_FETCH_LIMIT` | No | No | Max `Memory` rows loaded into the prompt pipeline per request (default `80`; max `200`) |
-| `VIRGIL_CALENDAR_INTEGRATION` | No | No | Set to `1` for read-only **Google Calendar** (`primary`). Requires `GOOGLE_CALENDAR_*` below. Routes: `GET /api/calendar/status`, `GET /api/calendar/events?timeMin=&timeMax=` (session auth). |
+| `VIRGIL_CALENDAR_INTEGRATION` | No | No | Set to `1` for read-only **Google Calendar** (`primary`). Requires `GOOGLE_CALENDAR_*` below. Routes: `GET /api/calendar/status`, `GET /api/calendar/events?timeMin=&timeMax=` (session auth). Tool: `listCalendarEvents` on gateway/fallback chat paths — see [docs/google-calendar-integration.md](docs/google-calendar-integration.md). |
 | `GOOGLE_CALENDAR_CLIENT_ID` | With calendar | Same | OAuth client ID (Google Cloud Console). |
 | `GOOGLE_CALENDAR_CLIENT_SECRET` | With calendar | Same | OAuth client secret. |
-| `GOOGLE_CALENDAR_REFRESH_TOKEN` | With calendar | Same | Long-lived refresh token with scope `https://www.googleapis.com/auth/calendar.readonly` (obtain via OAuth consent / device flow; store like any secret). |
+| `GOOGLE_CALENDAR_REFRESH_TOKEN` | With calendar | Same | Long-lived refresh token with scope `https://www.googleapis.com/auth/calendar.readonly` (obtain via OAuth; store like any secret). Full walkthrough: [docs/google-calendar-integration.md](docs/google-calendar-integration.md). |
 | `VIRGIL_HEALTH_INGEST_ENABLED` | No | No | Set to `1` to allow `POST /api/health/ingest` (Bearer `VIRGIL_HEALTH_INGEST_SECRET`). For Apple Watch: native iOS/watchOS app reads HealthKit and POSTs batches. |
 | `VIRGIL_HEALTH_INGEST_SECRET` | When ingest on | Same | Shared secret; treat like `CRON_SECRET` (high privilege — rotates snapshots for `VIRGIL_HEALTH_INGEST_USER_ID`). |
 | `VIRGIL_HEALTH_INGEST_USER_ID` | When ingest on | Same | Postgres `User.id` UUID that receives all ingested rows (single-owner pattern). |
@@ -639,13 +654,13 @@ Same flows as [Scheduled jobs on the host (no Vercel Cron)](#scheduled-jobs-on-t
 
 ### Minimal “live v1” posture (cost-first)
 
-- **Single Vercel Hobby project** + **Neon or Supabase** + **Upstash** + **Resend** (all free tiers) is enough for **Virgil** in personal use or a tiny closed beta if traffic stays low and **AI Gateway** usage is capped (use **local Ollama** for bulk chat; gateway for occasional hosted models).
+- **Single Vercel Hobby project** + **Neon or Supabase** + **Upstash** + **Resend** (all free tiers) is enough for **Virgil** in personal use or a tiny closed beta if traffic stays low; **feature ↔ quota** mapping: [docs/free-tier-feature-map.md](docs/free-tier-feature-map.md). Use **local Ollama** to reduce Gateway spend when you select it in the picker; default remains **gateway-first**.
 - **Do not** add databases, queues, or SaaS until a free-tier limit is actually hit — see the table in §6 above.
 - Roadmap and phased goals: [docs/PROJECT.md](docs/PROJECT.md), [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md).
 
 ## Testing Guidance
 
-Always verify behavior that could silently hurt the local path.
+Always verify behavior that could silently hurt the **default hosted path** or **local fallback** (model routing, tool registration, trim context).
 
 After a pull that changes `package.json` or the lockfile, run **`pnpm install`** so new packages (for example `@ai-sdk/google`) are present in `node_modules` before **`pnpm check`**, **`pnpm run type-check`**, or **`pnpm test:unit`** — otherwise TypeScript may fail with “Cannot find module” for newly added dependencies.
 
@@ -675,7 +690,7 @@ Virgil can accept self-improvement tasks via chat (`submitAgentTask` tool, gatew
 
 1. **On session start:** query the `AgentTask` table or GitHub Issues with label `approved-for-build` for approved tasks.
 2. **Pick** the highest-priority approved task.
-3. **Follow** existing coding guidance in this file (TypeScript strict, focused changes, local-first principles).
+3. **Follow** existing coding guidance in this file (TypeScript strict, focused changes, hosted-primary + resilience principles).
 4. **Update status** to `in_progress` via `PATCH /api/agent-tasks` before starting work, then `done` on completion (or note blockers).
 5. **Reference** the task ID in commit messages when implementing a task.
 
@@ -696,7 +711,7 @@ Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](doc
 
 - **v1 vs v2 deployment tracks (2026-04-03 ADR):** v1 hosted stack (Vercel + Neon or Supabase + Upstash Redis/QStash + Resend + Blob) vs planned v2 Mac mini + Ollama + Python backend; v2 data **either** Postgres-on-home (migration parity) **or** SQLite/Mem0 greenfield — [docs/PROJECT.md](docs/PROJECT.md), [docs/V2_MIGRATION.md](docs/V2_MIGRATION.md), [docs/V1_V2_RISK_AUDIT.md](docs/V1_V2_RISK_AUDIT.md).
 - **v2 behavioral specs (2026-04-04 ADR):** goals/habits, project graph, weekly schedule, and briefing payload are specified for the future Python backend in [docs/V2_BEHAVIORAL_SPECS.md](docs/V2_BEHAVIORAL_SPECS.md); HTTP route sketches in [docs/V2_BEHAVIORAL_API.md](docs/V2_BEHAVIORAL_API.md). Distinct from v1 pivot `Goal` / `GoalWeeklySnapshot` design — see [docs/V2_MIGRATION.md](docs/V2_MIGRATION.md) § Behavioral and goal state.
-- **Bespoke single-owner** product intent: [docs/OWNER_PRODUCT_VISION.md](docs/OWNER_PRODUCT_VISION.md) (2026-03-31 ADR). Commercial multi-tenant SaaS is not a design goal for this repo. Personal-assistant-only surface (business/front-desk paths removed 2026-04). Local models default; gateway optional. Optional gateway multi-agent orchestration via env (see `lib/ai/orchestration/`).
+- **Bespoke single-owner** product intent: [docs/OWNER_PRODUCT_VISION.md](docs/OWNER_PRODUCT_VISION.md) (2026-03-31 ADR). Commercial multi-tenant SaaS is not a design goal for this repo. Personal-assistant-only surface (business/front-desk paths removed 2026-04). **Ghost of Virgil (2026-04-05):** **Gateway / hosted tool-capable** default; **local Ollama** resilient choice; lane-based delegation — [docs/DECISIONS.md](docs/DECISIONS.md). Optional gateway multi-agent orchestration via env (see `lib/ai/orchestration/`).
 - **Target architecture (owner intent):** Virgil as **brain** (this repo); **Agent Zero** as preferred external **executor** on a home **Mac mini (~48 GB unified memory)**; bridge **not shipped** — see [docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md) and [docs/DECISIONS.md](docs/DECISIONS.md).
 - Postgres FTS for recall (no casual vector DB). QStash for reminders. Docker Compose defaults include **bundled Ollama** + health-gated **`virgil-app`** (see `docker-compose.yml`); host-Ollama layout in `docker-compose.host-ollama.yml`.
 - Night review optional ([workspace/night/README.md](workspace/night/README.md)). HTTP auth cookies via `shouldUseSecureAuthCookie()` where applicable.
@@ -709,6 +724,7 @@ Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](doc
 - **Proactive pivot (E11):** phased work toward nudges/goals/intent routing — [docs/tickets/2026-04-02-proactive-pivot-epic.md](docs/tickets/2026-04-02-proactive-pivot-epic.md); semantic recall strategy [docs/DECISIONS.md](docs/DECISIONS.md) (2026-04-02). Does not change default chat until phase PRs merge.
 - **OpenClaw bridge** (optional): `delegateTask` / `approveOpenClawIntent`, `PendingIntent` queue, `GET/PATCH /api/openclaw/pending` — [docs/openclaw-bridge.md](docs/openclaw-bridge.md), [docs/DECISIONS.md](docs/DECISIONS.md).
 - **Chat fallback cascade** (`VIRGIL_CHAT_FALLBACK=1`): when a local Ollama model fails (unreachable, missing model, timeout), the chat route automatically escalates to direct Gemini (personal API key), then Vercel AI Gateway. No mid-stream fallback; escalation uses gateway-style prompt and full tool set. See [docs/DECISIONS.md](docs/DECISIONS.md) (2026-04-04).
+- **Gateway → Ollama fallback** (`VIRGIL_GATEWAY_FALLBACK_OLLAMA=1`): when the **selected model is a gateway model** and `streamText` fails with an eligible error, retry once with **`DEFAULT_GATEWAY_FALLBACK_OLLAMA_MODEL`** (default `ollama/qwen2.5:7b-instruct`) so the owner can still get a text reply without tools. See [docs/DECISIONS.md](docs/DECISIONS.md) (Ghost of Virgil ADR).
 
 ## Enhancement Review Process
 
@@ -721,7 +737,7 @@ Backlog (E1–E11, …), review cadence, and acceptance criteria: [docs/ENHANCEM
 - [ ] Focused tests cover the changed local-model behavior
 - [ ] No hardcoded secrets were introduced
 - [ ] New env vars are documented everywhere required
-- [ ] Optional multi-agent / gateway-only features do not hurt the default local path
+- [ ] Optional multi-agent / local-only features do not break the **default hosted path** or **owner safety**
 - [ ] Prompt changes do not increase sycophancy or context bloat
 - [ ] Docker/local instructions still match real runtime behavior
 
@@ -729,9 +745,9 @@ Backlog (E1–E11, …), review cadence, and acceptance criteria: [docs/ENHANCEM
 
 Before ending a session, answer these:
 
-1. Did this improve the default personal-assistant experience?
-2. Did it help local 3B/7B models specifically?
-3. Did it increase recurring cost?
+1. Did this improve the **default (hosted)** personal-assistant experience?
+2. Did it preserve or improve **local Ollama** as a **fallback or explicit choice** where relevant?
+3. Did it increase recurring cost in a **surprising** way (Gateway, QStash, Mem0)?
 4. Did it add unnecessary prompt or tool complexity?
 5. Did it preserve Virgil's honest, non-sycophantic voice?
 

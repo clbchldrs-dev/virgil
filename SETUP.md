@@ -5,6 +5,8 @@ Authoritative procedures live in **[AGENTS.md](AGENTS.md)** (Setup checklist, Do
 - **[AGENTS.md — Setup checklist](AGENTS.md#setup-checklist)** — env, local dev, Docker, Ollama, LAN, host cron
 - **[docs/PROJECT.md](docs/PROJECT.md)** — intent, documentation map, agent handoff
 - **[README.md](README.md)** — human-facing quick start
+- **[docs/google-calendar-integration.md](docs/google-calendar-integration.md)** — optional read-only Google Calendar (OAuth env, verification, agent handoff)
 - **[docs/beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md)** — Ubuntu / LAN home server runbook
 - **[packaging/README.md](packaging/README.md)** — desktop launcher
 - **[DEPLOY.md](DEPLOY.md)** — deployment link hub → [AGENTS.md — Deployment (production)](AGENTS.md#deployment-production)
+- **[docs/free-tier-feature-map.md](docs/free-tier-feature-map.md)** — quotas vs features (QStash, Resend, Gateway, etc.)

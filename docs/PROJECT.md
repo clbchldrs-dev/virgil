@@ -2,11 +2,22 @@
 
 This file is the **single entrypoint** for intent, documentation map, architecture overview, and **handoff** when starting a new Cursor chat or onboarding an agent to the repo. It does not duplicate env tables or deploy steps—those stay in linked docs.
 
-## Intent (lightweight companion)
+## Intent (Ghost of Virgil — v1)
 
-- **Lightweight:** Run well on 3B/7B-class local models; slim prompts; avoid extra inference calls unless they clearly pay off.
-- **Affordable:** Low recurring cost by default (local Ollama, free tiers for optional cloud); gateway models are secondary.
-- **Iterable:** Small, focused changes; preserve existing abstractions unless they hurt the local path; verify with `pnpm check`, tests, and AGENTS checklists.
+### What “Ghost of Virgil” means
+
+Virgil is meant to feel **always available** wherever you open the app—persistent memory, scheduled jobs, and chat—but **not embodied** in the sense of a single machine or body that can touch your home, filesystem, or shell by default. On a typical **hosted** deploy, the “creature” is **state and inference in the cloud**: Postgres, optional Mem0, APIs, and the strongest **tool-capable** model path you configure. It does **not** run as root on your laptop; **corporeal** work (files, shell, LAN automations) is intentionally **delegated**—for example optional **OpenClaw** (`delegateTask`), **self-hosted** app instances that expose filesystem tools, or future bridges—rather than assumed.
+
+**Always-on** is therefore a **composite**, not one daemon: the Vercel (or self-hosted) app and cron/QStash hooks can run continuously; **local Ollama** is on only when a host you control is up; **proactive** features (reminders, digest, night review) consume **email and queue quotas**. Effectiveness is **as high as free and hobby tiers allow**: see [free-tier-feature-map.md](free-tier-feature-map.md). When a quota or provider fails, behavior should degrade **honestly** (clear errors, slimmer tools, optional **gateway → local** retry)—not pretend unlimited reach.
+
+**Ubiquity and context** mean: the ghost is only as informed as **you and your integrations** feed it (chat, `Memory`, calendar, health ingest, digest, night review). It should **route** work into **lanes** (inline chat vs home execution vs repo tasks) instead of trying to do everything in one overloaded turn—see [DECISIONS.md](DECISIONS.md) (Ghost of Virgil ADR) and [V2_TOOL_MAP.md](V2_TOOL_MAP.md).
+
+### Operational bullets
+
+- **Hosted-primary:** Default chat uses **AI Gateway / tool-capable hosted models** (`DEFAULT_CHAT_MODEL` in `lib/ai/models.ts`). Full companion tools run on that path.
+- **Local resilient:** **Ollama** remains a **picker choice** and optional **gateway failure fallback**; local chat uses **slim prompts** and a **thin tool set** by design (see [docs/V2_TOOL_MAP.md](V2_TOOL_MAP.md) §1). ADR: [docs/DECISIONS.md](DECISIONS.md) (2026-04-05 Ghost of Virgil).
+- **Affordable infra:** Prefer documented **free/hobby** tiers for Vercel, Neon/Supabase, Upstash, Resend, Blob; map features to quotas in [docs/free-tier-feature-map.md](free-tier-feature-map.md). **LLM spend** (Gateway / Gemini) is explicit, not hidden.
+- **Iterable:** Small, focused changes; preserve abstractions unless they hurt **hosted quality** or **local resilience**; verify with `pnpm check`, tests, and AGENTS checklists.
 - **Self-improvement:** The **product** (Virgil) improves via a backlog ([docs/ENHANCEMENTS.md](ENHANCEMENTS.md)), measured changes, and reviews—not unbounded autonomous edits to prompts or production behavior. The **repo** improves via the same loop plus human or agent review in Cursor.
 
 ## Target architecture (owner intent — beyond shipped v1)
@@ -38,7 +49,7 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 | Bespoke single-owner product intent (fitness v1, data tiers, voice) | [docs/OWNER_PRODUCT_VISION.md](OWNER_PRODUCT_VISION.md) |
 | Optional pruning inventory (historical; major business paths removed 2026-04) | [docs/PRUNING_CANDIDATES.md](PRUNING_CANDIDATES.md) |
 | Target architecture (brain vs executor, hardware, Agent Zero — **scoped intent**) | [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) |
-| Coding rules, file pointers, local-first rules, review checklists | [AGENTS.md](../AGENTS.md) |
+| Coding rules, file pointers, hosted-primary / resilience rules, review checklists | [AGENTS.md](../AGENTS.md) |
 | Traceable architecture decisions | [docs/DECISIONS.md](DECISIONS.md) |
 | Stability track (verification phases, `pnpm stable:check`) | [docs/STABILITY_TRACK.md](STABILITY_TRACK.md) — Phase B (Vercel), C (security), D (cron/QStash) runbooks; resume [docs/STABLE_STOP_HANDOFF.md](STABLE_STOP_HANDOFF.md) |
 | Security tool inventory + cron/QStash auth matrix | [docs/security/tool-inventory.md](security/tool-inventory.md) |
@@ -63,6 +74,8 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 | Proactive pivot (E11, phased; external prompt) | [docs/tickets/2026-04-02-proactive-pivot-epic.md](tickets/2026-04-02-proactive-pivot-epic.md), [docs/PIVOT_EVENTS_AND_NUDGES.md](PIVOT_EVENTS_AND_NUDGES.md) |
 | Future monetization (issue caps, gateway limits — not personal-use phase) | [docs/tickets/future-monetization-product-opportunity-limits.md](tickets/future-monetization-product-opportunity-limits.md) |
 | GitHub Issues for gateway “product opportunity” tool | [docs/github-product-opportunity.md](github-product-opportunity.md) |
+| Read-only Google Calendar (env OAuth, primary calendar, chat + REST) | [docs/google-calendar-integration.md](google-calendar-integration.md) |
+| Free-tier quotas vs features | [docs/free-tier-feature-map.md](free-tier-feature-map.md) |
 | Local setup / Docker / Ollama / LAN (procedures, env table) | [AGENTS.md](../AGENTS.md) — [Setup checklist](../AGENTS.md#setup-checklist), [Deployment (production)](../AGENTS.md#deployment-production) |
 | Setup / deploy link hubs (thin; discoverability only) | [SETUP.md](../SETUP.md), [DEPLOY.md](../DEPLOY.md) |
 | Beta on a LAN home server (Ubuntu-first Docker stack, bundled Ollama, systemd, cold start / warmup) | [docs/beta-lan-gaming-pc.md](beta-lan-gaming-pc.md) |
@@ -102,7 +115,7 @@ Details and file-level pointers: [AGENTS.md § Architecture Notes](../AGENTS.md#
 ## How we improve the companion (process)
 
 1. **Backlog:** Pick or add items in [docs/ENHANCEMENTS.md](ENHANCEMENTS.md) with realistic impact/cost.
-2. **Implement:** Follow [AGENTS.md](../AGENTS.md) (focused diffs, local-first defaults, one tool per file).
+2. **Implement:** Follow [AGENTS.md](../AGENTS.md) (focused diffs, hosted-primary defaults, one tool per file).
 3. **Verify:** `pnpm check`, `pnpm build`, targeted tests (`tests/unit/local-context.test.ts`, `tests/unit/multi-agent-orchestration.test.ts`, `pnpm ollama:smoke` when behavior touches models/Ollama).
 4. **Decide:** Record meaningful tradeoffs in [docs/DECISIONS.md](DECISIONS.md) (ADR-style).
 5. **Hand off:** Use the checklist below and AGENTS Review + Handoff checklists.
@@ -120,7 +133,7 @@ Details and file-level pointers: [AGENTS.md § Architecture Notes](../AGENTS.md#
 1. This file (`docs/PROJECT.md`) — intent and map.
 2. [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) — **if** changing runtime topology, executor integration, or owner hardware assumptions.
 3. [AGENTS.md](../AGENTS.md) — how to change code safely.
-4. As needed: [AGENTS.md](../AGENTS.md#setup-checklist) (env / setup / deploy detail), [docs/DECISIONS.md](DECISIONS.md) (why past choices), [docs/ENHANCEMENTS.md](ENHANCEMENTS.md) (planned work).
+4. As needed: [AGENTS.md](../AGENTS.md#setup-checklist) (env / setup / deploy detail), [docs/DECISIONS.md](DECISIONS.md) (why past choices), [docs/ENHANCEMENTS.md](ENHANCEMENTS.md) (planned work), [docs/google-calendar-integration.md](google-calendar-integration.md) (turn on calendar + **handoff block** for the next agent).
 5. Optional: [.cursor/rules](../.cursor/rules/) for editor-specific automation.
 
 **Capture at session start (from prior chat or human)**
