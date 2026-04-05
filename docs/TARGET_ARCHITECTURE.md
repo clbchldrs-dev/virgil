@@ -40,6 +40,46 @@ Smart home and mobile devices are **contact surfaces**—places the owner meets 
 
 ---
 
+## 2a. Tri-layer framing (Interaction, Integration, Cognitive)
+
+This vocabulary describes the **same** split as §2 (Virgil brain vs Agent Zero hands), with a third axis for **where cognition and long-horizon state live**. It aligns proactive “life management” intent with **shipped** code and **ticketed** work ([E11 epic](tickets/2026-04-02-proactive-pivot-epic.md), [v2 behavioral specs](V2_BEHAVIORAL_SPECS.md)).
+
+| Layer | Role | In Virgil today (examples) | Planned / adjacent |
+|-------|------|----------------------------|--------------------|
+| **Interaction** | Multi-modal **ingress** and **egress**—how the owner meets Virgil without implying all reasoning runs in the chat turn | Next.js chat UI; bearer and session ingest routes (see [AGENTS.md](../AGENTS.md) setup); share target, health ingest; email (digest, reminders, night review) | More output surfaces (e.g. ntfy) per device taxonomy above; voice STT/TTS later |
+| **Integration** | **Tooling and data silos**—calendar, mail, files, automations; depth of access determines advisor vs actor | Companion tools in [`lib/ai/tools/`](../lib/ai/tools/); read-only Google Calendar; optional OpenClaw `delegateTask` | **Agent Zero** (or successor) for rich local automation; **bridge** §3; calendar **write** only behind explicit policy |
+| **Cognitive** | **Persistent state**, recall, and async **reflection**—not only LLM text in a single request | Postgres (`Chat`, `Memory`, `Goal` / `GoalCheckIn` where enabled); optional Mem0 + pgvector per [DECISIONS](DECISIONS.md); night review; optional gateway planner [`lib/ai/orchestration/`](../lib/ai/orchestration/) | E11 phases (events/nudges, intent prompts, summarization); v2 **constraint-based** schedule proposals ([spike ticket](tickets/2026-04-05-scheduling-symbolic-grounding-spike.md)) |
+
+**Engineering notes (intent vs hype):**
+
+- **Recall:** Hybrid **FTS + optional vectors** in Postgres (and optional Mem0)—not a mandate for a separate vector-only database. See E11 and DECISIONS.
+- **Scheduling / optimization:** Real systems use **bounded** constraint solvers or layered heuristics plus **human approval**—not literal enumeration of factorial task orderings.
+- **Symbolic grounding:** v1 pattern is **tools + structured rows + suggest-only automation**; a dedicated rules/solver **engine** is **out of scope** for v1 and is spec’d for evaluation in the spike ticket above (likely v2 Python side).
+
+```mermaid
+flowchart TB
+  subgraph interaction [Interaction]
+    UI[Chat_and_UI]
+    Ingest[Ingest_APIs]
+    Out[Email_scheduled_outputs]
+  end
+  subgraph integration [Integration]
+    Tools[In_repo_tools]
+    Cal[Calendar_read]
+    Exec[Executor_AgentZero_planned]
+  end
+  subgraph cognitive [Cognitive]
+    PG[(Postgres_memory_goals)]
+    Vec[Vectors_Mem0_optional]
+    Async[Night_review_planner_optional]
+  end
+  interaction --> integration
+  integration --> cognitive
+  cognitive --> interaction
+```
+
+---
+
 ## 3. Bridge (planned, not yet first-class)
 
 To connect the layers safely:
@@ -78,5 +118,6 @@ Update **`docs/TARGET_ARCHITECTURE.md`** when:
 - The preferred executor changes (e.g. fork or alternative to Agent Zero).
 - Bridge contract is chosen (auth scheme, URL shape).
 - Hardware assumptions change (e.g. Linux server instead of Mini).
+- The **tri-layer** mapping (§2a) needs to change because a new surface, store, or executor materially shifts Interaction vs Integration vs Cognitive boundaries.
 
 Pair substantive changes with a dated entry in [DECISIONS.md](DECISIONS.md).

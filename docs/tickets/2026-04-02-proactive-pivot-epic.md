@@ -45,9 +45,25 @@ When schema or API surfaces change, update:
 ## Child tickets
 
 - [2026-04-02-pivot-goals-layer-design.md](2026-04-02-pivot-goals-layer-design.md)
+- [2026-04-05-scheduling-symbolic-grounding-spike.md](2026-04-05-scheduling-symbolic-grounding-spike.md) (v2 / research; not Phase 3 implementation)
+
+## Phase 3 — Next slice engineering touchpoints (`feat/pivot-events-nudges`)
+
+**Status:** Phase 2 (goals + tools) is shipped; Phase 3 is **event bus + notifications** per [PIVOT_EVENTS_AND_NUDGES.md](../PIVOT_EVENTS_AND_NUDGES.md). Use this list as a **concrete file/route checklist** when opening the branch (adjust names if the implementation ticket refines them).
+
+| Area | Files / routes (expected) |
+|------|---------------------------|
+| Schema + migration | [`lib/db/schema.ts`](../../lib/db/schema.ts) — `Notification` (or equivalently named) table; new SQL under [`lib/db/migrations/`](../../lib/db/migrations/) |
+| Queries | New module e.g. `lib/db/query-modules/notifications.ts`; export from [`lib/db/queries.ts`](../../lib/db/queries.ts) barrel |
+| Stale signals | [`lib/db/query-modules/goals.ts`](../../lib/db/query-modules/goals.ts) — `getStaleGoalsForUser` (already present); extend or add producers for other event types per pivot doc |
+| HTTP API | `app/api/notifications/route.ts` — `GET` (list pending), `PATCH` (dismiss / delivered / acted_on) matching stub contract in PIVOT doc |
+| Async delivery | Mirror QStash/cron patterns: [`app/api/night-review/enqueue/route.ts`](../../app/api/night-review/enqueue/route.ts), [`app/api/digest/route.ts`](../../app/api/digest/route.ts); **note:** Vercel Hobby **two-cron limit** — new schedules may require self-hosted cron + `CRON_SECRET` (see [AGENTS.md](../../AGENTS.md#scheduled-jobs-on-the-host-no-vercel-cron)) |
+| Chat context | [`app/(chat)/api/chat/route.ts`](../../app/(chat)/api/chat/route.ts) and/or companion prompt assembly — inject high-priority pending nudges when appropriate |
+| UI | [`app/(chat)/layout.tsx`](../../app/(chat)/layout.tsx), [`components/chat/shell.tsx`](../../components/chat/shell.tsx) (or adjacent) — minimal dismissible banner per PIVOT doc |
+| Optional LAN | Redis Streams consumer (Phase 3b) — same `Notification` rows as QStash path so [`GET /api/notifications`](../PIVOT_EVENTS_AND_NUDGES.md) stays one surface |
 
 ## Verification (per phase, when implemented)
 
 - `pnpm check`, `pnpm build`, targeted tests as in external prompt.
-- [AGENTS.md](../AGENTS.md) Review + Handoff checklists.
+- [AGENTS.md](../../AGENTS.md) Review + Handoff checklists.
 - New ADR entries in [DECISIONS.md](../DECISIONS.md) for any superseding recall or schema SSOT change.

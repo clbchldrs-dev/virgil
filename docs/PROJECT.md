@@ -22,7 +22,7 @@ Virgil is meant to feel **always available** wherever you open the app—persist
 
 ## Target architecture (owner intent — beyond shipped v1)
 
-Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md)**: **Virgil** (this repo) as the **brain** (UI, memory, routing, in-repo tools), a **Mac mini (~48 GB unified memory)** as the **primary home host** for Ollama and sidecars, and **[Agent Zero](https://github.com/agent0ai/agent-zero)** as the **preferred external “hands”** runtime (Python, headless)—connected later via a **planned bridge**, not shipped yet. OpenClaw remains **inspiration only** for workspace-style files (e.g. night review), not a bundled executor.
+Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md)** (including **§2a** Interaction / Integration / Cognitive): **Virgil** (this repo) as the **brain** (UI, memory, routing, in-repo tools), a **Mac mini (~48 GB unified memory)** as the **primary home host** for Ollama and sidecars, and **[Agent Zero](https://github.com/agent0ai/agent-zero)** as the **preferred external “hands”** runtime (Python, headless)—connected later via a **planned bridge**, not shipped yet. OpenClaw remains **inspiration only** for workspace-style files (e.g. night review), not a bundled executor.
 
 ## Deployment tracks (v1 vs v2)
 

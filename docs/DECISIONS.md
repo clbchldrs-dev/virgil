@@ -4,6 +4,22 @@ Significant, stable choices for Virgil. New entries go at the **top** (reverse c
 
 ---
 
+## 2026-04-05 — Tri-layer product vocabulary (Interaction, Integration, Cognitive) — Accepted
+
+**Context:** Owner framing describes moving from reactive chat toward proactive life management using three layers (interaction gateway, integration with data silos and executors, cognitive state and long-horizon reasoning).
+
+**Decision:**
+
+1. **[`docs/TARGET_ARCHITECTURE.md`](TARGET_ARCHITECTURE.md) §2a** is the SSOT mapping of that vocabulary to **Virgil (brain)**, **Agent Zero (hands)**, shipped surfaces, E11, and v2 specs.
+2. **[`docs/tickets/2026-04-02-proactive-pivot-epic.md`](tickets/2026-04-02-proactive-pivot-epic.md)** lists **Phase 3** engineering touchpoints for the next E11 slice (`feat/pivot-events-nudges`).
+3. **[`docs/tickets/2026-04-05-scheduling-symbolic-grounding-spike.md`](tickets/2026-04-05-scheduling-symbolic-grounding-spike.md)** scopes a **non-implementing** spike: bounded scheduling/optimization and symbolic grounding for a future v2 backend—**no v2 code in this repo** until the June 2026 track begins.
+
+**Consequences:** Contributors can use one vocabulary across product essays and code reviews. Scheduling/solver work stays ticketed and out of default v1 scope unless explicitly picked up.
+
+**Links:** [docs/PROJECT.md](PROJECT.md), [docs/PIVOT_EVENTS_AND_NUDGES.md](PIVOT_EVENTS_AND_NUDGES.md), [docs/V2_BEHAVIORAL_SPECS.md](V2_BEHAVIORAL_SPECS.md) (weekly schedule proposal)
+
+---
+
 ## 2026-04-05 — Context ingress channels (ingest, share, journal file, inbound email) — Accepted
 
 **Context:** Single-owner deployments need low-friction ways to add `Memory` rows and surface Apple Health batches in chat **without** bloating slim/compact local prompts.
