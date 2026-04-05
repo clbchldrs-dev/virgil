@@ -103,6 +103,7 @@ Postgres and Redis via Docker (OrbStack or Docker Desktop) if v2 needs them. Ful
 - [docs/DECISIONS.md](docs/DECISIONS.md): architecture decision records
 - [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md): enhancement backlog and review process
 - [docs/github-product-opportunity.md](docs/github-product-opportunity.md): optional GitHub Issues inbox for product feedback (gateway models)
+- [docs/digital-self-bridge.md](docs/digital-self-bridge.md): optional **Digital Self** orchestrator (`digital-self/` — Slack/WhatsApp/SMS policy, approvals); `pnpm digital-self:dev` from repo root
 - Optional **phase-1 onboarding** (timeline and quick start, cross-linked with each other): [QUICK_START.txt](QUICK_START.txt), [VIRGIL_PHASE1_SETUP.md](VIRGIL_PHASE1_SETUP.md), [VIRGIL_READY_TO_BUILD.md](VIRGIL_READY_TO_BUILD.md)
 
 ## Project management and agents

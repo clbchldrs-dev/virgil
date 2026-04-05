@@ -1,7 +1,7 @@
 # V2-T4 — Memory migration blueprint (Postgres → v2 tiers)
 
 **Track:** V2 groundwork — [overview](2026-04-01-v2-groundwork-overview.md)  
-**Status:** Not started
+**Status:** Done — [docs/V2_MEMORY_MIGRATION.md](../V2_MEMORY_MIGRATION.md)
 
 ## Problem
 

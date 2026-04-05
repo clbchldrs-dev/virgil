@@ -637,6 +637,9 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `OPENCLAW_EXECUTE_PATH` | No | No | POST path for intents (default `/api/execute`) |
 | `OPENCLAW_SKILLS_PATH` | No | No | GET path for skills (default `/api/skills`) |
 | `OPENCLAW_HEALTH_PATH` | No | No | GET path for health ping (default `/health`) |
+| `DIGITAL_SELF_BASE_URL` | No | No | Optional **Digital Self** orchestrator origin (`digital-self/` package); `GET /api/digital-self/bridge-health` pings `/health`; see [docs/digital-self-bridge.md](docs/digital-self-bridge.md) |
+| `DIGITAL_SELF_SERVICE_TOKEN` | No | No | Optional; same token as orchestrator for future server-to-server `/v1/*` calls from Virgil |
+| `VIRGIL_BRIDGE_WEBHOOK_SECRET` | No | No | Optional shared bearer for `POST /api/digital-self/webhook` when the orchestrator notifies Virgil (`VIRGIL_BRIDGE_WEBHOOK_URL` + secret on the **digital-self** side); see [docs/digital-self-bridge.md](docs/digital-self-bridge.md) |
 | `VIRGIL_MULTI_AGENT_ENABLED` | No | No | Set to `1` / `true` for gateway-only planner+executor pass before `streamText` (extra cost/latency) |
 | `VIRGIL_MULTI_AGENT_PLANNER_MODEL` | No | No | Optional model id for the planner when different from the chat model |
 | `BOTID_ENFORCE` | No | No | Set to `1` / `true` to return 403 on `POST /api/chat` when BotID classifies an unverified bot; default is log-only in production (`lib/security/botid-chat.ts`) |

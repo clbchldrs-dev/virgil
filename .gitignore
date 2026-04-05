@@ -34,6 +34,7 @@ tsconfig.tsbuildinfo
 
 # Local pnpm store (should not be committed)
 .pnpm-store/
+.worktrees/
 
 # Cursor IDE debug logs (local)
 .cursor/debug*.log

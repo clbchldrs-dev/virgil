@@ -10,3 +10,4 @@ Authoritative procedures live in **[AGENTS.md](AGENTS.md)** (Setup checklist, Do
 - **[packaging/README.md](packaging/README.md)** — desktop launcher
 - **[DEPLOY.md](DEPLOY.md)** — deployment link hub → [AGENTS.md — Deployment (production)](AGENTS.md#deployment-production)
 - **[docs/free-tier-feature-map.md](docs/free-tier-feature-map.md)** — quotas vs features (QStash, Resend, Gateway, etc.)
+- **[docs/digital-self-bridge.md](docs/digital-self-bridge.md)** — optional **Digital Self** orchestrator (`digital-self/` package) for Slack/WhatsApp/SMS policy + approvals

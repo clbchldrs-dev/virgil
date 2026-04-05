@@ -111,12 +111,14 @@ import {
   generateUUID,
   getTextFromMessage,
 } from "@/lib/utils";
+import { logGatewayCost } from "@/lib/v2-eval/cost-log";
 import { extractToolNamesFromUIMessages } from "@/lib/v2-eval/extract-tools-from-ui-messages";
 import type {
   FallbackTierLogged,
   PromptVariantLogged,
 } from "@/lib/v2-eval/interaction-log";
 import { logInteraction } from "@/lib/v2-eval/interaction-log";
+import { logDecisionTrace } from "@/lib/v2-eval/trace-log";
 import { getLastUserAndAssistantTextLengths } from "@/lib/v2-eval/turn-text-lengths";
 import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
@@ -873,7 +875,17 @@ export async function POST(request: Request) {
         }
       },
       generateId: generateUUID,
-      onFinish: async ({ messages: finishedMessages }) => {
+      onFinish: async (finishEvent) => {
+        const finishedMessages = finishEvent.messages;
+        const usage = (
+          finishEvent as {
+            usage?: {
+              inputTokens?: number;
+              outputTokens?: number;
+              totalTokens?: number;
+            };
+          }
+        ).usage;
         if (isToolApprovalFlow) {
           for (const finishedMsg of finishedMessages) {
             const existingMsg = uiMessages.find((m) => m.id === finishedMsg.id);
@@ -952,8 +964,10 @@ export async function POST(request: Request) {
           const toolsUsed = extractToolNamesFromUIMessages(finishedMessages);
           const { userMessageLength, responseLength } =
             getLastUserAndAssistantTextLengths(finishedMessages);
+          const timestamp = new Date().toISOString();
+
           await logInteraction({
-            timestamp: new Date().toISOString(),
+            timestamp,
             model: v2EvalStreamMetrics.effectiveModelId,
             requestedModelId: chatModel,
             userMessageLength,
@@ -969,6 +983,37 @@ export async function POST(request: Request) {
             effectiveModelId: v2EvalStreamMetrics.effectiveModelId,
             fallbackTier: v2EvalStreamMetrics.fallbackTier,
           });
+
+          logDecisionTrace({
+            timestamp,
+            chatId: id,
+            requestedModelId: chatModel,
+            effectiveModelId: v2EvalStreamMetrics.effectiveModelId,
+            fallbackTier: v2EvalStreamMetrics.fallbackTier,
+            promptVariant: v2EvalStreamMetrics.effectivePromptVariant,
+            isOllamaLocal,
+            trigger: {
+              source: "chat",
+              type: "user_message",
+            },
+            toolsInvoked: toolsUsed,
+            inputTokens: usage?.inputTokens ?? null,
+            outputTokens: usage?.outputTokens ?? null,
+            totalTokens: usage?.totalTokens ?? null,
+            userMessageLength,
+            responseLength,
+          }).catch(() => undefined);
+
+          logGatewayCost({
+            timestamp,
+            chatId: id,
+            requestedModelId: chatModel,
+            effectiveModelId: v2EvalStreamMetrics.effectiveModelId,
+            fallbackTier: v2EvalStreamMetrics.fallbackTier,
+            inputTokens: usage?.inputTokens ?? null,
+            outputTokens: usage?.outputTokens ?? null,
+            totalTokens: usage?.totalTokens ?? null,
+          }).catch(() => undefined);
         }
       },
       onError: (error) => {

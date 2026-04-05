@@ -1,6 +1,6 @@
 # V2 groundwork — two-sprint bridge (v1 → v2 alignment)
 
-**Status:** Ready to execute (2026-04-01)  
+**Status:** Completed (2026-04-05)  
 **Related:** [docs/V2_MIGRATION.md](../V2_MIGRATION.md), [docs/V2_ARCHITECTURE.md](../V2_ARCHITECTURE.md), [workspace/v2-eval/](../../workspace/v2-eval/)  
 **Enhancement row:** E10 in [ENHANCEMENTS.md](../ENHANCEMENTS.md)
 
@@ -38,15 +38,15 @@ flowchart LR
 | T1 | [2026-04-01-v2-t1-api-contract-for-python-backend.md](2026-04-01-v2-t1-api-contract-for-python-backend.md) | `docs/V2_API_CONTRACT.md` — chat/SSE/auth/errors vs current Next behavior (**done**) |
 | T2 | [2026-04-01-v2-t2-tool-inventory-and-v2-mapping.md](2026-04-01-v2-t2-tool-inventory-and-v2-mapping.md) | `docs/V2_TOOL_MAP.md` — every v1 tool → v2 registry fields (approval, local/gateway) (**done**) |
 | T3 | [2026-04-01-v2-t3-v2-eval-chat-instrumentation.md](2026-04-01-v2-t3-v2-eval-chat-instrumentation.md) | Wire + extend `logInteraction`; stable JSONL for routing/tool analysis (**done**) |
-| T4 | [2026-04-01-v2-t4-memory-migration-blueprint.md](2026-04-01-v2-t4-memory-migration-blueprint.md) | `docs/V2_MEMORY_MIGRATION.md` — schema, kinds, metadata, export strategy |
+| T4 | [2026-04-01-v2-t4-memory-migration-blueprint.md](2026-04-01-v2-t4-memory-migration-blueprint.md) | `docs/V2_MEMORY_MIGRATION.md` — schema, kinds, metadata, export strategy (**done**) |
 
 **Sprint 2 (observability + persona):** parity docs and logs that match v2 night/traces/budget/persona plans.
 
 | Ticket | File | Outcome |
 |--------|------|---------|
-| T5 | [2026-04-01-v2-t5-night-agent-task-v2-parity-matrix.md](2026-04-01-v2-t5-night-agent-task-v2-parity-matrix.md) | `docs/V2_NIGHT_PARITY.md` — night review / digest / agent triage vs v2 night tasks |
-| T6 | [2026-04-01-v2-t6-decision-trace-jsonl.md](2026-04-01-v2-t6-decision-trace-jsonl.md) | Optional `V2_TRACE_LOGGING` JSONL aligned to v2 trace shape |
-| T7 | [2026-04-01-v2-t7-gateway-cost-telemetry.md](2026-04-01-v2-t7-gateway-cost-telemetry.md) | Document + optional log of token usage for gateway path (budget calibration) |
+| T5 | [2026-04-01-v2-t5-night-agent-task-v2-parity-matrix.md](2026-04-01-v2-t5-night-agent-task-v2-parity-matrix.md) | `docs/V2_NIGHT_PARITY.md` — night review / digest / agent triage vs v2 night tasks (**done**) |
+| T6 | [2026-04-01-v2-t6-decision-trace-jsonl.md](2026-04-01-v2-t6-decision-trace-jsonl.md) | `lib/v2-eval/trace-log.ts` + `V2_TRACE_LOGGING` JSONL aligned to v2 trace shape (**done**) |
+| T7 | [2026-04-01-v2-t7-gateway-cost-telemetry.md](2026-04-01-v2-t7-gateway-cost-telemetry.md) | `docs/V2_COST_TELEMETRY.md` + optional `costs.jsonl` token usage logging (**done**) |
 | T8 | [2026-04-01-v2-t8-persona-ssot-apply-workbook.md](2026-04-01-v2-t8-persona-ssot-apply-workbook.md) | `docs/VIRGIL_PERSONA.md` + prompt code sync (**done** 2026-04-05) |
 
 ## Dependencies
@@ -57,7 +57,7 @@ flowchart LR
 
 ## Definition of done (program level)
 
-- All eight tickets either **merged** or explicitly **deferred** with a one-line reason in this file.
+- All eight tickets are **merged** (or explicitly deferred with a one-line reason in this file).
 - `pnpm check` / `pnpm build` green after code-changing tickets (T3, T6, T7).
 - [docs/tickets/README.md](README.md) lists this overview and T1–T8.
 
