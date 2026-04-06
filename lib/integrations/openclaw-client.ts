@@ -147,7 +147,7 @@ export async function sendOpenClawIntent(
   } catch (e) {
     return {
       success: false,
-      error: e instanceof Error ? e.message : "Request failed",
+      error: e instanceof Error ? truncateError(e.message) : "Request failed",
       skill: intent.skill,
       executedAt,
     };

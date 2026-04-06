@@ -21,7 +21,5 @@ jobs:
           cache: "pnpm"
       - name: Install dependencies
         run: pnpm install
-      - name: Run check
-        run: pnpm check
-      - name: Unit tests
-        run: pnpm test:unit
+      - name: Stable check
+        run: pnpm stable:check

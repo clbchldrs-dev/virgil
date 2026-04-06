@@ -46,6 +46,7 @@ Copy from [.env.example](../.env.example) only if you use the feature:
 - **GitHub product opportunities** — `GITHUB_REPOSITORY`, `GITHUB_PRODUCT_OPPORTUNITY_TOKEN` (or `GITHUB_TOKEN`)
 - **Mem0** — `MEM0_API_KEY`, `MEM0_MONTHLY_SEARCH_LIMIT` (default `1000`; caps retrieval API calls per month, falls back to Postgres FTS)
 - **Jira tools** — `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`
+- **Bot abuse enforcement** — `BOTID_ENFORCE=1` to return 403 for unverified bot traffic on `POST /api/chat` (recommended for public internet exposure)
 - **Rate limit** — `SKIP_CHAT_MESSAGE_RATE_LIMIT` (usually leave unset in production)
 
 ## After first deploy

@@ -7,25 +7,36 @@ export function isOpenClawConfigured(): boolean {
   );
 }
 
+function normalizeOpenClawOrigin(raw: string): string | null {
+  try {
+    const parsed = new URL(raw.trim());
+    if (parsed.protocol === "ws:") {
+      parsed.protocol = "http:";
+    } else if (parsed.protocol === "wss:") {
+      parsed.protocol = "https:";
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * HTTP origin for REST calls. Prefer OPENCLAW_HTTP_URL; else derive from OPENCLAW_URL (ws/wss → http/https).
  */
 export function getOpenClawHttpOrigin(): string | null {
   const explicit = process.env.OPENCLAW_HTTP_URL?.trim();
   if (explicit) {
-    return explicit.replace(/\/$/u, "");
+    return normalizeOpenClawOrigin(explicit);
   }
   const ws = process.env.OPENCLAW_URL?.trim();
   if (!ws) {
     return null;
   }
-  try {
-    const u = new URL(ws);
-    u.protocol = u.protocol === "wss:" ? "https:" : "http:";
-    return u.origin;
-  } catch {
-    return null;
-  }
+  return normalizeOpenClawOrigin(ws);
 }
 
 export function getOpenClawExecutePath(): string {

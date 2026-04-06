@@ -39,7 +39,7 @@ export async function loadChatPromptContext({
   userId: string;
   chatModel: string;
 }): Promise<ChatPromptContextLoad> {
-  const capabilities = await getCapabilitiesForModel(chatModel);
+  const capabilitiesPromise = getCapabilitiesForModel(chatModel);
 
   const healthSince = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
@@ -57,6 +57,7 @@ export async function loadChatPromptContext({
         createdAfter: healthSince,
       }),
     ]);
+  const capabilities = await capabilitiesPromise;
 
   let recentMemories: Memory[] = [];
   if (memoriesOutcome.status === "fulfilled") {

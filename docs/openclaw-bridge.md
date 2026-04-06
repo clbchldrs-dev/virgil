@@ -10,13 +10,22 @@ This doc is **execution delegation** (optional LAN gateway). It is separate from
 
 | Variable | Purpose |
 |----------|---------|
-| `OPENCLAW_URL` | WebSocket base (e.g. `ws://192.168.1.10:3100`). Used to derive HTTP origin when `OPENCLAW_HTTP_URL` is omitted. |
-| `OPENCLAW_HTTP_URL` | Optional explicit HTTP origin (e.g. `http://localhost:3100`) for REST calls. |
+| `OPENCLAW_URL` | WebSocket base (e.g. `ws://127.0.0.1:13100` when tunneled). Used to derive HTTP origin when `OPENCLAW_HTTP_URL` is omitted. |
+| `OPENCLAW_HTTP_URL` | Optional explicit HTTP origin. Hardened default is `http://127.0.0.1:13100` (SSH local forward). |
 | `OPENCLAW_EXECUTE_PATH` | POST path for intents (default `/api/execute`). |
 | `OPENCLAW_SKILLS_PATH` | GET path for skill list (default `/api/skills`). |
 | `OPENCLAW_HEALTH_PATH` | GET path for `ping()` (default `/health`). |
 
 Adapt paths to match your OpenClaw gateway’s real routes.
+
+### Hardened baseline (recommended)
+
+Use a local SSH tunnel and point Virgil at loopback:
+
+- `OPENCLAW_HTTP_URL=http://127.0.0.1:13100`
+- `OPENCLAW_URL=ws://127.0.0.1:13100` (optional, for consistency)
+
+This keeps OpenClaw private on the remote host while Virgil talks only to a localhost forward.
 
 ## Features
 
@@ -29,6 +38,8 @@ Adapt paths to match your OpenClaw gateway’s real routes.
 
 - Intents are scoped by **`userId`**; API routes require session auth.
 - Destructive or outbound phrasing sets **`requiresConfirmation`** until the owner approves.
+- Prefer an **SSH local tunnel** from the Virgil host to the OpenClaw host so OpenClaw can stay bound to loopback on the old PC (`127.0.0.1`) instead of being exposed broadly on your LAN.
+- For a concrete operator runbook (Mac tunnel commands, remote hardening, verification), see [openclaw-ssh-tunnel-hardening.md](openclaw-ssh-tunnel-hardening.md).
 
 ## Known limitations and operator notes
 
@@ -53,3 +64,4 @@ Adapt paths to match your OpenClaw gateway’s real routes.
 
 - ADR: [docs/DECISIONS.md](DECISIONS.md) (OpenClaw execution layer).
 - Event mapping: [lib/integrations/openclaw-actions.ts](../lib/integrations/openclaw-actions.ts).
+- Tunnel hardening runbook: [docs/openclaw-ssh-tunnel-hardening.md](openclaw-ssh-tunnel-hardening.md).

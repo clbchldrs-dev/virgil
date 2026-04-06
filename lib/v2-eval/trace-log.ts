@@ -26,6 +26,11 @@ export type DecisionTraceRecord = {
   totalTokens?: number | null;
   responseLength: number;
   userMessageLength: number;
+  preStreamTimingsMs?: {
+    authAndBotCheck: number | null;
+    promptContextLoad: number | null;
+    totalBeforeFirstModelCall: number | null;
+  };
 };
 
 export async function logDecisionTrace(

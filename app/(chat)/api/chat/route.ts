@@ -156,11 +156,21 @@ export async function POST(request: Request) {
       showThinking: showThinkingRaw,
     } = requestBody;
     const showThinking = showThinkingRaw === true;
+    const requestStartedAtMs = Date.now();
+    let authAndBotCheckedAtMs: number | null = null;
+    let promptContextLoadedAtMs: number | null = null;
+    let firstModelCallAtMs: number | null = null;
+    const markFirstModelCall = () => {
+      if (firstModelCallAtMs === null) {
+        firstModelCallAtMs = Date.now();
+      }
+    };
 
     const [botCheckResult, session] = await Promise.all([
       checkBotId().catch((): null => null),
       auth(),
     ]);
+    authAndBotCheckedAtMs = Date.now();
 
     if (!session?.user) {
       return new VirgilError("unauthorized:chat").toResponse();
@@ -276,6 +286,7 @@ export async function POST(request: Request) {
         userId: session.user.id,
         chatModel,
       });
+    promptContextLoadedAtMs = Date.now();
     const goalContextAppendix = formatActiveGoalsForPrompt(activeGoals);
     const isReasoningModel = capabilities?.reasoning === true;
     const supportsTools = capabilities?.tools === true;
@@ -456,6 +467,7 @@ export async function POST(request: Request) {
             }),
           };
           try {
+            markFirstModelCall();
             const outline = await runPlannerOutline({
               plannerModelId: plannerId,
               userMessages: modelMessages,
@@ -598,59 +610,6 @@ export async function POST(request: Request) {
           ...(agentTaskEnabled ? (["submitAgentTask"] as const) : []),
         ];
 
-        const mergedGatewayToolKeys = Object.keys({
-          ...baseTools,
-          ...companionTools,
-          ...gatewayExtraTools,
-          ...(openClawToolsBlock ?? {}),
-        });
-        const activeToolNamesForStream = noActiveTools
-          ? []
-          : [
-              ...baseToolNames,
-              ...companionToolNames,
-              ...gatewayExtraToolNames,
-              ...openClawToolNames,
-            ];
-        if (process.env.NODE_ENV === "development") {
-          // #region agent log
-          fetch(
-            "http://127.0.0.1:7838/ingest/7925a257-7797-4a8d-9c5b-1a308b2155f1",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Debug-Session-Id": "7813dc",
-              },
-              body: JSON.stringify({
-                sessionId: "7813dc",
-                hypothesisId: "H1-H3",
-                location: "app/(chat)/api/chat/route.ts:pre-stream-tools",
-                message:
-                  "Tool registration vs active list (getBriefing / QStash prep)",
-                data: {
-                  chatModel,
-                  isOllamaLocal,
-                  supportsTools,
-                  promptSupportsTools,
-                  isReasoningModel,
-                  noActiveTools,
-                  hasGetBriefingInMergedKeys:
-                    mergedGatewayToolKeys.includes("getBriefing"),
-                  hasGetBriefingInActiveNames:
-                    activeToolNamesForStream.includes("getBriefing"),
-                  mergedToolCount: mergedGatewayToolKeys.length,
-                  activeToolCount: activeToolNamesForStream.length,
-                },
-                timestamp: Date.now(),
-              }),
-            }
-          ).catch(() => {
-            /* debug ingest optional */
-          });
-          // #endregion
-        }
-
         if (fallbackEnabled) {
           try {
             await assertOllamaReachable();
@@ -702,6 +661,7 @@ export async function POST(request: Request) {
             goalContextAppendix,
           });
 
+          markFirstModelCall();
           const fallbackResult = streamText({
             model: fallbackModel,
             system: escalationPrompt,
@@ -732,6 +692,7 @@ export async function POST(request: Request) {
             fallbackResult.toUIMessageStream({ sendReasoning: false })
           );
         } else if (isOllamaLocal) {
+          markFirstModelCall();
           const result = streamText({
             ...localCommonStreamArgs,
             ...(openClawToolsBlock
@@ -767,6 +728,7 @@ export async function POST(request: Request) {
               ];
 
           const mergeGatewayStream = () => {
+            markFirstModelCall();
             const result = streamText({
               ...gatewayCommonStreamArgs,
               tools: gatewayTools,
@@ -837,6 +799,7 @@ export async function POST(request: Request) {
             v2EvalStreamMetrics.effectivePromptVariant =
               fbVariant === "compact" ? "compact" : "slim";
 
+            markFirstModelCall();
             const fbResult = streamText({
               model: getLanguageModel(
                 resolveRuntimeModelId(fbModelId),
@@ -1002,6 +965,21 @@ export async function POST(request: Request) {
             totalTokens: usage?.totalTokens ?? null,
             userMessageLength,
             responseLength,
+            preStreamTimingsMs: {
+              authAndBotCheck:
+                authAndBotCheckedAtMs === null
+                  ? null
+                  : authAndBotCheckedAtMs - requestStartedAtMs,
+              promptContextLoad:
+                promptContextLoadedAtMs === null ||
+                authAndBotCheckedAtMs === null
+                  ? null
+                  : promptContextLoadedAtMs - authAndBotCheckedAtMs,
+              totalBeforeFirstModelCall:
+                firstModelCallAtMs === null
+                  ? null
+                  : firstModelCallAtMs - requestStartedAtMs,
+            },
           }).catch(() => undefined);
 
           logGatewayCost({

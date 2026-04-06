@@ -632,8 +632,8 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `GITHUB_PRODUCT_OPPORTUNITY_LABELS` | No | No | Optional comma-separated issue labels |
 | `AGENT_TASK_TRIAGE_ENABLED` | No | No | Set to `1` to enable background triage of submitted agent tasks via local Ollama |
 | `AGENT_TASK_TRIAGE_MODEL` | No | No | Model id for triage worker (default `ollama/qwen2.5:7b-instruct`) |
-| `OPENCLAW_URL` | No | No | Optional LAN OpenClaw gateway (e.g. `ws://host:3100`); enables `delegateTask` when set with HTTP reachability; see [docs/openclaw-bridge.md](docs/openclaw-bridge.md) |
-| `OPENCLAW_HTTP_URL` | No | No | Explicit HTTP origin for OpenClaw REST (defaults from `OPENCLAW_URL`) |
+| `OPENCLAW_URL` | No | No | Optional OpenClaw gateway. Hardened default is a local tunnel (`ws://127.0.0.1:13100`) instead of exposing OpenClaw directly on LAN; see [docs/openclaw-bridge.md](docs/openclaw-bridge.md) + [docs/openclaw-ssh-tunnel-hardening.md](docs/openclaw-ssh-tunnel-hardening.md) |
+| `OPENCLAW_HTTP_URL` | No | No | Explicit HTTP origin for OpenClaw REST (defaults from `OPENCLAW_URL`). Hardened tunnel value: `http://127.0.0.1:13100` |
 | `OPENCLAW_EXECUTE_PATH` | No | No | POST path for intents (default `/api/execute`) |
 | `OPENCLAW_SKILLS_PATH` | No | No | GET path for skills (default `/api/skills`) |
 | `OPENCLAW_HEALTH_PATH` | No | No | GET path for health ping (default `/health`) |

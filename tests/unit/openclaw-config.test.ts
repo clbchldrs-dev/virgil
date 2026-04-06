@@ -90,6 +90,27 @@ test("getOpenClawHttpOrigin strips trailing slash", () => {
   );
 });
 
+test("getOpenClawHttpOrigin normalizes explicit URL with path/query", () => {
+  withEnv(
+    {
+      OPENCLAW_URL: undefined,
+      OPENCLAW_HTTP_URL: "https://example.internal:8443/api/skills?x=1",
+    },
+    () => {
+      assert.equal(getOpenClawHttpOrigin(), "https://example.internal:8443");
+    }
+  );
+});
+
+test("getOpenClawHttpOrigin rejects unsupported explicit protocols", () => {
+  withEnv(
+    { OPENCLAW_URL: undefined, OPENCLAW_HTTP_URL: "ftp://host:21" },
+    () => {
+      assert.equal(getOpenClawHttpOrigin(), null);
+    }
+  );
+});
+
 test("getOpenClawHttpOrigin derives http from ws URL", () => {
   withEnv(
     { OPENCLAW_URL: "ws://host:3100", OPENCLAW_HTTP_URL: undefined },

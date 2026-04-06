@@ -27,6 +27,7 @@
     "test:unit": "node --test --import tsx tests/unit/*.test.ts",
     "ollama:smoke": "pnpm exec tsx scripts/ollama-smoke.ts",
     "warmup:ollama": "pnpm exec tsx scripts/warmup-ollama-cli.ts",
+    "openclaw:tunnel": "bash scripts/openclaw-tunnel.sh",
     "launch:desktop": "bash packaging/launch-virgil.sh",
     "virgil:preflight": "tsx scripts/virgil-preflight.ts",
     "virgil:preflight:strict": "tsx scripts/virgil-preflight.ts --strict",

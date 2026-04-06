@@ -38,6 +38,8 @@ Runs `stable:check`, then `pnpm build`.
 
 **Optional:** `pnpm ollama:smoke` after model/routing changes; `pnpm test` for Playwright when UI/auth paths change.
 
+For chat startup latency budgeting, set `V2_TRACE_LOGGING=true` temporarily and inspect `workspace/v2-eval/traces.jsonl` for `preStreamTimingsMs` (`authAndBotCheck`, `promptContextLoad`, `totalBeforeFirstModelCall`).
+
 ---
 
 ## Phased work (in order)
@@ -130,6 +132,7 @@ Check **Production env** and **Production migrate** under [Phase B](#phase-b--de
 ### 1. Read the inventory (≈15 min)
 
 - [docs/security/tool-inventory.md](security/tool-inventory.md) — tool risk table, **background auth matrix** (cron vs QStash), file uploads, **IDOR** patterns and `lib/security/idor.ts`.
+- If OpenClaw delegation is enabled, also verify tunnel-first defaults in [docs/openclaw-ssh-tunnel-hardening.md](openclaw-ssh-tunnel-hardening.md) and [docs/openclaw-bridge.md](openclaw-bridge.md).
 
 ### 2. Hardening plan status
 
