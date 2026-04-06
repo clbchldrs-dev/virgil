@@ -2,7 +2,7 @@
 
 This file is the **single entrypoint** for intent, documentation map, architecture overview, and **handoff** when starting a new Cursor chat or onboarding an agent to the repo. It does not duplicate env tables or deploy steps—those stay in linked docs.
 
-## Intent (Ghost of Virgil — v1)
+## Intent (Ghost of Virgil — v1 target; **Virgil 0.5** today)
 
 ### What “Ghost of Virgil” means
 
@@ -22,11 +22,11 @@ Virgil is meant to feel **always available** wherever you open the app—persist
 
 ## Target architecture (owner intent — beyond shipped v1)
 
-Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md)** (including **§2a** Interaction / Integration / Cognitive): **Virgil** (this repo) as the **brain** (UI, memory, routing, in-repo tools), a **Mac mini (~48 GB unified memory)** as the **primary home host** for Ollama and sidecars, and **[Agent Zero](https://github.com/agent0ai/agent-zero)** as the **preferred external “hands”** runtime (Python, headless)—connected later via a **planned bridge**, not shipped yet. OpenClaw remains **inspiration only** for workspace-style files (e.g. night review), not a bundled executor.
+Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md)** (including **§2a** Interaction / Integration / Cognitive): **Virgil** (this repo) as the **brain** (UI, memory, routing, in-repo tools), a **Mac mini (~48 GB unified memory)** as the **primary home host** for Ollama and sidecars, and **[Agent Zero](https://github.com/agent0ai/agent-zero)** as the **preferred external “hands”** runtime (Python, headless)—connected later via a **planned bridge**, not shipped yet. **[OpenClaw](https://github.com/openclaw/openclaw)** is a **separate** concern: optional **breadth** (multi-channel gateway, skills on the LAN) via the **shipped** [`delegateTask` bridge](openclaw-bridge.md) when `OPENCLAW_*` is set—it is **not** bundled in default Docker Compose. OpenClaw still **inspires** workspace-style patterns (e.g. [`workspace/night/`](../workspace/night/README.md)). A **Hermes-style** learning specialist (evaluated tasks, reusable skills, long-horizon workflow model) and **ACP** (Agent Communication Protocol) as a wire between orchestrator and specialist are **owner-intent complements**, not implemented in this repo until explicitly scoped—see **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) §2b**.
 
 ## Deployment tracks (v1 vs v2)
 
-- **v1 (shipped):** The default **hosted** stack for this repo is **Vercel** (Next.js app) plus **Neon** Postgres, **Upstash** Redis and QStash, **Resend**, and **Vercel Blob**—aligned with free/hobby tiers and documented in [AGENTS.md](../AGENTS.md) (setup checklist and deployment table) and [docs/vercel-env-setup.md](vercel-env-setup.md). Env vars are **not** duplicated here.
+- **v1 (target stack for Virgil 1.0):** The default **hosted** stack for this repo is **Vercel** (Next.js app) plus **Neon** Postgres, **Upstash** Redis and QStash, **Resend**, and **Vercel Blob**—aligned with free/hobby tiers and documented in [AGENTS.md](../AGENTS.md) (setup checklist and deployment table) and [docs/vercel-env-setup.md](vercel-env-setup.md). **Today’s product label is Virgil 0.5** (pre-stable); **v1.0** is the stabilization milestone before June 2026. Env vars are **not** duplicated here.
 - **v2 (planned):** **Mac mini** (or equivalent home host) as the primary place for **local Ollama** and the **headless Python backend** described in [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md), with the **Next.js UI** still able to live on Vercel and talk to that backend over a secure tunnel (see migration doc). This path **leverages hardware and open-source inference** rather than maximizing managed free tiers for the runtime.
 - **v2 data layer (two valid tracks):** Operators may run **Postgres on the Mac mini (or LAN)** to preserve schema parity when migrating from v1, **or** follow the **greenfield** blueprint of **SQLite + Mem0** in [docs/V2_MIGRATION.md](V2_MIGRATION.md). The choice is an environment decision, not a single locked stack.
 - **Risks that slow v2 work** are summarized in [docs/V1_V2_RISK_AUDIT.md](V1_V2_RISK_AUDIT.md); groundwork tickets **T1–T8** ([overview](tickets/2026-04-01-v2-groundwork-overview.md)) reduce reverse-engineering.
@@ -41,6 +41,8 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 
 **Example deployment topology:** **Phone** as the usual browser UI; **MacBook (e.g. M1 Air)** as the always-on stack (Docker Compose or `pnpm dev` + Postgres/Redis/Ollama per [AGENTS.md](../AGENTS.md)); a **LAN PC** with more RAM as a heavier Ollama **workhorse** by pointing **`OLLAMA_BASE_URL`** at that host (see [docs/beta-lan-gaming-pc.md](beta-lan-gaming-pc.md) and the LAN notes in [AGENTS.md](../AGENTS.md#setup-checklist)).
 
+**Reachability:** Chat inference runs on the **Next.js server**; `OLLAMA_BASE_URL` must be reachable from that process. **Vercel** cannot reach a LAN-only Ollama without an authenticated HTTPS front or moving the app to the LAN—see the matrix in [README.md](../README.md) (Troubleshooting local models).
+
 ## Where truth lives (SSOT map)
 
 | Topic | Authoritative doc / location |
@@ -48,7 +50,7 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 | Project intent and this handoff | **This file** (`docs/PROJECT.md`) |
 | Bespoke single-owner product intent (fitness v1, data tiers, voice) | [docs/OWNER_PRODUCT_VISION.md](OWNER_PRODUCT_VISION.md) |
 | Optional pruning inventory (historical; major business paths removed 2026-04) | [docs/PRUNING_CANDIDATES.md](PRUNING_CANDIDATES.md) |
-| Target architecture (brain vs executor, hardware, device surface taxonomy, Agent Zero — **scoped intent**) | [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) |
+| Target architecture (brain vs executor, hardware, device surface taxonomy, Agent Zero — **scoped intent**; **ecosystem map**: OpenClaw / Sophon / AutoAgent) | [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) §2b |
 | Coding rules, file pointers, hosted-primary / resilience rules, review checklists | [AGENTS.md](../AGENTS.md) |
 | Traceable architecture decisions | [docs/DECISIONS.md](DECISIONS.md) |
 | Sophon daily command center (Option B v1) | `app/(chat)/api/sophon/daily/route.ts`, `sophon/src/`, `sophon/tests/`, [docs/superpowers/specs/2026-04-05-sophon-daily-command-center-design.md](superpowers/specs/2026-04-05-sophon-daily-command-center-design.md) |

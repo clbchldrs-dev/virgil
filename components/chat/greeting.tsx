@@ -1,4 +1,11 @@
+"use client";
+
+import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useMemo } from "react";
+import { guestRegex } from "@/lib/constants";
+import { getUserDisplayFirstName } from "@/lib/user-display";
+import { cn } from "@/lib/utils";
 
 const FLAVOR_LINES = [
   "*You feel watched by absolutely nothing in particular.*",
@@ -25,10 +32,17 @@ type GreetingProps = {
 };
 
 export function Greeting({ chatId }: GreetingProps) {
+  const { data: session, status } = useSession();
   const flavor = useMemo(() => {
     const h = hashChatId(chatId);
     return FLAVOR_LINES[(h >> 5) % FLAVOR_LINES.length];
   }, [chatId]);
+
+  const email = session?.user?.email ?? "";
+  const isGuest = guestRegex.test(email);
+  const displayFirst = session?.user
+    ? getUserDisplayFirstName(session.user)
+    : null;
 
   return (
     <div
@@ -46,6 +60,32 @@ export function Greeting({ chatId }: GreetingProps) {
         />
         <div className="relative z-[1] flex flex-col items-center gap-2 text-center">
           <h2 className="sr-only">Empty chat</h2>
+          {status === "authenticated" && session?.user && (
+            <p
+              className={cn(
+                "pointer-events-auto max-w-[280px] text-[13px] leading-snug",
+                isGuest
+                  ? "text-muted-foreground/60"
+                  : "font-medium text-foreground"
+              )}
+              data-testid="empty-chat-session-label"
+            >
+              {isGuest ? (
+                <>
+                  Temporary session —{" "}
+                  <Link
+                    className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                    href="/login"
+                  >
+                    Sign in
+                  </Link>{" "}
+                  for your account.
+                </>
+              ) : (
+                <>Signed in as {displayFirst}</>
+              )}
+            </p>
+          )}
           <div
             aria-hidden="true"
             className="empty-chat-greeting__soul text-primary"

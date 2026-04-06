@@ -59,8 +59,8 @@ const rows: Row[] = [
     key: "OLLAMA_BASE_URL",
     ok: true,
     note: process.env.OLLAMA_BASE_URL
-      ? `Set (${process.env.OLLAMA_BASE_URL}) — must be reachable from the Next.js process, not from the browser alone.`
-      : "Optional; defaults to http://127.0.0.1:11434. The Next server must reach Ollama here. On Vercel, localhost Ollama on your laptop is not reachable unless you point OLLAMA_BASE_URL at a network-exposed host.",
+      ? `Set (${process.env.OLLAMA_BASE_URL}) — must be reachable from the Next.js process (not the phone browser). Vercel cannot see your LAN unless this URL is a reachable HTTPS/tunnel endpoint; see README “Where the app runs vs where Ollama runs”.`
+      : "Optional; defaults to http://127.0.0.1:11434. Same rule: server reaches Ollama. Vercel + LAN-only Ollama will not work without network plumbing; see README and docs/beta-lan-gaming-pc.md.",
   },
 ];
 

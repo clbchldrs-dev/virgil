@@ -1,11 +1,15 @@
 import type { Geo } from "@vercel/functions";
 import type { ArtifactKind } from "@/components/chat/artifact";
 
-export const artifactsPrompt = `
+export function buildArtifactsPrompt(options: {
+  jiraEnabled: boolean;
+}): string {
+  const jiraExamples = options.jiraEnabled ? ", Jira" : "";
+  return `
 Artifacts is a side panel that displays content alongside the conversation. It supports scripts (code), documents (text), and spreadsheets. Changes appear in real-time.
 
 Tool chaining (read with the Behavior section above):
-- Non-artifact tools (e.g. getBriefing, recallMemory, saveMemory, getWeather, readFile, Jira, calendar): chain freely when needed.
+- Non-artifact tools (e.g. getBriefing, recallMemory, saveMemory, getWeather, readFile${jiraExamples}, calendar): chain freely when needed.
 - Artifact tools are stricter — see below. Before the first artifact tool in a response, non-artifact tools are allowed (e.g. getBriefing then createDocument). After any artifact tool call, do not add more tools in that response — except multiple editDocument calls are allowed as described below.
 
 Artifact tool rules:
@@ -56,6 +60,10 @@ Wasted effort (name it; avoid doing it):
 **Using \`requestSuggestions\`:**
 - ONLY when the user explicitly asks for suggestions on an existing document
 `;
+}
+
+/** Legacy export; chat uses {@link buildArtifactsPrompt} with live `jiraEnabled`. */
+export const artifactsPrompt = buildArtifactsPrompt({ jiraEnabled: true });
 
 export const companionCorePrompt = `You are a companion assistant with access to tools and persistent context about the user. Follow these rules:
 

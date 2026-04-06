@@ -23,6 +23,7 @@ import { getChatHistoryPaginationKey } from "@/components/chat/sidebar-history";
 import { toast } from "@/components/chat/toast";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
 import { useAutoResume } from "@/hooks/use-auto-resume";
+import type { ClientRoutingHints } from "@/lib/ai/model-routing";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { describeChatError } from "@/lib/chat-error-display";
 import type { Vote } from "@/lib/db/schema";
@@ -59,6 +60,21 @@ const ActiveChatContext = createContext<ActiveChatContextValue | null>(null);
 function extractChatId(pathname: string): string | null {
   const match = pathname.match(/\/chat\/([^/]+)/);
   return match ? match[1] : null;
+}
+
+function readClientRoutingHints(): ClientRoutingHints | undefined {
+  if (typeof navigator === "undefined") {
+    return undefined;
+  }
+  const nav = navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string };
+    userAgentData?: { platform?: string };
+  };
+  return {
+    saveData: nav.connection?.saveData,
+    effectiveConnectionType: nav.connection?.effectiveType,
+    platform: nav.userAgentData?.platform ?? nav.platform,
+  };
 }
 
 export function ActiveChatProvider({ children }: { children: ReactNode }) {
@@ -162,6 +178,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             selectedChatModel: currentModelIdRef.current,
             selectedVisibilityType: visibility,
             showThinking: showThinkingRef.current,
+            clientRoutingHints: readClientRoutingHints(),
             ...request.body,
           },
         };

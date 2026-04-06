@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Create a hardened local SSH tunnel for OpenClaw.
 # Usage:
-#   OPENCLAW_SSH_HOST=user@old-pc ./scripts/openclaw-tunnel.sh
+#   OPENCLAW_SSH_HOST=caleb@192.168.1.81 ./scripts/openclaw-tunnel.sh
+#   OPENCLAW_SSH_HOST=user@lan-host ./scripts/openclaw-tunnel.sh
 # Optional env:
 #   OPENCLAW_LOCAL_PORT (default 13100)
 #   OPENCLAW_REMOTE_PORT (default 3100)
@@ -11,7 +12,7 @@
 set -euo pipefail
 
 if [[ -z "${OPENCLAW_SSH_HOST:-}" ]]; then
-  echo "Missing OPENCLAW_SSH_HOST (example: user@old-pc)." >&2
+  echo "Missing OPENCLAW_SSH_HOST (example: caleb@192.168.1.81)." >&2
   exit 1
 fi
 

@@ -4,6 +4,38 @@ Significant, stable choices for Virgil. New entries go at the **top** (reverse c
 
 ---
 
+## 2026-04-06 — Mobile browser is not a local-LLM compute target (explicit non-goal) — Accepted
+
+**Context:** Primary surfaces include a **phone** (e.g. Pixel in the browser) and a **laptop on the LAN** with home inference (Ollama on a Mac mini, optional OpenClaw). It is easy to revisit whether the **phone** must run **on-device** models or obtain a **direct** path to LAN Ollama so “everything is local,” which drives VPNs, tunnels, split stacks, and scope creep unrelated to the shipped architecture.
+
+**Decision:**
+
+1. For **product and network planning**, the **mobile browser** is an **interaction surface** only: chat inference runs on the **server** that implements `POST /api/chat` (hosted gateway, or self-hosted Next with `OLLAMA_BASE_URL`, etc.). The phone does **not** need to run a **local LLM** and does **not** need LAN reachability to Ollama **by itself**.
+2. **Local Ollama** remains a **first-class** choice where the **Next.js process** can open `OLLAMA_BASE_URL` (dev laptop, Docker, LAN-hosted app)—not where only the phone’s browser could theoretically reach the LAN.
+3. A **separate** exploratory note ([on-device Gemma / Android spike](tickets/2026-04-06-on-device-gemma-android-spike.md)) describes a **different** shape (client-side inference); it is **not** a commitment to ship that path or to require it for the owner’s phone experience.
+
+**Consequences:** No obligation to design Pixel → home Ollama plumbing for “parity” with laptop local chat. Away-from-home phone use can stay **hosted-primary** without architectural conflict. Revisit only with an explicit ADR if native on-device inference becomes a goal.
+
+**Links:** [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) (mobile browser, local LLM), [README.md](../README.md) (Troubleshooting local models), [AGENTS.md](../AGENTS.md) (Ollama / Android note)
+
+---
+
+## 2026-04-06 — Complementarity: OpenClaw breadth, Virgil depth, Hermes-style + ACP as future — Accepted
+
+**Context:** Older docs described OpenClaw as **inspiration only** for workspace/night patterns, while v1 already ships an **optional** HTTP bridge (`delegateTask`, `approveOpenClawIntent`, `PendingIntent` queue — [openclaw-bridge.md](openclaw-bridge.md)). That wording confused contributors. Separately, owner intent positions **multi-channel orchestration** (breadth), **persistent companion state** (Virgil), and a **learning specialist** (depth over time) as **complementary**—with **ACP** as a possible future wire—not as one replaceable product.
+
+**Decision:**
+
+1. **[`docs/PROJECT.md`](PROJECT.md)** and **[`docs/TARGET_ARCHITECTURE.md`](TARGET_ARCHITECTURE.md) §2, §2b, §3, §5** describe: optional OpenClaw = **integration** for gateway breadth (not bundled in default Compose); Virgil = **brain**; **Agent Zero** remains the documented **Python executor** target (bridge still planned); **Hermes-style** learning and **ACP** are **documented intent only**—no in-repo implementation until scoped.
+2. **§3** explicitly distinguishes **in-process** companion tools from **optional OpenClaw** out-of-process delegation and from the **future Agent Zero** bridge.
+3. **No Hermes integration, no ACP client, and no new env vars** ship from this ADR.
+
+**Consequences:** Architecture docs align with shipped code; future orchestrator/specialist work is named without implying it exists in the repo.
+
+**Links:** [docs/TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md) §2b, [docs/openclaw-bridge.md](openclaw-bridge.md), [docs/digital-self-bridge.md](digital-self-bridge.md)
+
+---
+
 ## 2026-04-05 — Tri-layer product vocabulary (Interaction, Integration, Cognitive) — Accepted
 
 **Context:** Owner framing describes moving from reactive chat toward proactive life management using three layers (interaction gateway, integration with data silos and executors, cognitive state and long-horizon reasoning).

@@ -25,6 +25,19 @@ Smart home and mobile devices are **contact surfaces**—places the owner meets 
 
 > The v1 codebase supports input sources (chat, `/api/ingest`, `/api/health/ingest`, share target) and one output channel (Resend email via digest/reminders/night review). v2 adds ntfy as a second output channel and Home Assistant as a bidirectional surface. Voice (STT → Virgil → TTS) is a future layer that promotes speakers and hubs from output-only to bidirectional. Each surface should be specced with: auth model, latency tolerance, update frequency, and which v2 phase it ships in.
 
+### Mobile browser (e.g. Pixel): not a local-LLM compute target
+
+**Decision (owner scope):** The phone **does not** need to run an **on-device** LLM, and **planning must not** assume the phone has a **direct** network path to home **Ollama**. This is an explicit **non-goal** so LAN/VPN/tunnel designs are not re-litigated for “mobile local parity.” ADR: [DECISIONS.md](DECISIONS.md) (2026-04-06).
+
+**Why:**
+
+1. **Architecture:** Virgil chat inference is **server-side** (`streamText` on the Next.js host). The browser sends messages and a model id; it never opens `OLLAMA_BASE_URL`. The **deployment** that serves `/api/chat` must reach Ollama when you pick a local model—not the phone alone.
+2. **Away from home:** A typical **Vercel** deploy cannot reach `192.168.x.x:11434`. Requiring “local LLM on the phone” to compensate would mean a **second** inference stack (tools, memory, streaming), not a small tweak.
+3. **Home WiFi:** If the app is served from **Vercel**, the phone still hits the cloud origin; Ollama on the LAN is irrelevant unless you **self-host** the app on the LAN or add **controlled** remote access to that app. That is optional infra, not a phone capability.
+4. **Laptop vs phone:** **Local Ollama** is for hosts where the **Next process** can use `OLLAMA_BASE_URL` (e.g. MacBook dev → Mac mini, Docker, LAN server). The **Pixel** can use **hosted** models on the same UI without breaking the home-local story on the laptop.
+
+**If this ever changes:** Treat **native on-device** inference as a **new** product surface; document it in [DECISIONS.md](DECISIONS.md)—do not infer it from “local-first home” intent alone.
+
 ---
 
 ## 2. Two-layer model: Virgil vs Agent Zero
@@ -36,7 +49,7 @@ Smart home and mobile devices are **contact surfaces**—places the owner meets 
 
 **Rationale:** Virgil stays **maintainable, reviewable, and local-first**. Heavy or open-ended **computer use** belongs in a **dedicated agent runtime** (Agent Zero) rather than reimplementing the entire ecosystem inside `lib/ai/tools/`.
 
-**Not in scope as the default executor:** Bundling **OpenClaw** as the runtime. OpenClaw may still **inspire** patterns (e.g. workspace files under [`workspace/night/`](../workspace/night/README.md)); that is **documentation parity**, not “Virgil ships OpenClaw.”
+**OpenClaw vs bundling:** Default Compose **does not** ship OpenClaw as a service. Operators who want **breadth** (gateway-style skills, shell, messaging integrations on a LAN host) enable the **optional** HTTP bridge documented in [`openclaw-bridge.md`](openclaw-bridge.md) (`delegateTask` / `approveOpenClawIntent` when `OPENCLAW_*` is set). That is **integration**, not “Virgil embeds OpenClaw.” OpenClaw may still **inspire** patterns (e.g. workspace files under [`workspace/night/`](../workspace/night/README.md)); that is **documentation parity** beside the optional bridge.
 
 ---
 
@@ -80,6 +93,53 @@ flowchart TB
 
 ---
 
+## 2b. Complementary stacks: orchestration breadth vs cognitive depth
+
+Product intent treats three ideas as **complementary**, not as a single monolith in this repo:
+
+| Idea | Breadth vs depth | Role |
+|------|------------------|------|
+| **Multi-channel gateway** (e.g. [OpenClaw](https://github.com/openclaw/openclaw)) | **Breadth** | Many ingress/egress channels, skills ecosystem, team-friendly orchestration—“agent as **system** to be run.” |
+| **Virgil (this repo)** | **Depth + product** | Single-owner **brain**: Postgres memory, goals, night review, chat UI, policy, hosted-primary routing—“persistent **state** and companion loop.” |
+| **Hermes-style specialist** (conceptual; not a bundled product here) | **Depth (learning)** | Long-horizon **learning**: task evaluation, reusable skills, a model of how the owner works—“agent as **mind** to develop.” **Not implemented** as a separate product; Virgil’s memory and async review are general on-repo depth. The **Sophon** slice is the closest **in-repo** match for Hermes-shaped **life/task** depth (see map below). |
+
+**Ecosystem map (how pieces relate):**
+
+| Label | What it is | Breadth, depth, or harness | Notes |
+|-------|------------|------------------------------|--------|
+| **OpenClaw** | Multi-channel gateway (optional bridge) | **Breadth** | Orchestration, many surfaces, “agent as **system**.” Integrates via [`openclaw-bridge.md`](openclaw-bridge.md) when configured. |
+| **Sophon** | Daily command center (`sophon/`, API route, spec) | **Depth (in Virgil)** | Priority matrix, habits, accountability, calm UX—“fits **your** work over time.” Spec: [`superpowers/specs/2026-04-05-sophon-daily-command-center-design.md`](superpowers/specs/2026-04-05-sophon-daily-command-center-design.md). **Hermes-shaped** in intent, not a separate runtime. |
+| **Virgil core** | Chat, Postgres `Memory`, goals, night review, tools | **Depth + product** | Persistent companion loop; everything above hangs off this repo. |
+| **AutoAgent** ([kevinrgu/autoagent](https://github.com/kevinrgu/autoagent)) | External Python repo | **Harness / meta** | Score-driven loop improves **`agent.py`** against Harbor benchmarks—not your life model. **Not bundled**; useful as a **methodology reference** only. Same *evaluated-loop shape* as “learn and keep,” different *substrate* (code vs user context). |
+
+```mermaid
+flowchart TB
+  openclaw[OpenClaw_breadth_optional]
+  virgil[Virgil_core_brain]
+  sophon[Sophon_depth_slice]
+  autoagent[AutoAgent_external_harness]
+  openclaw -->|delegateTask_when_configured| virgil
+  sophon -->|implemented_inside| virgil
+  autoagent -.->|analogy_eval_loop_not_integration| sophon
+```
+
+**ACP (Agent Communication Protocol):** Documented only as a **possible future** wire between an orchestrator (e.g. OpenClaw) and a learning specialist. **No** API surface or env vars in Virgil until an integration is explicitly designed and ADR’d.
+
+**Agent Zero** (§2) remains the documented target for a **Python headless executor** on the home machine. **OpenClaw** (optional bridge) is a **different** integration shape (HTTP to a gateway process). Operators may use one, the other, or neither; they are not mutually exclusive by design.
+
+**Digital Self** ([`digital-self-bridge.md`](digital-self-bridge.md)) is another **separate** orchestrator pattern (Slack/WhatsApp/SMS with approval policy). Do not conflate it with OpenClaw when reading env tables or bridges.
+
+```mermaid
+flowchart LR
+  channels[Channels_OpenClaw_or_similar]
+  virgil[Virgil_brain_Next_Postgres]
+  specialist[Hermes_style_specialist_future]
+  channels -->|delegation_tools_optional| virgil
+  virgil -->|future_ACP_sketch| specialist
+```
+
+---
+
 ## 3. Bridge (planned, not yet first-class)
 
 To connect the layers safely:
@@ -88,7 +148,7 @@ To connect the layers safely:
 - **Default posture:** **Read-only / advisory** execution unless an explicit policy allows writes (e.g. dedicated git worktree, allowlisted paths).
 - **Naming:** A future tool might be described as “delegate to local executor” in code; exact API TBD in implementation ADRs.
 
-Until the bridge exists, **all** tool behavior remains **in-process** in this repo (see [security/tool-inventory.md](security/tool-inventory.md)).
+**Today:** Optional **OpenClaw** delegation already sends work **out of process** over HTTP (see [`openclaw-bridge.md`](openclaw-bridge.md)); companion tools otherwise run **in-process** in this repo (see [security/tool-inventory.md](security/tool-inventory.md)). Until the **Agent Zero** bridge exists, there is **no** first-class Virgil → Agent Zero path—only the planned contract above.
 
 ---
 
@@ -106,8 +166,8 @@ These phrases are **product goals**, not permission for unchecked autonomy.
 
 ## 5. Relationship to current code
 
-- **Implemented today:** Next.js chat, Ollama + gateway models, companion tools in `lib/ai/tools/`, optional gateway planner ([`lib/ai/orchestration/`](../lib/ai/orchestration/)), Mem0, reminders, night review, agent tasks.
-- **Not implemented yet:** Agent Zero process, bridge routes, or Mac-specific install scripts **in this repo**. Those are **follow-on** work tracked via [ENHANCEMENTS.md](ENHANCEMENTS.md) once broken into tickets.
+- **Implemented today:** Next.js chat, Ollama + gateway models, companion tools in `lib/ai/tools/`, optional gateway planner ([`lib/ai/orchestration/`](../lib/ai/orchestration/)), Mem0, reminders, night review, agent tasks, optional **OpenClaw** HTTP delegation when configured ([`openclaw-bridge.md`](openclaw-bridge.md)).
+- **Not implemented yet:** Agent Zero process, **Agent Zero** bridge routes, Hermes-style learning integration, ACP, or Mac-specific install scripts **in this repo**. Those are **follow-on** work tracked via [ENHANCEMENTS.md](ENHANCEMENTS.md) once broken into tickets.
 
 ---
 
@@ -118,6 +178,6 @@ Update **`docs/TARGET_ARCHITECTURE.md`** when:
 - The preferred executor changes (e.g. fork or alternative to Agent Zero).
 - Bridge contract is chosen (auth scheme, URL shape).
 - Hardware assumptions change (e.g. Linux server instead of Mini).
-- The **tri-layer** mapping (§2a) needs to change because a new surface, store, or executor materially shifts Interaction vs Integration vs Cognitive boundaries.
+- The **tri-layer** mapping (§2a) or **complementarity** framing (§2b) needs to change because a new surface, store, or executor materially shifts Interaction vs Integration vs Cognitive boundaries.
 
 Pair substantive changes with a dated entry in [DECISIONS.md](DECISIONS.md).

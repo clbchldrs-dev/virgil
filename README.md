@@ -1,5 +1,7 @@
 # Virgil
 
+**Product version: Virgil 0.5** (pre-stable). Goal is a declared **v1.0** before June 2026; the **v2** Python-backend architecture remains planned ([docs/V2_ARCHITECTURE.md](docs/V2_ARCHITECTURE.md)). The repo `package.json` version tracks this label.
+
 Virgil is a personal AI assistant with a **hosted-primary** default (AI Gateway tool-capable models) and **local Ollama** as a strong option for privacy, cost, or resilience.
 
 The project is optimized for:
@@ -63,15 +65,26 @@ ollama pull qwen2.5:3b
 ollama pull qwen2.5:7b-instruct
 ```
 
-Hosted models remain available, but the default direction of the project is local-first.
+Hosted models are the **default** in code and UI; use **LAN Ollama** (for example on an always-on home PC) via `OLLAMA_BASE_URL` when you want to **cut AI Gateway token use** while keeping the same app. Optional **OpenClaw** on the LAN handles delegation and skills—not the main chat LLM; see [docs/openclaw-bridge.md](docs/openclaw-bridge.md).
 
 ### Troubleshooting local models
 
-Local inference uses **Ollama**, but the **Next.js server** opens that HTTP connection (`OLLAMA_BASE_URL`), not your browser. If hosted models work while local ones fail, the server usually cannot reach Ollama (wrong URL, Ollama not running, or you are on a **deployed** host such as Vercel where `127.0.0.1` is the server, not your laptop).
+Local inference uses **Ollama**, but the **Next.js server** opens that HTTP connection (`OLLAMA_BASE_URL`), not your browser or phone. The browser only picks a model id; it never talks to Ollama directly.
+
+#### Where the app runs vs where Ollama runs
+
+| App host | Ollama on same machine / Docker network | Ollama on LAN only (e.g. `192.168.x.x`) | Works? |
+| -------- | --------------------------------------- | ---------------------------------------- | ------ |
+| `pnpm dev` / Docker Compose on your PC | Set `OLLAMA_BASE_URL` to that Ollama | Point `OLLAMA_BASE_URL` at LAN IP; firewall allows **11434** | Yes, if the **Next.js process** can open TCP to that URL |
+| **Vercel** (serverless) | Not applicable | LAN IPs are **not** reachable from Vercel | **No**, unless Ollama is exposed via an **authenticated** HTTPS reverse proxy or you **self-host** the app on the LAN |
+| Self-hosted Next on LAN (same subnet as Ollama) | — | `OLLAMA_BASE_URL=http://<lan-host>:11434` | Yes |
+
+**Android / mobile:** Using Virgil in Chrome on a phone does not change the rule—the **deployment** that serves `/api/chat` must reach Ollama when you use local models **there**. The **phone itself** does not need on-device or LAN-direct Ollama; that is an explicit **non-goal** so you do not over-engineer tunnels or split stacks for mobile—see [docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md) (mobile browser) and [docs/DECISIONS.md](docs/DECISIONS.md) (2026-04-06 ADR). For a home-server layout and Vercel/HTTPS notes, see [docs/beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md) and [docs/vercel-env-setup.md](docs/vercel-env-setup.md).
 
 - **Docker:** Default Compose uses the bundled `ollama` service. If Ollama runs on the host instead (e.g. GPU), use [`docker-compose.host-ollama.yml`](docker-compose.host-ollama.yml) and set `OLLAMA_BASE_URL` (often `http://host.docker.internal:11434` on Docker Desktop).
 - **Quick probe** (from the same machine or container as the app): `curl -sS "${OLLAMA_BASE_URL:-http://127.0.0.1:11434}/api/tags"` should return JSON listing models.
 - **Smoke test:** `pnpm ollama:smoke` (optionally with a preset id) exercises the same path as chat.
+- **Preflight:** `pnpm dev:check` reminds you that `OLLAMA_BASE_URL` must be reachable from the server process, not only from the browser.
 
 ## V2 Python backend (planned)
 
@@ -112,4 +125,4 @@ For **product intent** (lightweight companion, cost, iterability), **where docum
 
 ## Core principle
 
-Virgil should be as helpful as possible on small local models without becoming flattering, bloated, or expensive.
+Virgil should be as **capable as possible on the default hosted path** and **honest** on small local models—without becoming flattering, bloated, or expensive. **Stabilization focus:** verification gates (`pnpm stable:check`), persona consistency ([docs/VIRGIL_PERSONA.md](docs/VIRGIL_PERSONA.md)), and chat UI polish.

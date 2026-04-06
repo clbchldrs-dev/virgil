@@ -27,6 +27,79 @@ export function getFallbackGatewayModel(): string {
   );
 }
 
+/** Bare Gemini model name for direct Google API when the AI Gateway path fails (pre-stream). */
+export function getGatewayFallbackGeminiModel(): string {
+  const fromEnv = process.env.VIRGIL_GATEWAY_FALLBACK_GEMINI_MODEL?.trim();
+  if (fromEnv) {
+    return fromEnv.replace(/^gemini\//, "");
+  }
+  return getFallbackGeminiModel().replace(/^gemini\//, "");
+}
+
+function collectGatewayErrorText(error: unknown, maxDepth = 6): string {
+  const parts: string[] = [];
+  let current: unknown = error;
+  let depth = 0;
+  while (current instanceof Error && depth < maxDepth) {
+    parts.push(`${current.name} ${current.message}`);
+    current = current.cause;
+    depth += 1;
+  }
+  return parts.join(" ").toLowerCase();
+}
+
+/**
+ * Obvious gateway credential / auth failures — do not chain to other tiers
+ * (avoids masking a broken API key with silent local fallback).
+ */
+export function isGatewayAuthFailureError(error: unknown): boolean {
+  const text = collectGatewayErrorText(error);
+  if (text.includes("invalid api key")) {
+    return true;
+  }
+  if (
+    text.includes("unauthenticated") &&
+    (text.includes("gateway") || text.includes("ai gateway"))
+  ) {
+    return true;
+  }
+  if (
+    text.includes("authentication failed") &&
+    (text.includes("gateway") || text.includes("ai gateway"))
+  ) {
+    return true;
+  }
+  if (/status\s+code:\s*401\b/.test(text)) {
+    return true;
+  }
+  if (
+    /status\s+code:\s*403\b/.test(text) &&
+    !text.includes("rate") &&
+    !text.includes("quota") &&
+    !text.includes("limit")
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** Rate limit / quota signals (pre-stream); excludes {@link isGatewayAuthFailureError}. */
+export function isGatewayRateLimitError(error: unknown): boolean {
+  if (isGatewayAuthFailureError(error)) {
+    return false;
+  }
+  const text = collectGatewayErrorText(error);
+  return (
+    text.includes("429") ||
+    text.includes("rate limit") ||
+    text.includes("too many requests") ||
+    text.includes("resource exhausted") ||
+    text.includes("resource_exhausted") ||
+    text.includes("quota exceeded") ||
+    /status\s+code:\s*429\b/.test(text)
+  );
+}
+
 /**
  * Ordered fallback tiers after Ollama fails.
  * Gemini is included only when GOOGLE_GENERATIVE_AI_API_KEY is set;
@@ -85,9 +158,12 @@ export function getDefaultGatewayFallbackOllamaModelId(): string {
 }
 
 /**
- * Errors that justify a one-shot gateway → Ollama retry (pre-stream).
- * Reuses transport-style signals from {@link isFallbackEligibleError}.
+ * Errors that justify gateway → (optional) Gemini direct → (optional) Ollama (pre-stream only).
+ * Transport-style errors, rate limits, and missing-model style failures; not bare auth failures.
  */
 export function isGatewayFallbackEligibleError(error: unknown): boolean {
-  return isFallbackEligibleError(error);
+  if (isGatewayAuthFailureError(error)) {
+    return false;
+  }
+  return isFallbackEligibleError(error) || isGatewayRateLimitError(error);
 }

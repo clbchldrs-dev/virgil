@@ -2,6 +2,21 @@
 
 This file is for AI agents working on this codebase. Read it before making changes. For project intent, documentation map, architecture overview, and **new-chat handoff**, start with [docs/PROJECT.md](docs/PROJECT.md).
 
+## Release status (product version)
+
+- **Virgil 0.5** — current label (`package.json` **version**). The app is **usable and deployable** but **not** yet a declared stable **v1.0**.
+- **v1.0 target:** before **June 2026** — stability, docs, and verification (`pnpm stable:check`, [docs/STABILITY_TRACK.md](docs/STABILITY_TRACK.md)) aligned with what owners run in production.
+- **v2:** planned architecture (Python backend, home hardware); **not** in active development in this repo until explicitly scoped — [docs/V2_ARCHITECTURE.md](docs/V2_ARCHITECTURE.md).
+
+### Always-on LAN host (`virgil-manos`)
+
+Operator intent: **Ubuntu PC on the LAN**, instance name **`virgil-manos`**, **always on**.
+
+- **Lower AI Gateway spend:** run **Ollama** on that host (or point `OLLAMA_BASE_URL` at it from the machine running the Next.js server) so **local model chat** avoids Gateway tokens for day-to-day use.
+- **OpenClaw:** run the **OpenClaw gateway** there for optional **`delegateTask`** / skills; reach it via SSH tunnel or explicit `OPENCLAW_*` URLs per [docs/openclaw-bridge.md](docs/openclaw-bridge.md) and [docs/openclaw-ssh-tunnel-hardening.md](docs/openclaw-ssh-tunnel-hardening.md). OpenClaw is **execution delegation**, not the primary chat model.
+
+Do not commit LAN IPs, SSH users, or secrets—document **patterns and env var names** only.
+
 ## What This Is
 
 Virgil is a **single-owner** personal assistant: **hosted, tool-capable models** are the **default** path in code (`DEFAULT_CHAT_MODEL` in `lib/ai/models.ts`); **local Ollama** remains a **first-class choice** for privacy, cost, or resilience, with a **slim tool surface** on the local branch by design.
@@ -448,6 +463,8 @@ Check with `ollama list`. If you see **`model '…' not found`**, the weights fo
 
 Remote Ollama (e.g. gaming PC on LAN): set `OLLAMA_BASE_URL` in `.env.local` to `http://<host>:11434` and ensure that machine has pulled the same tags.
 
+**Deployed on Vercel:** the serverless runtime **cannot** open `http://192.168.x.x:11434` on your home LAN. Use **gateway** models there, self-host the app on the LAN, or put Ollama behind an **authenticated** HTTPS endpoint. Same rule for **Android**: the phone browser does not talk to Ollama—the **app server** must reach `OLLAMA_BASE_URL`. Matrix: [README.md](README.md) (Troubleshooting local models).
+
 Smoke test the live Ollama path:
 
 ```bash
@@ -597,8 +614,11 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `AGENT_FETCH_ALLOWLIST_HOSTS` | No      | No                 | Comma-separated hostnames for tool `fetch` (defaults include Open-Meteo) |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | No | No | Direct Gemini API key (personal plan). Enables Gemini as chat fallback tier and night-review model. Get a key at https://aistudio.google.com/apikey |
 | `VIRGIL_CHAT_FALLBACK` | No | No | Set to `1` to enable Ollama → Gemini → Gateway cascade on local model failure |
-| `VIRGIL_GATEWAY_FALLBACK_OLLAMA` | No | No | Set to `1` to retry **once** with local Ollama when a **gateway** chat request fails with an eligible error (requires reachable Ollama) |
+| `VIRGIL_GATEWAY_FALLBACK_OLLAMA` | No | No | Set to `1` to retry with local Ollama when **gateway** (and optional Gemini direct) fail with an eligible **pre-stream** error (requires reachable Ollama) |
+| `VIRGIL_GATEWAY_FALLBACK_GEMINI_MODEL` | No | No | Bare Gemini model name when falling back from AI Gateway to **direct Google API** (default: same as `VIRGIL_FALLBACK_GEMINI_MODEL` / `gemini-2.5-flash`). Requires `GOOGLE_GENERATIVE_AI_API_KEY`. |
 | `DEFAULT_GATEWAY_FALLBACK_OLLAMA_MODEL` | No | No | Ollama model id for gateway→local fallback (default `ollama/qwen2.5:7b-instruct`) |
+| `VIRGIL_AUTO_LOCAL_MODEL` | No | No | Resolved **virgil/auto** local id when Ollama is reachable (default `ollama/qwen2.5:3b`) |
+| `VIRGIL_AUTO_HOSTED_FALLBACK_MODEL` | No | No | Resolved **virgil/auto** gateway id when Ollama is unreachable (default `google/gemini-2.5-flash-lite`) |
 | `VIRGIL_FALLBACK_GEMINI_MODEL` | No | No | Gemini model for fallback (default `gemini-2.5-flash`). Bare Google model name, no prefix. |
 | `VIRGIL_FALLBACK_GATEWAY_MODEL` | No | No | Gateway model for last-resort fallback (default `deepseek/deepseek-v3.2`) |
 | `VIRGIL_LANE_ROUTER` | No | No | Reserved: set to `1` when an optional lane-classifier pass is implemented (off by default) |
@@ -632,7 +652,7 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `GITHUB_PRODUCT_OPPORTUNITY_LABELS` | No | No | Optional comma-separated issue labels |
 | `AGENT_TASK_TRIAGE_ENABLED` | No | No | Set to `1` to enable background triage of submitted agent tasks via local Ollama |
 | `AGENT_TASK_TRIAGE_MODEL` | No | No | Model id for triage worker (default `ollama/qwen2.5:7b-instruct`) |
-| `OPENCLAW_URL` | No | No | Optional OpenClaw gateway. Hardened default is a local tunnel (`ws://127.0.0.1:13100`) instead of exposing OpenClaw directly on LAN; see [docs/openclaw-bridge.md](docs/openclaw-bridge.md) + [docs/openclaw-ssh-tunnel-hardening.md](docs/openclaw-ssh-tunnel-hardening.md) |
+| `OPENCLAW_URL` | No | No | Optional OpenClaw gateway. Hardened default is a local tunnel (`ws://127.0.0.1:13100`) on the Mac: set `OPENCLAW_SSH_HOST` and run `pnpm openclaw:tunnel` (see [docs/openclaw-ssh-tunnel-hardening.md](docs/openclaw-ssh-tunnel-hardening.md) for SSH target and owner reference host). Bridge behavior: [docs/openclaw-bridge.md](docs/openclaw-bridge.md) |
 | `OPENCLAW_HTTP_URL` | No | No | Explicit HTTP origin for OpenClaw REST (defaults from `OPENCLAW_URL`). Hardened tunnel value: `http://127.0.0.1:13100` |
 | `OPENCLAW_EXECUTE_PATH` | No | No | POST path for intents (default `/api/execute`) |
 | `OPENCLAW_SKILLS_PATH` | No | No | GET path for skills (default `/api/skills`) |
@@ -736,8 +756,10 @@ Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](doc
 - **Agent task orchestration** (`submitAgentTask`): gateway-only tool writes to `AgentTask` table + optional GitHub Issue; background triage via local Ollama `generateObject`; manual approval required before any agent picks up work; owner UI at `/agent-tasks` — see [Agent Task Pickup Convention](#agent-task-pickup-convention).
 - **Proactive pivot (E11):** phased work toward nudges/goals/intent routing — [docs/tickets/2026-04-02-proactive-pivot-epic.md](docs/tickets/2026-04-02-proactive-pivot-epic.md); semantic recall strategy [docs/DECISIONS.md](docs/DECISIONS.md) (2026-04-02). Does not change default chat until phase PRs merge.
 - **OpenClaw bridge** (optional): `delegateTask` / `approveOpenClawIntent`, `PendingIntent` queue, `GET/PATCH /api/openclaw/pending` — [docs/openclaw-bridge.md](docs/openclaw-bridge.md), [docs/DECISIONS.md](docs/DECISIONS.md).
+- **Complementarity framing (2026-04-06 ADR):** optional OpenClaw = breadth/orchestration integration; Virgil = cognitive brain; Hermes-style learning specialist + ACP = future intent only ([docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md) §2b) — [docs/DECISIONS.md](docs/DECISIONS.md).
+- **Mobile browser / local LLM (2026-04-06 ADR):** phone (e.g. Pixel) is **not** a required on-device or LAN-direct Ollama target; chat inference stays on the **server** that serves `/api/chat`—avoids unnecessary VPN/tunnel/split-stack design — [docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md), [docs/DECISIONS.md](docs/DECISIONS.md).
 - **Chat fallback cascade** (`VIRGIL_CHAT_FALLBACK=1`): when a local Ollama model fails (unreachable, missing model, timeout), the chat route automatically escalates to direct Gemini (personal API key), then Vercel AI Gateway. No mid-stream fallback; escalation uses gateway-style prompt and full tool set. See [docs/DECISIONS.md](docs/DECISIONS.md) (2026-04-04).
-- **Gateway → Ollama fallback** (`VIRGIL_GATEWAY_FALLBACK_OLLAMA=1`): when the **selected model is a gateway model** and `streamText` fails with an eligible error, retry once with **`DEFAULT_GATEWAY_FALLBACK_OLLAMA_MODEL`** (default `ollama/qwen2.5:7b-instruct`) so the owner can still get a text reply without tools. See [docs/DECISIONS.md](docs/DECISIONS.md) (Ghost of Virgil ADR).
+- **Gateway → Gemini direct → Ollama** (`GOOGLE_GENERATIVE_AI_API_KEY` + optional `VIRGIL_GATEWAY_FALLBACK_GEMINI_MODEL`, then `VIRGIL_GATEWAY_FALLBACK_OLLAMA=1`): when a **gateway** chat request fails with an eligible **pre-stream** error (including many rate limits), try **direct Gemini**, then optional **local Ollama** with **`DEFAULT_GATEWAY_FALLBACK_OLLAMA_MODEL`**. **Not** mid-stream. See [docs/tickets/2026-04-06-on-device-gemma-android-spike.md](docs/tickets/2026-04-06-on-device-gemma-android-spike.md) § Mid-stream follow-up.
 
 ## Enhancement Review Process
 
@@ -774,7 +796,7 @@ Migration path is in [`docs/V2_MIGRATION.md`](docs/V2_MIGRATION.md).
 Hardware decisions are in [`docs/HARDWARE.md`](docs/HARDWARE.md).
 
 **v2 is not in development.** Do not build v2 features in this repo. The current
-focus is running v1 reliably and collecting evaluation data in `workspace/v2-eval/`.
+focus is stabilizing **Virgil 0.5** toward **v1.0** (before June 2026) and collecting evaluation data in `workspace/v2-eval/`.
 
 ### Planned v2 Python backend (June 2026)
 

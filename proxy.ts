@@ -7,9 +7,24 @@ import {
 import { guestRegex, shouldUseSecureAuthCookie } from "./lib/constants";
 import { postVirgilDebugIngest } from "./lib/debug-ingest";
 
-export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+function pathnameWithoutBasePath(pathname: string, basePath: string): string {
+  if (!basePath) {
+    return pathname;
+  }
+  if (pathname === basePath) {
+    return "/";
+  }
+  if (pathname.startsWith(`${basePath}/`)) {
+    const rest = pathname.slice(basePath.length);
+    return rest.length > 0 ? rest : "/";
+  }
+  return pathname;
+}
+
+async function proxy(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
   const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const logicalPath = pathnameWithoutBasePath(pathname, base);
   const includesNextAuthPath = pathname.includes("/api/auth");
   // #region agent log
   postVirgilDebugIngest(
@@ -123,7 +138,15 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!token) {
-    const redirectUrl = encodeURIComponent(new URL(request.url).pathname);
+    if (logicalPath === "/login" || logicalPath === "/register") {
+      return NextResponse.next();
+    }
+    if (logicalPath.startsWith("/api/")) {
+      return NextResponse.next();
+    }
+
+    const callbackTarget = `${pathname}${search}`;
+    const callbackUrl = encodeURIComponent(callbackTarget);
     // #region agent log
     postVirgilDebugIngest(
       {
@@ -134,8 +157,8 @@ export async function proxy(request: NextRequest) {
         message: "Proxy redirecting due to missing token",
         data: {
           pathname,
-          redirectTo: `${base}/api/auth/guest`,
-          redirectUrlLength: redirectUrl.length,
+          redirectTo: `${base}/login`,
+          callbackLength: callbackUrl.length,
         },
         timestamp: Date.now(),
       },
@@ -155,8 +178,8 @@ export async function proxy(request: NextRequest) {
             "Middleware redirecting due to missing token for auth-like path",
           data: {
             pathname,
-            redirectToPath: `${base}/api/auth/guest`,
-            hasRedirectUrl: redirectUrl.length > 0,
+            redirectToPath: `${base}/login`,
+            hasCallbackUrl: callbackUrl.length > 0,
           },
           timestamp: Date.now(),
         },
@@ -166,18 +189,20 @@ export async function proxy(request: NextRequest) {
     }
 
     return NextResponse.redirect(
-      new URL(`${base}/api/auth/guest?redirectUrl=${redirectUrl}`, request.url)
+      new URL(`${base}/login?callbackUrl=${callbackUrl}`, request.url)
     );
   }
 
   const isGuest = guestRegex.test(token?.email ?? "");
 
-  if (token && !isGuest && ["/login", "/register"].includes(pathname)) {
+  if (token && !isGuest && ["/login", "/register"].includes(logicalPath)) {
     return NextResponse.redirect(new URL(`${base}/`, request.url));
   }
 
   return NextResponse.next();
 }
+
+export default proxy;
 
 export const config = {
   matcher: [

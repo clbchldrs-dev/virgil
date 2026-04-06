@@ -36,7 +36,7 @@ After adding or changing **`NEXT_PUBLIC_APP_URL`**, trigger a **new deployment**
 ## AI and models on Vercel
 
 - **`AI_GATEWAY_API_KEY`** — Usually **omit on Vercel** if AI Gateway uses OIDC for this project ([AGENTS.md](../AGENTS.md)). Keep it in `.env.local` for local dev.
-- **`OLLAMA_BASE_URL`** — Not used for serverless inference on Vercel; use **gateway** model IDs in the app. Ollama stays for local/Docker only.
+- **`OLLAMA_BASE_URL`** — The chat route calls Ollama from the **Vercel runtime**. A URL like `http://192.168.1.10:11434` is **not** reachable from Vercel’s network. To use Ollama with a Vercel-deployed app you need either an **HTTPS** endpoint (reverse proxy + auth—not raw Ollama on `0.0.0.0`) or **self-host** the Next app on your LAN instead. For the matrix, see [README.md](../README.md) (Troubleshooting local models). Optional: **`VIRGIL_GATEWAY_FALLBACK_OLLAMA`** + **`GOOGLE_GENERATIVE_AI_API_KEY`** help when the gateway is rate-limited or down (see [AGENTS.md](../AGENTS.md) env table).
 
 ## Optional features
 

@@ -1,0 +1,37 @@
+---
+description: Product version, stabilization priorities, LAN OpenClaw/Ollama posture, persona and chat UI
+alwaysApply: true
+---
+
+# Virgil stabilization (0.5 → v1 → v2)
+
+## Product version
+
+- **Current:** **Virgil 0.5** — useful and deployable, not yet a declared stable **v1.0**.
+- **Near-term goal:** **v1.0** before **June 2026** — stability, predictable behavior, docs and verification gates (`pnpm stable:check`, [docs/STABILITY_TRACK.md](docs/STABILITY_TRACK.md)) match what operators run in production.
+- **Later:** **v2** — headless Python backend and home hardware track per [docs/V2_ARCHITECTURE.md](docs/V2_ARCHITECTURE.md) (planned; not implemented in this repo until scoped).
+
+When writing user-facing copy or release notes, prefer **“Virgil 0.5”** over implying GA. The `package.json` **version** field should stay aligned with this product label when bumping releases.
+
+## Cost and inference posture
+
+- **Default chat path** remains **hosted-primary** (AI Gateway) for capability; do not silently flip the product to local-only.
+- **Reduce Gateway token burn** by making **LAN local inference** easy and documented: point **`OLLAMA_BASE_URL`** at an always-on host (see below), use local presets in the picker, and enable documented fallbacks only when they match [AGENTS.md](AGENTS.md) / [docs/DECISIONS.md](docs/DECISIONS.md).
+- **OpenClaw** is **execution / skills / delegation**, not the primary chat LLM. Pair it with **Ollama on the same or another LAN machine** for small-model chat.
+
+## Operator reference host: `virgil-manos`
+
+- **Name:** OpenClaw (and recommended co-located **Ollama**) instance **`virgil-manos`** — **Ubuntu PC on the LAN**, intended **always-on**.
+- **Chat savings:** Run **Ollama** on that host; set **`OLLAMA_BASE_URL`** (e.g. `http://<lan-ip>:11434`) wherever the Next.js server runs so **local model chat** does not use the Gateway.
+- **Delegation:** Configure **`OPENCLAW_HTTP_URL`** / **`OPENCLAW_URL`** (and tunnel per [docs/openclaw-ssh-tunnel-hardening.md](docs/openclaw-ssh-tunnel-hardening.md)) so Virgil reaches OpenClaw on **`virgil-manos`** without exposing the gateway broadly on the LAN.
+- Do **not** commit secrets, LAN IPs, or SSH targets; reference the **instance name** and patterns in docs only.
+
+## Current stabilization priorities
+
+1. **Verification:** Keep **CI and `pnpm stable:check`** green; prefer small, reviewable diffs.
+2. **Persona:** Treat [docs/VIRGIL_PERSONA.md](docs/VIRGIL_PERSONA.md) and `lib/ai/companion-prompt.ts` / `lib/ai/slim-prompt.ts` as the voice SSOT; changes should stay **warm, direct, honest**, non-sycophantic ([AGENTS.md](AGENTS.md) Personality Rules).
+3. **Chat UI:** Polish `app/(chat)/` and shared chat components for clarity, accessibility, and consistency with existing design patterns (shadcn/Tailwind); avoid drive-by redesigns—incremental improvements tied to UX defects or spec’d work.
+
+## Documentation alignment
+
+- **README** and **docs/PROJECT.md** are the public narrative; **AGENTS.md** is the agent/operator SSOT for setup and rules. When version or topology changes, update **all three** plus [docs/openclaw-bridge.md](docs/openclaw-bridge.md) if OpenClaw wiring is affected.

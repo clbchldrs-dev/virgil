@@ -6,7 +6,7 @@ import { buildVirgilLaneGuidanceBlock } from "@/lib/ai/lanes";
 import type { LocalModelClass } from "@/lib/ai/models";
 import type { HealthSnapshot, Memory } from "@/lib/db/schema";
 import type { RequestHints } from "./prompts";
-import { artifactsPrompt, getRequestPromptFromHints } from "./prompts";
+import { buildArtifactsPrompt, getRequestPromptFromHints } from "./prompts";
 
 const HEALTH_SNAPSHOT_PROMPT_MAX_CHARS = 900;
 
@@ -33,13 +33,21 @@ function formatHealthSnapshotsForPrompt(snapshots: HealthSnapshot[]): string {
   return `${block.slice(0, HEALTH_SNAPSHOT_PROMPT_MAX_CHARS - 1)}…`;
 }
 
-const companionToolGuidance = `You also have access to tools for interacting with the user's local environment and external services.
+function buildCompanionToolGuidance(jiraEnabled: boolean): string {
+  const jiraBlock = jiraEnabled
+    ? `Jira tools:
+- Use getJiraIssue, searchJiraIssues, and updateJiraIssue for ticket lookups, JQL searches, and updates.
+- If the user references a ticket by number alone, infer the project prefix from context or memory if possible.`
+    : "Jira is not configured on this Virgil server (JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN are not all set). There are no Jira tools — do not attempt to call getJiraIssue, searchJiraIssues, or updateJiraIssue. If the user asks about Jira tickets or JQL, say clearly that Jira is not wired up here and offer alternatives (e.g. draft text they can paste into Jira, or general workflow advice).";
+
+  return `You also have access to tools for interacting with the user's local environment and external services.
 
 Behavior:
 - Do first, explain second. When the user requests an actionable task, execute it immediately — don't describe what you could do.
 - At the start of a new conversation (no prior messages), call the getBriefing tool before responding. Use the briefing to ground your initial response in the user's current day and context.
 - Chain multiple non-artifact tool calls in one turn when the task requires it (e.g. recallMemory then answer; read then summarize). Don't wait for confirmation between steps if the intent is clear. Artifact tools (createDocument, editDocument, updateDocument) are different: at most one per response — see the Artifacts section.
 - If a tool returns an error, explain what went wrong plainly and suggest an alternative.
+- Only use tools that exist in your tool list. If an integration is not configured, say what is missing instead of inventing tool calls.
 
 File and shell tools (local only):
 - Use readFile / writeFile to read and write files on the user's machine.
@@ -47,12 +55,11 @@ File and shell tools (local only):
 - For shell commands, prefer safe and reversible operations. Never run destructive commands without explicit confirmation.
 - When reading files, summarize the relevant parts rather than dumping the full content unless asked.
 
-Jira tools:
-- Use getJiraIssue, searchJiraIssues, and updateJiraIssue for ticket lookups, JQL searches, and updates.
-- If the user references a ticket by number alone, infer the project prefix from context or memory if possible.
+${jiraBlock}
 
 Calendar:
 - listCalendarEvents reads the primary Google Calendar when VIRGIL_CALENDAR_INTEGRATION=1 and Google OAuth env vars are set. On success you get timed events (and all-day flags); on error, explain the error or hint field plainly.`;
+}
 
 export function buildCompanionSystemPrompt({
   ownerName,
@@ -62,6 +69,7 @@ export function buildCompanionSystemPrompt({
   supportsTools,
   productOpportunityEnabled = false,
   agentTaskEnabled = false,
+  jiraEnabled = false,
   localModelClass,
   goalContextAppendix = "",
 }: {
@@ -75,6 +83,8 @@ export function buildCompanionSystemPrompt({
   productOpportunityEnabled?: boolean;
   /** Gateway: enables submitAgentTask tool guidance */
   agentTaskEnabled?: boolean;
+  /** Jira REST tools registered when JIRA_* env is set */
+  jiraEnabled?: boolean;
   /**
    * When set (local Ollama + `promptVariant: full`), tightens length guidance to match
    * {@link LocalModelClass} — same buckets as slim/compact; gateway omits this.
@@ -149,8 +159,8 @@ Anti-sycophancy: you are not here to be liked; you are here to be useful. Do not
 
   if (supportsTools) {
     parts.push(buildVirgilLaneGuidanceBlock());
-    parts.push(companionToolGuidance);
-    parts.push(artifactsPrompt);
+    parts.push(buildCompanionToolGuidance(jiraEnabled));
+    parts.push(buildArtifactsPrompt({ jiraEnabled }));
     parts.push(buildGoalGuidancePromptAppendix());
   }
 

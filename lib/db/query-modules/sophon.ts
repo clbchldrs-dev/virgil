@@ -5,6 +5,18 @@ import { VirgilError } from "@/lib/errors";
 import { db } from "../client";
 import { sophonDailyReview, sophonTask } from "../schema";
 
+const SOPHON_SOURCES = new Set([
+  "manual",
+  "calendar",
+  "existing-task",
+  "memory",
+  "habit",
+]);
+
+function normalizeSophonSource(source: string): string {
+  return SOPHON_SOURCES.has(source) ? source : "manual";
+}
+
 export async function listSophonTasksForUser({ userId }: { userId: string }) {
   try {
     return await db
@@ -17,6 +29,39 @@ export async function listSophonTasksForUser({ userId }: { userId: string }) {
     throw new VirgilError(
       "bad_request:database",
       "Failed to list Sophon tasks"
+    );
+  }
+}
+
+export async function insertSophonTaskForUser({
+  userId,
+  title,
+  source = "manual",
+  dueAt,
+  effortFit = 50,
+}: {
+  userId: string;
+  title: string;
+  source?: string;
+  dueAt?: Date | null;
+  effortFit?: number;
+}) {
+  try {
+    const [row] = await db
+      .insert(sophonTask)
+      .values({
+        userId,
+        title,
+        source: normalizeSophonSource(source),
+        dueAt: dueAt ?? null,
+        effortFit,
+      })
+      .returning();
+    return row;
+  } catch (_error) {
+    throw new VirgilError(
+      "bad_request:database",
+      "Failed to create Sophon task"
     );
   }
 }

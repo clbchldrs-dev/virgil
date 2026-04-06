@@ -32,3 +32,9 @@ Sophon lives in this repository as a related but bounded workspace.
 - `src/config.ts` — deterministic scoring constants.
 - `src/priority-matrix.ts` — adaptive focus-count and deterministic ranking.
 - `tests/priority-matrix.test.ts` — core behavior checks.
+
+## In-app surfaces (Virgil)
+
+- **UI:** signed-in users: **`/sophon`** — Daily command center (Now / Next / Later), add task, end-of-day review.
+- **API:** `GET` / `POST` [`/api/sophon/daily`](../app/(chat)/api/sophon/daily/route.ts); `POST` [`/api/sophon/tasks`](../app/(chat)/api/sophon/tasks/route.ts).
+- **Server helper:** [`lib/sophon/daily-brief.ts`](../lib/sophon/daily-brief.ts) — `getSophonDailyBriefForUser` (JSON-serializable brief for RSC and API).

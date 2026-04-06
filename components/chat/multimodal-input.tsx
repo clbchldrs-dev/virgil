@@ -810,6 +810,7 @@ function PureModelSelectorCompact({
             }
 
             const providerNames: Record<string, string> = {
+              virgil: "Virgil",
               alibaba: "Alibaba",
               anthropic: "Anthropic",
               "arcee-ai": "Arcee AI",

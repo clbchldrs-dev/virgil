@@ -36,6 +36,8 @@ LLM-invoked tools live under [`lib/ai/tools/`](../../lib/ai/tools/). Server-side
 | `/api/journal/parse` | GET, POST | `Authorization: Bearer $CRON_SECRET` + `VIRGIL_JOURNAL_FILE_PARSE=1` (POST body variant for journal text on serverless) |
 | `/api/ingest/email` | POST | **Svix** webhook headers + `RESEND_WEBHOOK_SECRET` + `VIRGIL_EMAIL_INGEST_ENABLED=1` |
 | `/api/openclaw/pending` | GET, PATCH | Session auth (`auth()`), user-scoped DB filters; no cron/QStash secret |
+| `/api/sophon/daily` | GET, POST | Session auth; `GET` builds brief from user `SophonTask` rows; `POST` upserts `SophonDailyReview` for signed-in user |
+| `/api/sophon/tasks` | POST | Session auth; inserts `SophonTask` for signed-in user |
 
 Self-hosted cron: [AGENTS.md](../../AGENTS.md#scheduled-jobs-on-the-host-no-vercel-cron). No sensitive work without these checks.
 
@@ -62,3 +64,17 @@ Shared ownership checks for high-traffic routes live in [`lib/security/idor.ts`]
 | Memory PATCH (`proposals`, `night-review`) | `WHERE memory.id AND memory.userId` in query layer |
 | Agent tasks PATCH | `UPDATE … WHERE id AND userId` |
 | Jobs / background jobs | `userId` in query or `get*ForUser` helpers |
+
+---
+
+## npm supply chain (axios incident and audits)
+
+**axios (March 2026 npm compromise):** Malicious releases were **1.14.1** and **0.30.4** (malicious dependency **plain-crypto-js@4.2.1**). Virgil has **no direct** `axios` dependency; it is pulled in by **`mem0ai`**. Root [`package.json`](../../package.json) sets **`pnpm.overrides.axios`** to **1.14.0** (vendor-recommended safe 1.x release below **1.14.1**) so a wider transitive range cannot resolve the compromised version.
+
+**Verification:** `pnpm why axios`; search all `pnpm-lock.yaml` files for `axios@1.14.1`, `axios@0.30.4`, and `plain-crypto-js`.
+
+**`pnpm audit`:** Exits non-zero for many trees — treat **`pnpm-lock.yaml`** as ground truth for exact installed versions. Recent triage surfaced (non-exhaustive): Playwright browser install TLS verification (dev dependency), `ultracite` → `glob` → `minimatch` / `@isaacs/brace-expansion`, and **undici** (transitive). Follow [GitHub Security Advisories](https://github.com/advisories) and upgrade upstream when practical.
+
+**CI:** Lint workflow uses **`pnpm install --frozen-lockfile`** so CI cannot drift from the committed lockfile without an explicit lockfile update. Playwright workflow already used the same flag.
+
+**If you ran `pnpm install` / `npm install` during the exposure window:** Rotate credentials for that machine, review IOCs in [Microsoft’s mitigation post](https://www.microsoft.com/en-us/security/blog/2026/04/01/mitigating-the-axios-npm-supply-chain-compromise/) and [axios issue #10636](https://github.com/axios/axios/issues/10636), then reinstall from a verified lockfile.

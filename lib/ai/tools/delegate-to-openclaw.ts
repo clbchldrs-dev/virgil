@@ -50,8 +50,20 @@ export function delegateTaskToOpenClaw({
     }),
     execute: async ({ description, lane, skill, params, urgent }) => {
       const skills = await getCachedOpenClawSkillNames();
+      const skillTrimmed = skill?.trim();
+      if (skillTrimmed && skills.length > 0 && !skills.includes(skillTrimmed)) {
+        const sample = skills.slice(0, 24).join(", ");
+        const suffix = skills.length > 24 ? ", …" : "";
+        return {
+          ok: false,
+          queued: false,
+          message:
+            `No OpenClaw skill named "${skillTrimmed}". Available: ${sample}${suffix}. ` +
+            "Omit `skill` so one can be inferred from the description, or use an id from that list.",
+        };
+      }
       const resolvedSkill =
-        skill?.trim() ||
+        skillTrimmed ||
         matchSkillFromDescription(description, skills) ||
         "generic-task";
       const resolvedLane = lane ?? "home";

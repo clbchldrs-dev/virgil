@@ -1,12 +1,20 @@
 import { tool } from "ai";
 import { z } from "zod";
 
+/** True when server env has all three Jira Cloud REST credentials (trimmed non-empty). */
+export function isJiraConfigured(): boolean {
+  const baseUrl = process.env.JIRA_BASE_URL?.trim();
+  const email = process.env.JIRA_EMAIL?.trim();
+  const token = process.env.JIRA_API_TOKEN?.trim();
+  return Boolean(baseUrl && email && token);
+}
+
 async function jiraFetch(path: string, options?: RequestInit) {
   const baseUrl = process.env.JIRA_BASE_URL;
   const email = process.env.JIRA_EMAIL;
   const token = process.env.JIRA_API_TOKEN;
 
-  if (!baseUrl || !email || !token) {
+  if (!isJiraConfigured()) {
     throw new Error("Jira credentials not configured");
   }
 

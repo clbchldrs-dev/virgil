@@ -18,21 +18,25 @@ import {
   getFallbackGatewayModel,
   getFallbackGeminiModel,
   getFallbackTiers,
+  getGatewayFallbackGeminiModel,
   isChatFallbackEnabled,
   isFallbackEligibleError,
   isGatewayFallbackEligibleError,
   isGatewayFallbackToOllamaEnabled,
+  isGeminiDirectConfigured,
 } from "@/lib/ai/chat-fallback";
 import { createModelMetricsStreamHooks } from "@/lib/ai/chat-stream-metrics";
 import { buildCompanionSystemPrompt } from "@/lib/ai/companion-prompt";
 import { buildLocalChatTitleFromUserMessage } from "@/lib/ai/local-title";
 import { isMem0Configured, mem0Add } from "@/lib/ai/mem0-client";
+import { resolveAutoChatModel } from "@/lib/ai/model-routing";
 import {
   DEFAULT_CHAT_MODEL,
   getChatModelWithLocalFallback,
   getResolvedLocalModelClass,
   isLocalModel,
   resolveRuntimeModelId,
+  VIRGIL_AUTO_MODEL_ID,
 } from "@/lib/ai/models";
 import { isAllowedChatModelId } from "@/lib/ai/ollama-discovery";
 import {
@@ -69,6 +73,7 @@ import { delegateTaskToOpenClaw } from "@/lib/ai/tools/delegate-to-openclaw";
 import { editDocument } from "@/lib/ai/tools/edit-document";
 import { fetchUrl } from "@/lib/ai/tools/fetch-url";
 import { getWeather } from "@/lib/ai/tools/get-weather";
+import { isJiraConfigured } from "@/lib/ai/tools/jira";
 import { listGoals } from "@/lib/ai/tools/list-goals";
 import { recallMemory } from "@/lib/ai/tools/recall-memory";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
@@ -154,6 +159,7 @@ export async function POST(request: Request) {
       selectedChatModel,
       selectedVisibilityType,
       showThinking: showThinkingRaw,
+      clientRoutingHints,
     } = requestBody;
     const showThinking = showThinkingRaw === true;
     const requestStartedAtMs = Date.now();
@@ -187,9 +193,14 @@ export async function POST(request: Request) {
     }
 
     const selectedModelAllowed = await isAllowedChatModelId(selectedChatModel);
-    const chatModel = selectedModelAllowed
+    let chatModel = selectedModelAllowed
       ? selectedChatModel
       : DEFAULT_CHAT_MODEL;
+    if (chatModel === VIRGIL_AUTO_MODEL_ID) {
+      const { modelId } = await resolveAutoChatModel(clientRoutingHints);
+      const resolvedAllowed = await isAllowedChatModelId(modelId);
+      chatModel = resolvedAllowed ? modelId : DEFAULT_CHAT_MODEL;
+    }
     isOllamaRequest = isLocalModel(chatModel);
 
     const isToolApprovalFlow = Boolean(messages);
@@ -301,6 +312,7 @@ export async function POST(request: Request) {
       !isOllamaLocal && isProductOpportunityConfigured();
 
     const agentTaskEnabled = !isOllamaLocal;
+    const jiraEnabled = isJiraConfigured();
 
     const systemPromptText =
       isOllamaLocal && promptVariant === "compact"
@@ -325,6 +337,7 @@ export async function POST(request: Request) {
               supportsTools: promptSupportsTools,
               productOpportunityEnabled,
               agentTaskEnabled,
+              jiraEnabled,
               goalContextAppendix,
               ...(isOllamaLocal ? { localModelClass } : {}),
             });
@@ -658,6 +671,7 @@ export async function POST(request: Request) {
             supportsTools: true,
             productOpportunityEnabled: isProductOpportunityConfigured(),
             agentTaskEnabled: true,
+            jiraEnabled: isJiraConfigured(),
             goalContextAppendix,
           });
 
@@ -741,26 +755,13 @@ export async function POST(request: Request) {
             );
           };
 
-          try {
-            mergeGatewayStream();
-          } catch (gatewayErr: unknown) {
-            if (
-              !isGatewayFallbackToOllamaEnabled() ||
-              !isGatewayFallbackEligibleError(gatewayErr)
-            ) {
-              throw gatewayErr;
-            }
-
+          const mergeOllamaAfterGatewayFailure = async (notice: string) => {
             dataStream.write({
               type: "data-fallback-notice",
-              data: "Hosted model unavailable; using local Ollama (limited tools).",
+              data: notice,
             });
 
-            try {
-              await assertOllamaReachable();
-            } catch {
-              throw gatewayErr;
-            }
+            await assertOllamaReachable();
 
             const fbModelId = getDefaultGatewayFallbackOllamaModelId();
             const fbConfig = getChatModelWithLocalFallback(fbModelId);
@@ -828,6 +829,64 @@ export async function POST(request: Request) {
                 sendReasoning: showThinking,
               })
             );
+          };
+
+          try {
+            mergeGatewayStream();
+          } catch (gatewayErr: unknown) {
+            if (!isGatewayFallbackEligibleError(gatewayErr)) {
+              throw gatewayErr;
+            }
+
+            if (isGeminiDirectConfigured()) {
+              try {
+                dataStream.write({
+                  type: "data-fallback-notice",
+                  data: "AI Gateway unavailable or rate limited; trying Google Generative AI API.",
+                });
+                const geminiBareId = getGatewayFallbackGeminiModel();
+                v2EvalStreamMetrics.effectiveModelId = `gemini/${geminiBareId}`;
+                v2EvalStreamMetrics.fallbackTier = "gemini";
+                v2EvalStreamMetrics.effectivePromptVariant = "full";
+
+                markFirstModelCall();
+                const geminiResult = streamText({
+                  model: getGeminiLanguageModel(geminiBareId),
+                  system: executorSystemPrompt,
+                  messages: modelMessages,
+                  stopWhen: stepCountIs(5),
+                  experimental_telemetry: {
+                    isEnabled: isProductionEnvironment,
+                    functionId: "stream-text",
+                  },
+                  ...metricsHooks,
+                  tools: gatewayTools,
+                  experimental_activeTools: gatewayActiveTools,
+                });
+
+                dataStream.merge(
+                  geminiResult.toUIMessageStream({
+                    sendReasoning: false,
+                  })
+                );
+              } catch (geminiErr: unknown) {
+                if (
+                  !isGatewayFallbackToOllamaEnabled() ||
+                  !isGatewayFallbackEligibleError(geminiErr)
+                ) {
+                  throw geminiErr;
+                }
+                await mergeOllamaAfterGatewayFailure(
+                  "Google API attempt failed; using local Ollama (limited tools)."
+                );
+              }
+            } else if (isGatewayFallbackToOllamaEnabled()) {
+              await mergeOllamaAfterGatewayFailure(
+                "Hosted model unavailable; using local Ollama (limited tools)."
+              );
+            } else {
+              throw gatewayErr;
+            }
           }
         }
 

@@ -1,5 +1,8 @@
 export const DEFAULT_CHAT_MODEL = "deepseek/deepseek-v3.2";
 
+/** Picker id: server resolves to a concrete gateway or Ollama model per {@link resolveAutoChatModel}. */
+export const VIRGIL_AUTO_MODEL_ID = "virgil/auto";
+
 export const titleModel = {
   id: "mistral/mistral-small",
   name: "Mistral Small",
@@ -165,6 +168,14 @@ export const chatModels: ChatModel[] = [
     },
     promptVariant: "slim",
     localModelClass: "7b",
+  },
+  {
+    id: VIRGIL_AUTO_MODEL_ID,
+    name: "Auto (local if up, else lite hosted)",
+    provider: "virgil",
+    description:
+      "Picks a small local model when Ollama is reachable from the server, otherwise a lightweight gateway model. Optional client hints are sent for future tuning.",
+    maxContextTokens: 8192,
   },
   {
     id: "deepseek/deepseek-v3.2",
@@ -360,6 +371,13 @@ async function fetchGatewayCapabilities(
 export function getCapabilitiesForModel(
   modelId: string
 ): Promise<ModelCapabilities> {
+  if (modelId === VIRGIL_AUTO_MODEL_ID) {
+    return Promise.resolve({
+      tools: true,
+      vision: false,
+      reasoning: false,
+    });
+  }
   if (isLocalModel(modelId)) {
     const runtimeModelId = resolveRuntimeModelId(modelId);
     return Promise.resolve(

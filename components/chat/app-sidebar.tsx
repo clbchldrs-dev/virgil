@@ -2,6 +2,7 @@
 
 import {
   ActivityIcon,
+  LayoutDashboardIcon,
   ListChecksIcon,
   MessageSquareIcon,
   MoonIcon,
@@ -72,7 +73,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   return (
     <>
       <Sidebar collapsible="icon">
-        <SidebarHeader className="pb-0 pt-3">
+        <SidebarHeader className="shrink-0 pb-0 pt-3 max-md:sticky max-md:top-0 max-md:z-10 max-md:border-b max-md:border-sidebar-border/70 max-md:bg-sidebar">
           <SidebarMenu>
             <SidebarMenuItem className="flex flex-row items-center justify-between">
               <div className="group/logo relative flex items-center justify-center">
@@ -105,116 +106,135 @@ export function AppSidebar({ user }: { user: User | undefined }) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
-        <SidebarContent>
-          <SidebarGroup className="pt-1">
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    className="h-8 rounded-lg border border-sidebar-border text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                    onClick={() => {
-                      setOpenMobile(false);
-                      router.push("/");
-                    }}
-                    tooltip="New Chat"
-                  >
-                    <PenSquareIcon className="size-4" />
-                    <span className="font-medium">New chat</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                {user && (
+        <SidebarContent className="max-md:flex-none max-md:min-h-0 max-md:overflow-visible">
+          <div className="shrink-0">
+            <SidebarGroup className="pt-1">
+              <SidebarGroupContent>
+                <SidebarMenu>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                      className="h-8 rounded-lg border border-sidebar-border text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                       onClick={() => {
                         setOpenMobile(false);
-                        router.push("/background");
+                        router.push("/");
                       }}
-                      tooltip="Background activity"
+                      tooltip="New Chat"
                     >
-                      <ActivityIcon className="size-4" />
-                      <span>Background</span>
+                      <PenSquareIcon className="size-4" />
+                      <span className="font-medium">New chat</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                )}
-                {user && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                      onClick={() => {
-                        setOpenMobile(false);
-                        router.push("/proposals");
-                      }}
-                      tooltip="Proposals"
-                    >
-                      <ListChecksIcon className="size-4" />
-                      <span>Proposals</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-                {user && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                      onClick={() => {
-                        setOpenMobile(false);
-                        router.push("/night-insights");
-                      }}
-                      tooltip="Night insights"
-                    >
-                      <MoonIcon className="size-4" />
-                      <span>Night insights</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-                {user && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                      onClick={() => {
-                        setOpenMobile(false);
-                        router.push("/agent-tasks");
-                      }}
-                      tooltip="Agent tasks"
-                    >
-                      <WrenchIcon className="size-4" />
-                      <span>Agent tasks</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-                {user && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                      onClick={() => {
-                        setOpenMobile(false);
-                        router.push("/preferences");
-                      }}
-                      tooltip="Preferences"
-                    >
-                      <Settings2Icon className="size-4" />
-                      <span>Preferences</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-                {user && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className="rounded-lg text-sidebar-foreground/40 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => setShowDeleteAllDialog(true)}
-                      tooltip="Delete All Chats"
-                    >
-                      <TrashIcon className="size-4" />
-                      <span className="text-[13px]">Delete all</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-          <SidebarHistory user={user} />
+                  {user && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                        onClick={() => {
+                          setOpenMobile(false);
+                          router.push("/background");
+                        }}
+                        tooltip="Background activity"
+                      >
+                        <ActivityIcon className="size-4" />
+                        <span>Background</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                  {user && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                        onClick={() => {
+                          setOpenMobile(false);
+                          router.push("/sophon");
+                        }}
+                        tooltip="Daily command center"
+                      >
+                        <LayoutDashboardIcon className="size-4" />
+                        <span>Command center</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                  {user && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                        onClick={() => {
+                          setOpenMobile(false);
+                          router.push("/proposals");
+                        }}
+                        tooltip="Proposals"
+                      >
+                        <ListChecksIcon className="size-4" />
+                        <span>Proposals</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                  {user && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                        onClick={() => {
+                          setOpenMobile(false);
+                          router.push("/night-insights");
+                        }}
+                        tooltip="Night insights"
+                      >
+                        <MoonIcon className="size-4" />
+                        <span>Night insights</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                  {user && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                        onClick={() => {
+                          setOpenMobile(false);
+                          router.push("/agent-tasks");
+                        }}
+                        tooltip="Agent tasks"
+                      >
+                        <WrenchIcon className="size-4" />
+                        <span>Agent tasks</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                  {user && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                        onClick={() => {
+                          setOpenMobile(false);
+                          router.push("/preferences");
+                        }}
+                        tooltip="Preferences"
+                      >
+                        <Settings2Icon className="size-4" />
+                        <span>Preferences</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                  {user && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        className="rounded-lg text-sidebar-foreground/40 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => setShowDeleteAllDialog(true)}
+                        tooltip="Delete All Chats"
+                      >
+                        <TrashIcon className="size-4" />
+                        <span className="text-[13px]">Delete all</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </div>
+          <div className="flex min-h-0 flex-col max-md:flex-none max-md:overflow-visible md:flex-1 md:overflow-y-auto">
+            <SidebarHistory user={user} />
+          </div>
         </SidebarContent>
-        <SidebarFooter className="border-t border-sidebar-border pt-2 pb-3">
+        <SidebarFooter className="shrink-0 border-t border-sidebar-border pt-2 pb-3 max-md:bg-sidebar">
           {user && <SidebarUserNav user={user} />}
         </SidebarFooter>
         <SidebarRail />

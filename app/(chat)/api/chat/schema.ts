@@ -26,6 +26,14 @@ const toolApprovalMessageSchema = z.object({
   parts: z.array(z.record(z.unknown())),
 });
 
+const clientRoutingHintsSchema = z
+  .object({
+    saveData: z.boolean().optional(),
+    effectiveConnectionType: z.string().max(32).optional(),
+    platform: z.string().max(120).optional(),
+  })
+  .optional();
+
 export const postRequestBodySchema = z.object({
   id: z.string().uuid(),
   message: userMessageSchema.optional(),
@@ -34,6 +42,8 @@ export const postRequestBodySchema = z.object({
   selectedVisibilityType: z.enum(["public", "private"]),
   /** When true, stream model reasoning/thinking when the provider supports it (gateway + Ollama `think`). */
   showThinking: z.boolean().optional(),
+  /** Optional client hints for **virgil/auto** and future routing (no PII). */
+  clientRoutingHints: clientRoutingHintsSchema,
 });
 
 export type PostRequestBody = z.infer<typeof postRequestBodySchema>;

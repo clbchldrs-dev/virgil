@@ -2,6 +2,8 @@
 
 Virgil keeps **goals, memory, and proactive logic** in this repo. [OpenClaw](https://github.com/openclaw/openclaw) (or a compatible gateway) can act as **hands**: messaging, shell, files, and skills on the LAN.
 
+**Operator reference:** the always-on LAN gateway for this deployment is named **`virgil-manos`** (Ubuntu). Co-locate **Ollama** on that host (or another LAN box) and set **`OLLAMA_BASE_URL`** on the Virgil server for **local chat inference**; use **`OPENCLAW_*`** here for **delegation**, not as a substitute for the chat LLM.
+
 The bridge is **optional**. If `OPENCLAW_URL` / `OPENCLAW_HTTP_URL` is unset, delegation tools are not registered.
 
 This doc is **execution delegation** (optional LAN gateway). It is separate from **E6** in [ENHANCEMENTS.md](ENHANCEMENTS.md): E6 uses OpenClaw (and similar) **communities as a source of product ideas** for Virgil scope via `submitProductOpportunity` — not runtime execution through this bridge.
@@ -38,8 +40,8 @@ This keeps OpenClaw private on the remote host while Virgil talks only to a loca
 
 - Intents are scoped by **`userId`**; API routes require session auth.
 - Destructive or outbound phrasing sets **`requiresConfirmation`** until the owner approves.
-- Prefer an **SSH local tunnel** from the Virgil host to the OpenClaw host so OpenClaw can stay bound to loopback on the old PC (`127.0.0.1`) instead of being exposed broadly on your LAN.
-- For a concrete operator runbook (Mac tunnel commands, remote hardening, verification), see [openclaw-ssh-tunnel-hardening.md](openclaw-ssh-tunnel-hardening.md).
+- Prefer an **SSH local tunnel** from the Virgil host to the OpenClaw host so OpenClaw can stay bound to loopback on the remote machine (`127.0.0.1`) instead of being exposed broadly on your LAN.
+- For a concrete operator runbook (Mac → Ubuntu LAN host, tunnel commands, hardening, verification), see [openclaw-ssh-tunnel-hardening.md](openclaw-ssh-tunnel-hardening.md) — includes owner reference for **`caleb-virgil1`** / **`caleb@192.168.1.81`**.
 
 ## Known limitations and operator notes
 
