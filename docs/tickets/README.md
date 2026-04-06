@@ -11,6 +11,7 @@ Tickets itemize **future work** from the [Linux 24/7 roadmap](../VIRGIL_ROADMAP_
 | ID | Ticket file | Enhancement / theme |
 |----|-------------|---------------------|
 | Tri-layer | [2026-04-05-scheduling-symbolic-grounding-spike.md](2026-04-05-scheduling-symbolic-grounding-spike.md) | v2 spike: bounded scheduling + symbolic grounding (spec only; see [DECISIONS.md](../DECISIONS.md)) |
+| E12 | [2026-04-05-virg-e12-slack-employee-standups.md](2026-04-05-virg-e12-slack-employee-standups.md) | Slack standup loop for Cursor, Clawleb, and Virgil (task definition) |
 | E2 | [2026-03-29-virg-e2-per-model-prompt-variants.md](2026-03-29-virg-e2-per-model-prompt-variants.md) | Per-model prompt variants (3B vs 7B) — **partially shipped** (`LocalModelClass` + slim/compact) |
 | E3 | [2026-03-29-virg-e3-smart-context-compression.md](2026-03-29-virg-e3-smart-context-compression.md) | Smarter `trim-context` — **partially shipped** (overhead + long-message cap) |
 | E6 | [2026-03-29-virg-e6-product-feedback-synthesis.md](2026-03-29-virg-e6-product-feedback-synthesis.md) | Product feedback + synthesis — **partially shipped** (docs + sanitization) |
