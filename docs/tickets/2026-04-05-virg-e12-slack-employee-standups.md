@@ -2,7 +2,7 @@
 
 **Enhancement ID:** E12 ([ENHANCEMENTS.md](../ENHANCEMENTS.md))  
 **Roadmap:** v1 stability / operations hygiene (post-P4 hardening)  
-**Status:** Proposed (2026-04-05)
+**Status:** Proposed (2026-04-05). **Partial (2026-04-06):** Scheduled **daily digest** can mirror to Slack via `VIRGIL_SLACK_CHECKIN_WEBHOOK_URL` or `SLACK_BOT_TOKEN` + `VIRGIL_SLACK_CHECKIN_CHANNEL_ID` ([`app/api/digest/route.ts`](../../app/api/digest/route.ts), [docs/operator-integrations-runbook.md](../operator-integrations-runbook.md)). E12’s multi-agent “standup” format (Cursor / Clawleb / Virgil) remains future work.
 
 ## Problem
 

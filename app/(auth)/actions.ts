@@ -3,8 +3,14 @@
 import { z } from "zod";
 
 import { createUser, getUser } from "@/lib/db/queries";
+import { isPasswordlessLoginConfigured } from "@/lib/passwordless-login";
+import { generateUUID } from "@/lib/utils";
 
 import { signIn } from "./auth";
+
+const emailOnlySchema = z.object({
+  email: z.string().email(),
+});
 
 const authFormSchema = z.object({
   email: z.string().email(),
@@ -20,16 +26,25 @@ export const login = async (
   formData: FormData
 ): Promise<LoginActionState> => {
   try {
-    const validatedData = authFormSchema.parse({
-      email: formData.get("email"),
-      password: formData.get("password"),
-    });
-
-    await signIn("credentials", {
-      email: validatedData.email,
-      password: validatedData.password,
-      redirect: false,
-    });
+    if (isPasswordlessLoginConfigured()) {
+      const validatedData = emailOnlySchema.parse({
+        email: formData.get("email"),
+      });
+      await signIn("passwordless", {
+        email: validatedData.email,
+        redirect: false,
+      });
+    } else {
+      const validatedData = authFormSchema.parse({
+        email: formData.get("email"),
+        password: formData.get("password"),
+      });
+      await signIn("credentials", {
+        email: validatedData.email,
+        password: validatedData.password,
+        redirect: false,
+      });
+    }
 
     return { status: "success" };
   } catch (error) {
@@ -56,22 +71,35 @@ export const register = async (
   formData: FormData
 ): Promise<RegisterActionState> => {
   try {
-    const validatedData = authFormSchema.parse({
-      email: formData.get("email"),
-      password: formData.get("password"),
-    });
-
-    const [user] = await getUser(validatedData.email);
-
-    if (user) {
-      return { status: "user_exists" } as RegisterActionState;
+    if (isPasswordlessLoginConfigured()) {
+      const validatedData = emailOnlySchema.parse({
+        email: formData.get("email"),
+      });
+      const [existing] = await getUser(validatedData.email);
+      if (existing) {
+        return { status: "user_exists" } as RegisterActionState;
+      }
+      await createUser(validatedData.email, generateUUID());
+      await signIn("passwordless", {
+        email: validatedData.email,
+        redirect: false,
+      });
+    } else {
+      const validatedData = authFormSchema.parse({
+        email: formData.get("email"),
+        password: formData.get("password"),
+      });
+      const [user] = await getUser(validatedData.email);
+      if (user) {
+        return { status: "user_exists" } as RegisterActionState;
+      }
+      await createUser(validatedData.email, validatedData.password);
+      await signIn("credentials", {
+        email: validatedData.email,
+        password: validatedData.password,
+        redirect: false,
+      });
     }
-    await createUser(validatedData.email, validatedData.password);
-    await signIn("credentials", {
-      email: validatedData.email,
-      password: validatedData.password,
-      redirect: false,
-    });
 
     return { status: "success" };
   } catch (error) {

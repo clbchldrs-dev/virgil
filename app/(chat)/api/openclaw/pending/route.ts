@@ -8,8 +8,10 @@ import {
   rejectPendingIntent,
   trySendPendingIntentById,
 } from "@/lib/db/queries";
-import { pingOpenClaw } from "@/lib/integrations/openclaw-client";
-import { isOpenClawConfigured } from "@/lib/integrations/openclaw-config";
+import {
+  getDelegationProvider,
+  isDelegationConfigured,
+} from "@/lib/integrations/delegation-provider";
 
 const patchBodySchema = z.object({
   id: z.string().uuid(),
@@ -24,19 +26,24 @@ export async function GET() {
   }
 
   const userId = session.user.id;
-  const configured = isOpenClawConfigured();
+  const delegationProvider = getDelegationProvider();
+  const configured = isDelegationConfigured();
   const pendingConfirmations = await getPendingConfirmationsForUser(userId);
-  const online = configured ? await pingOpenClaw() : false;
+  const online = configured ? await delegationProvider.ping() : false;
   const queuedBacklog = await countOpenClawBacklogForUser(userId);
+  const backendLabel =
+    delegationProvider.backend === "hermes" ? "Hermes" : "OpenClaw";
 
   return Response.json({
+    backend: delegationProvider.backend,
     configured,
+    delegationOnline: online,
     openClawOnline: online,
     pendingConfirmations,
     queuedBacklog,
     offlineMessage:
       !online && queuedBacklog > 0
-        ? `OpenClaw is offline — ${String(queuedBacklog)} task(s) queued.`
+        ? `${backendLabel} is offline — ${String(queuedBacklog)} task(s) queued.`
         : null,
   });
 }

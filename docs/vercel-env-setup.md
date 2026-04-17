@@ -8,7 +8,7 @@ Authoritative reference: [AGENTS.md](../AGENTS.md) (full table and provider link
 
 1. Create accounts and grab credentials:
    - **Neon** or **Supabase** — `POSTGRES_URL` (pooled/serverless string; Supabase: transaction pooler URI, port `6543`)
-   - **Upstash** — `REDIS_URL` (TLS `rediss://…`) and **QStash** — `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`
+   - **Upstash** — `REDIS_URL` (TLS `rediss://…`) and **QStash** — `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, and **`QSTASH_URL`** when your QStash region is **US** (`https://qstash-us-east-1.upstash.io`; SDK defaults to EU if unset)
    - **Resend** — `RESEND_API_KEY`
    - **Vercel project** — connect the Git repo, add **Blob** → `BLOB_READ_WRITE_TOKEN`
 2. In Vercel → Project → **Settings → Environment Variables**, add variables for **Production** (and Preview/Development only if you use them).
@@ -24,6 +24,7 @@ Set these first (all **Production** unless you use Preview DBs separately):
 | `REDIS_URL` | Upstash Redis (`rediss://`) |
 | `BLOB_READ_WRITE_TOKEN` | From Vercel Storage → Blob for this project |
 | `QSTASH_TOKEN` | JWT-shaped (`ey…`) |
+| `QSTASH_URL` | Optional for EU; **set for US** QStash: `https://qstash-us-east-1.upstash.io` (see [AGENTS.md](../AGENTS.md) step 1.6) |
 | `QSTASH_CURRENT_SIGNING_KEY` | From QStash dashboard |
 | `QSTASH_NEXT_SIGNING_KEY` | Rotation key from QStash |
 | `RESEND_API_KEY` | Starts with `re_` |

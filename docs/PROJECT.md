@@ -69,6 +69,8 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 | v2 behavioral HTTP API (companion to chat contract) | [docs/V2_BEHAVIORAL_API.md](V2_BEHAVIORAL_API.md) |
 | Hardware decisions (v2 host, inference tiers, retired gear) | [docs/HARDWARE.md](HARDWARE.md) |
 | v1 → v2 migration path and what carries forward | [docs/V2_MIGRATION.md](V2_MIGRATION.md) |
+| Virgil 1.1 bridge and June/August execution timeline | [docs/V1_1_TO_V2_EXECUTION_TIMELINE.md](V1_1_TO_V2_EXECUTION_TIMELINE.md) |
+| Virgil 1.1 implementation slices (adapters, env, PR order) | [docs/V1_1_IMPLEMENTATION_CHECKLIST.md](V1_1_IMPLEMENTATION_CHECKLIST.md) |
 | v2 chat / SSE / auth API contract (v1 vs Python adapter) | [docs/V2_API_CONTRACT.md](V2_API_CONTRACT.md) |
 | v2 tool inventory (v1 → registry / approval / night) | [docs/V2_TOOL_MAP.md](V2_TOOL_MAP.md) |
 | v1 → v2 risks (what in v1 complicates v2) | [docs/V1_V2_RISK_AUDIT.md](V1_V2_RISK_AUDIT.md) |

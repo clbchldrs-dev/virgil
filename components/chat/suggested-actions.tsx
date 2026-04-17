@@ -13,7 +13,7 @@ import {
   pickRandom,
 } from "@/lib/empty-suggestion-pools";
 import type { ChatMessage } from "@/lib/types";
-import { cn, fetcher } from "@/lib/utils";
+import { cn, fetcher, generateUUID } from "@/lib/utils";
 import { Suggestion } from "../ai-elements/suggestion";
 import { useSidebar } from "../ui/sidebar";
 import type { VisibilityType } from "./visibility-selector";
@@ -129,7 +129,9 @@ function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
 
   const navigateHome = () => {
     setOpenMobile(false);
-    router.push(`${basePath}/`);
+    // `router.push("/")` is a no-op when already at `/`, so the chat id never rotates.
+    // A fresh `/chat/:id` always navigates and matches "new thread" intent.
+    router.push(`${basePath}/chat/${generateUUID()}`);
   };
 
   return (
@@ -161,77 +163,61 @@ function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
               ease: [0.22, 1, 0.36, 1],
             }}
           >
-            <motion.div
-              className={cn(
-                "min-w-0",
-                !prefersReducedMotion && "suggestion-pill-12f-loop"
-              )}
-              style={
-                prefersReducedMotion
-                  ? undefined
-                  : { animationDelay: `${0.35 + slot.animIndex * 0.08}s` }
-              }
-            >
-              <Suggestion
-                aria-label={slot.ariaLabel}
-                className="inline-flex h-auto min-h-0 w-full flex-col items-center gap-0 whitespace-normal rounded-sm border border-border/50 px-2 py-2 text-center text-[12px] leading-[1.15] text-muted-foreground transition-all duration-150 hover:text-foreground hover:shadow-[var(--shadow-card)] md:text-[13px]"
-                data-suggestion-pill="true"
-                onClick={(suggestion) => {
-                  if (slot.kind === "inbox") {
-                    navigateBackground();
-                    return;
-                  }
-                  if (slot.kind === "continue") {
-                    navigateHome();
-                    return;
-                  }
-                  window.history.pushState(
-                    {},
-                    "",
-                    `${basePath}/chat/${chatId}`
-                  );
-                  sendMessage({
-                    role: "user",
-                    parts: [{ type: "text", text: suggestion }],
-                  });
-                }}
-                suggestion={
-                  slot.kind === "prompt"
-                    ? slot.item.prompt
-                    : slot.kind === "continue"
-                      ? slot.item.prompt
-                      : ""
+            <Suggestion
+              aria-label={slot.ariaLabel}
+              className="inline-flex h-auto min-h-0 w-full flex-col items-center gap-0 whitespace-normal rounded-sm border border-border/50 px-2 py-2 text-center text-[12px] leading-[1.15] text-muted-foreground transition-all duration-150 hover:text-foreground hover:shadow-[var(--shadow-card)] md:text-[13px]"
+              data-suggestion-pill="true"
+              onClick={(suggestion) => {
+                if (slot.kind === "inbox") {
+                  navigateBackground();
+                  return;
                 }
-                title={slot.title}
-              >
-                <span
-                  className={cn(
-                    "block text-balance font-medium tracking-wide",
-                    slot.uppercaseLine && "uppercase"
-                  )}
-                >
-                  {slot.kind === "inbox"
-                    ? slot.lines[0]
-                    : slot.kind === "continue"
-                      ? slot.item.lines[0]
-                      : slot.item.lines[0]}
-                </span>
-                {(slot.kind === "inbox"
-                  ? slot.lines[1]
+                if (slot.kind === "continue") {
+                  navigateHome();
+                  return;
+                }
+                window.history.pushState({}, "", `${basePath}/chat/${chatId}`);
+                sendMessage({
+                  role: "user",
+                  parts: [{ type: "text", text: suggestion }],
+                });
+              }}
+              suggestion={
+                slot.kind === "prompt"
+                  ? slot.item.prompt
                   : slot.kind === "continue"
-                    ? slot.item.lines[1]
-                    : slot.item.lines[1]
-                ).length > 0 ? (
-                  <span className="mt-0.5 block text-balance opacity-90">
-                    {slot.kind === "inbox"
-                      ? slot.lines[1]
-                      : slot.kind === "continue"
-                        ? slot.item.lines[1]
-                        : slot.item.lines[1]}
-                  </span>
-                ) : null}
-              </Suggestion>
-            </motion.div>
+                    ? slot.item.prompt
+                    : ""
+              }
+              title={slot.title}
+            >
+              <span
+                className={cn(
+                  "block text-balance font-medium tracking-wide",
+                  slot.uppercaseLine && "uppercase"
+                )}
+              >
+                {slot.kind === "inbox"
+                  ? slot.lines[0]
+                  : slot.kind === "continue"
+                    ? slot.item.lines[0]
+                    : slot.item.lines[0]}
+              </span>
+              {(slot.kind === "inbox"
+                ? slot.lines[1]
+                : slot.kind === "continue"
+                  ? slot.item.lines[1]
+                  : slot.item.lines[1]
+              ).length > 0 ? (
+                <span className="mt-0.5 block text-balance opacity-90">
+                  {slot.kind === "inbox"
+                    ? slot.lines[1]
+                    : slot.kind === "continue"
+                      ? slot.item.lines[1]
+                      : slot.item.lines[1]}
+                </span>
+              ) : null}
+            </Suggestion>
           </motion.div>
         </div>
       ))}

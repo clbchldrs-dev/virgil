@@ -38,7 +38,7 @@ const rows: Row[] = [
   {
     key: "QSTASH_TOKEN",
     ok: Boolean(process.env.QSTASH_TOKEN),
-    note: "Required for reminders via QStash. Upstash free tier OK.",
+    note: "Required for reminders via QStash. Upstash free tier OK. If your QStash is US region, also set QSTASH_URL=https://qstash-us-east-1.upstash.io (SDK defaults to EU).",
   },
   {
     key: "RESEND_API_KEY",

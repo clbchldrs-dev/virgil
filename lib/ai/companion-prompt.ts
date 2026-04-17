@@ -2,9 +2,13 @@
  * Gateway / hosted companion system prompt. Voice SSOT: `docs/VIRGIL_PERSONA.md`.
  */
 import { buildGoalGuidancePromptAppendix } from "@/lib/ai/goal-guidance-prompt";
-import { buildVirgilLaneGuidanceBlock } from "@/lib/ai/lanes";
+import {
+  buildVirgilLaneGuidanceBlock,
+  type VirgilLaneDelegationHint,
+} from "@/lib/ai/lanes";
 import type { LocalModelClass } from "@/lib/ai/models";
 import type { HealthSnapshot, Memory } from "@/lib/db/schema";
+import { delegationBackendShortPhrase } from "@/lib/integrations/delegation-labels";
 import type { RequestHints } from "./prompts";
 import { buildArtifactsPrompt, getRequestPromptFromHints } from "./prompts";
 
@@ -33,14 +37,53 @@ function formatHealthSnapshotsForPrompt(snapshots: HealthSnapshot[]): string {
   return `${block.slice(0, HEALTH_SNAPSHOT_PROMPT_MAX_CHARS - 1)}…`;
 }
 
-function buildCompanionToolGuidance(jiraEnabled: boolean): string {
+function buildMemoryVsDelegationGuidance(
+  delegation?: VirgilLaneDelegationHint
+): string {
+  const core = `Memory vs delegation:
+- **recallMemory** and **saveMemory** read and write the owner's stored memories in this app's database. They are not a separate "Hermes memory service" or "OpenClaw memory" — use them for long-term recall in-process.
+`;
+
+  if (delegation === undefined) {
+    return (
+      core +
+      `- **delegateTask** / **approveOpenClawIntent** appear only when the operator has configured a delegation backend (OpenClaw or Hermes). If those tools are absent from your tool list, say delegation is not enabled on this deployment — do not claim you lack all access to external systems in general.
+- When the relevant tools are present, use them instead of refusing.`
+    );
+  }
+
+  if (!delegation.enabled) {
+    return (
+      core +
+      "- Delegation is **not** enabled here: **delegateTask** and **approveOpenClawIntent** are not in your tool list. Say that plainly if the user asks to run tasks via Hermes, OpenClaw, or a bridge.\n" +
+      "- Still use **recallMemory** / **saveMemory** when they appear in your tool list."
+    );
+  }
+
+  const phrase = delegationBackendShortPhrase(delegation.backend);
+  const name = delegation.backend === "hermes" ? "Hermes" : "OpenClaw";
+  return (
+    core +
+    `- When **delegateTask** / **approveOpenClawIntent** are in your tool list, they send work to ${phrase} (${name}). Use them for delegated execution — not for loading memories.
+- If the user names "Hermes" or "OpenClaw", align your explanation with this deployment (${name}).`
+  );
+}
+
+function buildCompanionToolGuidance(
+  jiraEnabled: boolean,
+  delegation?: VirgilLaneDelegationHint
+): string {
   const jiraBlock = jiraEnabled
     ? `Jira tools:
 - Use getJiraIssue, searchJiraIssues, and updateJiraIssue for ticket lookups, JQL searches, and updates.
 - If the user references a ticket by number alone, infer the project prefix from context or memory if possible.`
     : "Jira is not configured on this Virgil server (JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN are not all set). There are no Jira tools — do not attempt to call getJiraIssue, searchJiraIssues, or updateJiraIssue. If the user asks about Jira tickets or JQL, say clearly that Jira is not wired up here and offer alternatives (e.g. draft text they can paste into Jira, or general workflow advice).";
 
-  return `You also have access to tools for interacting with the user's local environment and external services.
+  const memoryDelegationBlock = buildMemoryVsDelegationGuidance(delegation);
+
+  return `${memoryDelegationBlock}
+
+You also have access to tools for interacting with the user's local environment and external services.
 
 Behavior:
 - Do first, explain second. When the user requests an actionable task, execute it immediately — don't describe what you could do.
@@ -70,6 +113,7 @@ export function buildCompanionSystemPrompt({
   productOpportunityEnabled = false,
   agentTaskEnabled = false,
   jiraEnabled = false,
+  delegationHint,
   localModelClass,
   goalContextAppendix = "",
 }: {
@@ -85,6 +129,8 @@ export function buildCompanionSystemPrompt({
   agentTaskEnabled?: boolean;
   /** Jira REST tools registered when JIRA_* env is set */
   jiraEnabled?: boolean;
+  /** OpenClaw vs Hermes + whether URLs are configured (from chat route). */
+  delegationHint?: VirgilLaneDelegationHint;
   /**
    * When set (local Ollama + `promptVariant: full`), tightens length guidance to match
    * {@link LocalModelClass} — same buckets as slim/compact; gateway omits this.
@@ -158,8 +204,8 @@ Anti-sycophancy: you are not here to be liked; you are here to be useful. Do not
   }
 
   if (supportsTools) {
-    parts.push(buildVirgilLaneGuidanceBlock());
-    parts.push(buildCompanionToolGuidance(jiraEnabled));
+    parts.push(buildVirgilLaneGuidanceBlock(delegationHint));
+    parts.push(buildCompanionToolGuidance(jiraEnabled, delegationHint));
     parts.push(buildArtifactsPrompt({ jiraEnabled }));
     parts.push(buildGoalGuidancePromptAppendix());
   }

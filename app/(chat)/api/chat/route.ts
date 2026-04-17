@@ -103,7 +103,10 @@ import {
 } from "@/lib/debug/agent-ingest-log";
 import { VirgilError } from "@/lib/errors";
 import { isProductOpportunityConfigured } from "@/lib/github/product-opportunity-issue";
-import { isOpenClawConfigured } from "@/lib/integrations/openclaw-config";
+import {
+  getDelegationProvider,
+  isDelegationConfigured,
+} from "@/lib/integrations/delegation-provider";
 import {
   type BotIdVerification,
   handleBotIdForChatPost,
@@ -313,6 +316,10 @@ export async function POST(request: Request) {
 
     const agentTaskEnabled = !isOllamaLocal;
     const jiraEnabled = isJiraConfigured();
+    const delegationHint = {
+      enabled: isDelegationConfigured(),
+      backend: getDelegationProvider().backend,
+    };
 
     const systemPromptText =
       isOllamaLocal && promptVariant === "compact"
@@ -338,6 +345,7 @@ export async function POST(request: Request) {
               productOpportunityEnabled,
               agentTaskEnabled,
               jiraEnabled,
+              delegationHint,
               goalContextAppendix,
               ...(isOllamaLocal ? { localModelClass } : {}),
             });
@@ -591,7 +599,7 @@ export async function POST(request: Request) {
           allowed: agentTaskEnabled,
         });
 
-        const openClawPersonalEnabled = isOpenClawConfigured();
+        const openClawPersonalEnabled = isDelegationConfigured();
 
         const openClawToolsBlock = openClawPersonalEnabled
           ? {
@@ -672,6 +680,7 @@ export async function POST(request: Request) {
             productOpportunityEnabled: isProductOpportunityConfigured(),
             agentTaskEnabled: true,
             jiraEnabled: isJiraConfigured(),
+            delegationHint,
             goalContextAppendix,
           });
 

@@ -4,16 +4,16 @@ import {
   confirmPendingIntent,
   trySendPendingIntentById,
 } from "@/lib/db/queries";
+import { buildApproveDelegationIntentToolDescription } from "@/lib/integrations/delegation-labels";
 
 export function approveOpenClawIntent({ userId }: { userId: string }) {
   return tool({
-    description:
-      "Approve a queued OpenClaw intent that required confirmation, then send it to OpenClaw. Use when the owner has agreed to the action.",
+    description: buildApproveDelegationIntentToolDescription(),
     inputSchema: z.object({
       id: z
         .string()
         .uuid()
-        .describe("Pending intent id from delegateTaskToOpenClaw"),
+        .describe("Pending intent id returned by delegateTask"),
     }),
     execute: async ({ id }) => {
       const confirmed = await confirmPendingIntent({ id, userId });

@@ -4,6 +4,23 @@ Significant, stable choices for Virgil. New entries go at the **top** (reverse c
 
 ---
 
+## 2026-04-16 — Virgil 1.1 bridge: Hermes harness + LLM Wiki memory layer — Accepted
+
+**Context:** The v2 target remains a greenfield Python backend, but the owner wants a near-term **Virgil 1.1** bridge in this repo that validates Hermes-backed delegation and compounding memory behavior before full cutover. Existing docs positioned Hermes as future intent only and kept OpenClaw as the optional shipped delegation layer.
+
+**Decision:**
+
+1. Define **Virgil 1.1** as a bridge release in the current product shell: keep Next.js UI/auth/runtime, add a Hermes harness path for delegation, and treat OpenClaw as optional legacy compatibility.
+2. Adopt a **Karpathy-style LLM Wiki** memory pattern for the 1.1 bridge: immutable `raw/` sources, LLM-maintained `wiki/` markdown, and `schema/` rules that govern ingest/query/lint operations.
+3. Preserve existing single-owner safety posture: escalation floors, approval gates, spend caps, and auditability remain code-enforced requirements regardless of whether delegation runs through OpenClaw or Hermes.
+4. This ADR is a bridge decision, not a full v2 implementation claim. v2 greenfield architecture and timeline remain documented separately.
+
+**Consequences:** Contributors can build and evaluate Hermes + wiki memory behavior in a controlled v1.1 track without pretending v2 is already shipped. The memory artifact becomes inspectable and compounding (markdown + git history), while operator controls remain unchanged in strictness.
+
+**Links:** [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md), [docs/V2_MIGRATION.md](V2_MIGRATION.md), [docs/openclaw-bridge.md](openclaw-bridge.md), [docs/V1_1_HERMES_WIKI_BOOTSTRAP.md](V1_1_HERMES_WIKI_BOOTSTRAP.md), [workspace/wiki-starter/README.md](../workspace/wiki-starter/README.md)
+
+---
+
 ## 2026-04-06 — Mobile browser is not a local-LLM compute target (explicit non-goal) — Accepted
 
 **Context:** Primary surfaces include a **phone** (e.g. Pixel in the browser) and a **laptop on the LAN** with home inference (Ollama on a Mac mini, optional OpenClaw). It is easy to revisit whether the **phone** must run **on-device** models or obtain a **direct** path to LAN Ollama so “everything is local,” which drives VPNs, tunnels, split stacks, and scope creep unrelated to the shipped architecture.

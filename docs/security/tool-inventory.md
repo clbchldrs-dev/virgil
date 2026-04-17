@@ -21,6 +21,8 @@ LLM-invoked tools live under [`lib/ai/tools/`](../../lib/ai/tools/). Server-side
 
 **Local Ollama:** Tools are not attached on the chat route; see [`app/(chat)/api/chat/route.ts`](../../app/(chat)/api/chat/route.ts).
 
+**Cron: daily digest → Slack:** Not an LLM tool. `GET /api/digest` optionally posts the same plaintext as the digest email to Slack when `VIRGIL_SLACK_CHECKIN_WEBHOOK_URL` or bot token + channel env is set ([`app/api/digest/route.ts`](../../app/api/digest/route.ts)). Abuse scenario: leaked webhook URL or token → channel spam; keep secrets server-only and rotate if exposed.
+
 ---
 
 ## Background routes — authentication matrix

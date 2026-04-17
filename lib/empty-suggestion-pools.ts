@@ -25,7 +25,7 @@ export function firstSuggestion<T>(items: readonly T[]): T {
   return item;
 }
 
-/** Middle pill: navigates to `/` for a fresh chat (prompt unused). */
+/** Middle pill: starts a fresh thread via `/chat/:id` (prompt unused). */
 export const MIDDLE_CONTINUE_SUGGESTION: ChatEmptySuggestion = {
   prompt: "",
   lines: ["Continue", ""],

@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -20,6 +20,7 @@ import {
   useArtifactSelector,
 } from "@/hooks/use-artifact";
 import { postVirgilDebugIngest } from "@/lib/debug-ingest";
+import { pathnameWithoutBasePath } from "@/lib/path-without-base";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Artifact } from "./artifact";
@@ -34,6 +35,10 @@ import { OpenClawPendingBanner } from "./openclaw-pending-banner";
 
 export function ChatShell() {
   const searchParams = useSearchParams();
+  const pathname = usePathname() ?? "/";
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const logicalPath = pathnameWithoutBasePath(pathname, basePath);
+  const isConcreteChatRoute = /^\/chat\/[^/]+/.test(logicalPath);
 
   const {
     chatId,
@@ -66,7 +71,8 @@ export function ChatShell() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
   const { setArtifact } = useArtifact();
-  const chatPhase = messages.length > 0 ? "session" : "invitation";
+  const chatPhase =
+    messages.length > 0 || isConcreteChatRoute ? "session" : "invitation";
 
   const stopRef = useRef(stop);
   stopRef.current = stop;
@@ -140,22 +146,15 @@ export function ChatShell() {
               <div aria-hidden="true" className="chat-grain" />
               <div aria-hidden="true" className="chat-vignette" />
               {chatPhase === "invitation" && (
-                <div aria-hidden="true" className="chat-creepy-eyes">
-                  <span className="chat-creepy-eye" />
-                  <span className="chat-creepy-eye" />
+                <div aria-hidden="true" className="chat-space-atmosphere">
+                  <div className="chat-space-nebula" />
+                  <div className="chat-space-stars" />
                 </div>
               )}
               {chatPhase === "invitation" && (
-                <div aria-hidden="true" className="chat-candle-decoration">
-                  <div className="chat-candle-stack">
-                    <div className="chat-candle-flame-wrap">
-                      <div className="chat-candle-flame-glow" />
-                      <div className="chat-candle-flame" />
-                      <div className="chat-candle-flame-core" />
-                    </div>
-                    <div className="chat-candle-wick" />
-                    <div className="chat-candle-body" />
-                  </div>
+                <div aria-hidden="true" className="chat-creepy-eyes">
+                  <span className="chat-creepy-eye" />
+                  <span className="chat-creepy-eye" />
                 </div>
               )}
               <OpenClawPendingBanner />

@@ -12,7 +12,11 @@ import { type LoginActionState, login } from "../actions";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
-export function LoginContent() {
+export function LoginContent({
+  passwordless = false,
+}: {
+  passwordless?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { update: updateSession } = useSession();
@@ -27,7 +31,12 @@ export function LoginContent() {
 
   useEffect(() => {
     if (state.status === "failed") {
-      toast({ type: "error", description: "Invalid credentials!" });
+      toast({
+        type: "error",
+        description: passwordless
+          ? "Could not sign in. Check the email is on your allowlist and the account exists."
+          : "Invalid credentials!",
+      });
     } else if (state.status === "invalid_data") {
       toast({
         type: "error",
@@ -47,7 +56,7 @@ export function LoginContent() {
         }
       );
     }
-  }, [state.status, callbackUrlParam, router, updateSession]);
+  }, [state.status, callbackUrlParam, router, updateSession, passwordless]);
 
   const handleSubmit = (formData: FormData) => {
     setEmail(formData.get("email") as string);
@@ -64,9 +73,15 @@ export function LoginContent() {
     <>
       <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
       <p className="text-sm text-muted-foreground">
-        Sign in to your account to continue
+        {passwordless
+          ? "Sign in with the email allowed in your server configuration."
+          : "Sign in to your account to continue"}
       </p>
-      <AuthForm action={handleSubmit} defaultEmail={email}>
+      <AuthForm
+        action={handleSubmit}
+        defaultEmail={email}
+        passwordless={passwordless}
+      >
         <SubmitButton isSuccessful={isSuccessful}>Sign in</SubmitButton>
         <p className="text-center text-[13px] text-muted-foreground">
           {"No account? "}

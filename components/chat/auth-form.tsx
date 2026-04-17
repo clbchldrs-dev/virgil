@@ -7,12 +7,15 @@ export function AuthForm({
   action,
   children,
   defaultEmail = "",
+  passwordless = false,
 }: {
   action: NonNullable<
     string | ((formData: FormData) => void | Promise<void>) | undefined
   >;
   children: React.ReactNode;
   defaultEmail?: string;
+  /** When true, only email is collected (server uses `VIRGIL_PASSWORDLESS_*` env). */
+  passwordless?: boolean;
 }) {
   return (
     <Form action={action} className="flex flex-col gap-4">
@@ -33,19 +36,24 @@ export function AuthForm({
         />
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Label className="font-normal text-muted-foreground" htmlFor="password">
-          Password
-        </Label>
-        <Input
-          className="h-10 rounded-lg border-border/50 bg-muted/50 text-sm transition-colors focus:border-foreground/20 focus:bg-muted"
-          id="password"
-          name="password"
-          placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
-          required
-          type="password"
-        />
-      </div>
+      {passwordless ? null : (
+        <div className="flex flex-col gap-2">
+          <Label
+            className="font-normal text-muted-foreground"
+            htmlFor="password"
+          >
+            Password
+          </Label>
+          <Input
+            className="h-10 rounded-lg border-border/50 bg-muted/50 text-sm transition-colors focus:border-foreground/20 focus:bg-muted"
+            id="password"
+            name="password"
+            placeholder="••••••••"
+            required
+            type="password"
+          />
+        </div>
+      )}
 
       {children}
     </Form>

@@ -12,7 +12,11 @@ import { type RegisterActionState, register } from "../actions";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
-export function RegisterContent() {
+export function RegisterContent({
+  passwordless = false,
+}: {
+  passwordless?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { update: updateSession } = useSession();
@@ -66,8 +70,16 @@ export function RegisterContent() {
   return (
     <>
       <h1 className="text-2xl font-semibold tracking-tight">Create account</h1>
-      <p className="text-sm text-muted-foreground">Get started for free</p>
-      <AuthForm action={handleSubmit} defaultEmail={email}>
+      <p className="text-sm text-muted-foreground">
+        {passwordless
+          ? "Use the email you listed in your server allowlist."
+          : "Get started for free"}
+      </p>
+      <AuthForm
+        action={handleSubmit}
+        defaultEmail={email}
+        passwordless={passwordless}
+      >
         <SubmitButton isSuccessful={isSuccessful}>Sign up</SubmitButton>
         <p className="text-center text-[13px] text-muted-foreground">
           {"Have an account? "}

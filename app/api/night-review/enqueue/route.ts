@@ -1,4 +1,3 @@
-import { Client } from "@upstash/qstash";
 import { NextResponse } from "next/server";
 import { getUsersEligibleForCompanionBackgroundJobs } from "@/lib/db/queries";
 import {
@@ -13,11 +12,8 @@ import {
   getNightReviewChatModelProfile,
   resolveNightReviewLanguageModel,
 } from "@/lib/night-review/night-review-model";
+import { getQStashPublishClient } from "@/lib/qstash/publish-client";
 import { generateUUID } from "@/lib/utils";
-
-function getQStashClient(token: string) {
-  return new Client({ token });
-}
 
 function getBaseUrl(): string {
   if (process.env.VERCEL_URL) {
@@ -58,7 +54,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const qstash = getQStashClient(qstashToken);
+  const qstash = getQStashPublishClient();
 
   const now = new Date();
   const { windowStart, windowEnd } = computeNightReviewWindow(now);

@@ -6,20 +6,7 @@ import {
 } from "./lib/auth-secret";
 import { guestRegex, shouldUseSecureAuthCookie } from "./lib/constants";
 import { postVirgilDebugIngest } from "./lib/debug-ingest";
-
-function pathnameWithoutBasePath(pathname: string, basePath: string): string {
-  if (!basePath) {
-    return pathname;
-  }
-  if (pathname === basePath) {
-    return "/";
-  }
-  if (pathname.startsWith(`${basePath}/`)) {
-    const rest = pathname.slice(basePath.length);
-    return rest.length > 0 ? rest : "/";
-  }
-  return pathname;
-}
+import { pathnameWithoutBasePath } from "./lib/path-without-base";
 
 async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;

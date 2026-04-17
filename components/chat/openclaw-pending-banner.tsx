@@ -16,7 +16,9 @@ type PendingIntentRow = {
 };
 
 type OpenClawPendingResponse = {
+  backend?: "openclaw" | "hermes";
   configured: boolean;
+  delegationOnline?: boolean;
   openClawOnline: boolean;
   pendingConfirmations: PendingIntentRow[];
   queuedBacklog: number;
@@ -27,7 +29,9 @@ const fetcher = async (url: string): Promise<OpenClawPendingResponse> => {
   const res = await fetch(url);
   if (res.status === 401) {
     return {
+      backend: "openclaw",
       configured: false,
+      delegationOnline: false,
       openClawOnline: false,
       pendingConfirmations: [],
       queuedBacklog: 0,
@@ -50,6 +54,14 @@ function intentSummary(intent: Record<string, unknown>): string {
     return s;
   }
   return "Delegated task";
+}
+
+function backendLabel(response: OpenClawPendingResponse): string {
+  return response.backend === "hermes" ? "Hermes" : "OpenClaw";
+}
+
+function isBackendOnline(response: OpenClawPendingResponse): boolean {
+  return response.delegationOnline ?? response.openClawOnline;
 }
 
 export function OpenClawPendingBanner() {
@@ -185,11 +197,13 @@ export function OpenClawPendingBanner() {
                       Reject
                     </Button>
                     <Button
-                      disabled={actingId === row.id || !data.openClawOnline}
+                      disabled={actingId === row.id || !isBackendOnline(data)}
                       onClick={() => patchIntent(row.id, "approve")}
                       size="sm"
                       title={
-                        data.openClawOnline ? undefined : "OpenClaw is offline"
+                        isBackendOnline(data)
+                          ? undefined
+                          : `${backendLabel(data)} is offline`
                       }
                       type="button"
                       variant="secondary"
@@ -198,10 +212,10 @@ export function OpenClawPendingBanner() {
                     </Button>
                   </div>
                 </div>
-                {!data.openClawOnline && (
+                {!isBackendOnline(data) && (
                   <p className="mt-2 text-muted-foreground text-[11px]">
-                    OpenClaw is offline — Approve may not reach the gateway
-                    until it is reachable.
+                    {backendLabel(data)} is offline — Approve may not reach the
+                    gateway until it is reachable.
                   </p>
                 )}
               </li>
@@ -232,8 +246,9 @@ export function OpenClawPendingBanner() {
         role="status"
       >
         <p className="mx-auto max-w-4xl text-muted-foreground text-xs md:text-sm">
-          OpenClaw is not configured, but you have {String(data.queuedBacklog)}{" "}
-          queued delegation(s). Set OPENCLAW_URL (and HTTP paths) to send them.
+          {backendLabel(data)} is not configured, but you have{" "}
+          {String(data.queuedBacklog)} queued delegation(s). Configure the
+          active delegation backend to send them.
         </p>
       </div>
     );

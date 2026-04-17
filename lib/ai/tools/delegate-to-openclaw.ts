@@ -7,9 +7,11 @@ import {
   trySendPendingIntentById,
 } from "@/lib/db/queries";
 import {
-  getCachedOpenClawSkillNames,
-  pingOpenClaw,
-} from "@/lib/integrations/openclaw-client";
+  buildDelegateTaskToolDescription,
+  delegationUnknownSkillMessage,
+  delegationUnreachableMessage,
+} from "@/lib/integrations/delegation-labels";
+import { getDelegationProvider } from "@/lib/integrations/delegation-provider";
 import {
   delegationNeedsConfirmation,
   matchSkillFromDescription,
@@ -24,10 +26,7 @@ export function delegateTaskToOpenClaw({
   chatId: string;
 }) {
   return tool({
-    description:
-      "Send a task to OpenClaw for execution. Use when the task involves messaging someone, running a shell command, file operations, or other actions Virgil cannot perform in-process. " +
-      "Specify the OpenClaw skill name if known; otherwise describe the task and the best-matching skill is chosen from the live skill list (keyword overlap). " +
-      "Destructive or outbound actions may require owner confirmation before sending.",
+    description: buildDelegateTaskToolDescription(),
     inputSchema: z.object({
       description: z
         .string()
@@ -36,12 +35,14 @@ export function delegateTaskToOpenClaw({
       lane: virgilLaneIdSchema
         .optional()
         .describe(
-          "Delegation lane: use **home** for OpenClaw (default); **chat**/**code**/**research** if tagging a mixed flow for logging"
+          "Delegation lane: use **home** for LAN/out-of-app execution (default); **chat**/**code**/**research** if tagging a mixed flow for logging"
         ),
       skill: z
         .string()
         .optional()
-        .describe("OpenClaw skill id when known, e.g. send-whatsapp"),
+        .describe(
+          "Known delegation skill id when available, e.g. send-whatsapp"
+        ),
       params: z
         .record(z.string(), z.unknown())
         .optional()
@@ -49,7 +50,9 @@ export function delegateTaskToOpenClaw({
       urgent: z.boolean().optional().describe("When true, use high priority"),
     }),
     execute: async ({ description, lane, skill, params, urgent }) => {
-      const skills = await getCachedOpenClawSkillNames();
+      const delegationProvider = getDelegationProvider();
+      const backend = delegationProvider.backend;
+      const skills = await delegationProvider.listSkillNames();
       const skillTrimmed = skill?.trim();
       if (skillTrimmed && skills.length > 0 && !skills.includes(skillTrimmed)) {
         const sample = skills.slice(0, 24).join(", ");
@@ -57,9 +60,12 @@ export function delegateTaskToOpenClaw({
         return {
           ok: false,
           queued: false,
-          message:
-            `No OpenClaw skill named "${skillTrimmed}". Available: ${sample}${suffix}. ` +
-            "Omit `skill` so one can be inferred from the description, or use an id from that list.",
+          message: delegationUnknownSkillMessage(
+            backend,
+            skillTrimmed,
+            sample,
+            suffix
+          ),
         };
       }
       const resolvedSkill =
@@ -98,16 +104,14 @@ export function delegateTaskToOpenClaw({
         requiresConfirmation: needsConfirm,
       });
 
-      const online = await pingOpenClaw();
+      const online = await delegationProvider.ping();
       if (!online) {
         const backlog = await countOpenClawBacklogForUser(userId);
         return {
           ok: false,
           queued: true,
           intentId: row.id,
-          message:
-            `OpenClaw is unreachable. Intent queued (${String(backlog)} task(s) waiting). ` +
-            "Approve in the app when OpenClaw is back, or retry later.",
+          message: delegationUnreachableMessage(backend, backlog),
         };
       }
 
@@ -117,6 +121,17 @@ export function delegateTaskToOpenClaw({
           userId,
         });
         if (sendResult.skipped) {
+          if (sendResult.reason === "backend_offline") {
+            const backlog = await countOpenClawBacklogForUser(userId);
+            return {
+              ok: false,
+              queued: true,
+              intentId: row.id,
+              message:
+                `Delegation backend is offline. Intent queued (${String(backlog)} task(s) waiting). ` +
+                "Retry later or approve/send when the backend is reachable.",
+            };
+          }
           return {
             ok: false,
             intentId: row.id,

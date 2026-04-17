@@ -1,15 +1,21 @@
-import { Client } from "@upstash/qstash";
 import { tool } from "ai";
 import { z } from "zod";
 import { chatOwnershipDenial } from "@/lib/ai/tool-policy";
 import { getChatById } from "@/lib/db/queries";
+import { getQStashPublishClient } from "@/lib/qstash/publish-client";
 
-function getQStash() {
-  const token = process.env.QSTASH_TOKEN;
-  if (!token) {
-    throw new Error("QSTASH_TOKEN is not set");
+function qstashRegionMismatchMessage(raw: string): boolean {
+  return raw.includes("not found in this region");
+}
+
+function errorMessageString(err: unknown): string {
+  if (err instanceof Error) {
+    return err.message;
   }
-  return new Client({ token });
+  if (typeof err === "string") {
+    return err;
+  }
+  return "";
 }
 
 function getBaseUrl(): string {
@@ -79,16 +85,17 @@ export function setReminder({
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "X-Debug-Session-Id": "7813dc",
+              "X-Debug-Session-Id": "a80f52",
             },
             body: JSON.stringify({
-              sessionId: "7813dc",
-              hypothesisId: "H5",
+              sessionId: "a80f52",
+              hypothesisId: "H1",
               location: "lib/ai/tools/set-reminder.ts:pre-publish",
               message: "QStash env before publishJSON",
               data: {
                 hasQstashUrl: Boolean(rawUrl),
                 qstashHost,
+                sdkDefaultsToEuWhenUrlUnset: !rawUrl?.trim(),
                 delaySeconds,
                 baseUrlHost: (() => {
                   try {
@@ -107,16 +114,82 @@ export function setReminder({
       }
       // #endregion
 
-      await getQStash().publishJSON({
-        url: `${getBaseUrl()}/api/reminders`,
-        body: {
-          userId,
-          chatId,
-          message: input.message,
-          scheduledFor: input.deliverAt,
-        },
-        delay: delaySeconds,
+      try {
+        await getQStashPublishClient().publishJSON({
+          url: `${getBaseUrl()}/api/reminders`,
+          body: {
+            userId,
+            chatId,
+            message: input.message,
+            scheduledFor: input.deliverAt,
+          },
+          delay: delaySeconds,
+        });
+      } catch (err) {
+        const raw = errorMessageString(err);
+        // #region agent log
+        fetch(
+          "http://127.0.0.1:7838/ingest/7925a257-7797-4a8d-9c5b-1a308b2155f1",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Debug-Session-Id": "a80f52",
+            },
+            body: JSON.stringify({
+              sessionId: "a80f52",
+              hypothesisId: "H1",
+              location: "lib/ai/tools/set-reminder.ts:publish-catch",
+              message: "publishJSON failed",
+              data: {
+                regionMismatch: qstashRegionMismatchMessage(raw),
+                errStatus:
+                  err && typeof err === "object" && "status" in err
+                    ? (err as { status?: number }).status
+                    : undefined,
+              },
+              timestamp: Date.now(),
+            }),
+          }
+        ).catch(() => {
+          /* debug ingest optional */
+        });
+        // #endregion
+        if (qstashRegionMismatchMessage(raw)) {
+          return {
+            success: false as const,
+            message:
+              "QStash region mismatch: your token is not valid on the API endpoint in use. Set QSTASH_URL to the QStash URL from your Upstash console — for the US region use https://qstash-us-east-1.upstash.io; for EU use https://qstash.upstash.io. Docs: https://upstash.com/docs/qstash/howto/multi-region",
+          };
+        }
+        return {
+          success: false as const,
+          message: "Could not schedule the reminder. Try again later.",
+        };
+      }
+
+      // #region agent log
+      fetch(
+        "http://127.0.0.1:7838/ingest/7925a257-7797-4a8d-9c5b-1a308b2155f1",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "a80f52",
+          },
+          body: JSON.stringify({
+            sessionId: "a80f52",
+            hypothesisId: "H1",
+            location: "lib/ai/tools/set-reminder.ts:post-publish",
+            message: "publishJSON ok",
+            data: { ok: true },
+            timestamp: Date.now(),
+          }),
+        }
+      ).catch(() => {
+        /* debug ingest optional */
       });
+      // #endregion
 
       return {
         success: true,

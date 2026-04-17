@@ -4,11 +4,10 @@ import Script from "next/script";
 import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { AppSidebar } from "@/components/chat/app-sidebar";
+import { ChatSurfaceLayer } from "@/components/chat/chat-surface-layer";
 import { DataStreamProvider } from "@/components/chat/data-stream-provider";
 import { ModelMetricsProvider } from "@/components/chat/model-metrics-provider";
-import { ChatShell } from "@/components/chat/shell";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { ActiveChatProvider } from "@/hooks/use-active-chat";
 import { postVirgilDebugIngest } from "@/lib/debug-ingest";
 import { auth } from "../(auth)/auth";
 
@@ -70,11 +69,7 @@ async function SidebarShell({ children }: { children: React.ReactNode }) {
               "!bg-card !text-foreground !border-border/50 !shadow-[var(--shadow-float)]",
           }}
         />
-        <Suspense fallback={<div className="flex h-dvh" />}>
-          <ActiveChatProvider>
-            <ChatShell />
-          </ActiveChatProvider>
-        </Suspense>
+        <ChatSurfaceLayer />
         {children}
       </SidebarInset>
     </SidebarProvider>

@@ -38,6 +38,10 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { cn, generateUUID } from "@/lib/utils";
+
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,15 +54,142 @@ import {
 } from "../ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
+type SidebarPrimaryNavProps = {
+  user: User | undefined;
+  onRequestDeleteAll: () => void;
+};
+
+function SidebarPrimaryNav({
+  user,
+  onRequestDeleteAll,
+}: SidebarPrimaryNavProps) {
+  const router = useRouter();
+  const { setOpenMobile } = useSidebar();
+
+  return (
+    <SidebarGroup className="pt-1 pb-0 max-md:pt-0">
+      <SidebarGroupContent>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              className="h-8 rounded-lg border border-sidebar-border text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+              onClick={() => {
+                setOpenMobile(false);
+                router.push(`${BASE_PATH}/chat/${generateUUID()}`);
+              }}
+              tooltip="New Chat"
+            >
+              <PenSquareIcon className="size-4" />
+              <span className="font-medium">New chat</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          {user ? (
+            <>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  onClick={() => {
+                    setOpenMobile(false);
+                    router.push(`${BASE_PATH}/background`);
+                  }}
+                  tooltip="Background activity"
+                >
+                  <ActivityIcon className="size-4" />
+                  <span>Background</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  onClick={() => {
+                    setOpenMobile(false);
+                    router.push(`${BASE_PATH}/sophon`);
+                  }}
+                  tooltip="Daily command center"
+                >
+                  <LayoutDashboardIcon className="size-4" />
+                  <span>Command center</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  onClick={() => {
+                    setOpenMobile(false);
+                    router.push(`${BASE_PATH}/proposals`);
+                  }}
+                  tooltip="Proposals"
+                >
+                  <ListChecksIcon className="size-4" />
+                  <span>Proposals</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  onClick={() => {
+                    setOpenMobile(false);
+                    router.push(`${BASE_PATH}/night-insights`);
+                  }}
+                  tooltip="Night insights"
+                >
+                  <MoonIcon className="size-4" />
+                  <span>Night insights</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  onClick={() => {
+                    setOpenMobile(false);
+                    router.push(`${BASE_PATH}/agent-tasks`);
+                  }}
+                  tooltip="Agent tasks"
+                >
+                  <WrenchIcon className="size-4" />
+                  <span>Agent tasks</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  onClick={() => {
+                    setOpenMobile(false);
+                    router.push(`${BASE_PATH}/preferences`);
+                  }}
+                  tooltip="Preferences"
+                >
+                  <Settings2Icon className="size-4" />
+                  <span>Preferences</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className="rounded-lg text-sidebar-foreground/40 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={onRequestDeleteAll}
+                  tooltip="Delete All Chats"
+                >
+                  <TrashIcon className="size-4" />
+                  <span className="text-[13px]">Delete all</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </>
+          ) : null}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
 export function AppSidebar({ user }: { user: User | undefined }) {
   const router = useRouter();
-  const { setOpenMobile, toggleSidebar } = useSidebar();
+  const { isMobile, setOpenMobile, toggleSidebar } = useSidebar();
   const { mutate } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
 
   const handleDeleteAll = () => {
     setShowDeleteAllDialog(false);
-    router.replace("/");
+    router.replace(`${BASE_PATH}/`);
     mutate(unstable_serialize(getChatHistoryPaginationKey), [], {
       revalidate: false,
     });
@@ -73,7 +204,12 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   return (
     <>
       <Sidebar collapsible="icon">
-        <SidebarHeader className="shrink-0 pb-0 pt-3 max-md:sticky max-md:top-0 max-md:z-10 max-md:border-b max-md:border-sidebar-border/70 max-md:bg-sidebar">
+        <SidebarHeader
+          className={cn(
+            "shrink-0 pb-0 pt-3",
+            "max-md:sticky max-md:top-0 max-md:z-10 max-md:border-b max-md:border-sidebar-border/70 max-md:bg-sidebar"
+          )}
+        >
           <SidebarMenu>
             <SidebarMenuItem className="flex flex-row items-center justify-between">
               <div className="group/logo relative flex items-center justify-center">
@@ -82,7 +218,10 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   className="size-8 !px-0 items-center justify-center group-data-[collapsible=icon]:group-hover/logo:opacity-0"
                   tooltip="Virgil"
                 >
-                  <Link href="/" onClick={() => setOpenMobile(false)}>
+                  <Link
+                    href={`${BASE_PATH}/`}
+                    onClick={() => setOpenMobile(false)}
+                  >
                     <MessageSquareIcon className="size-4 text-sidebar-foreground/50" />
                   </Link>
                 </SidebarMenuButton>
@@ -106,136 +245,41 @@ export function AppSidebar({ user }: { user: User | undefined }) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
-        <SidebarContent className="max-md:flex-none max-md:min-h-0 max-md:overflow-visible">
-          <div className="shrink-0">
-            <SidebarGroup className="pt-1">
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className="h-8 rounded-lg border border-sidebar-border text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                      onClick={() => {
-                        setOpenMobile(false);
-                        router.push("/");
-                      }}
-                      tooltip="New Chat"
-                    >
-                      <PenSquareIcon className="size-4" />
-                      <span className="font-medium">New chat</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  {user && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                        onClick={() => {
-                          setOpenMobile(false);
-                          router.push("/background");
-                        }}
-                        tooltip="Background activity"
-                      >
-                        <ActivityIcon className="size-4" />
-                        <span>Background</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                  {user && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                        onClick={() => {
-                          setOpenMobile(false);
-                          router.push("/sophon");
-                        }}
-                        tooltip="Daily command center"
-                      >
-                        <LayoutDashboardIcon className="size-4" />
-                        <span>Command center</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                  {user && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                        onClick={() => {
-                          setOpenMobile(false);
-                          router.push("/proposals");
-                        }}
-                        tooltip="Proposals"
-                      >
-                        <ListChecksIcon className="size-4" />
-                        <span>Proposals</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                  {user && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                        onClick={() => {
-                          setOpenMobile(false);
-                          router.push("/night-insights");
-                        }}
-                        tooltip="Night insights"
-                      >
-                        <MoonIcon className="size-4" />
-                        <span>Night insights</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                  {user && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                        onClick={() => {
-                          setOpenMobile(false);
-                          router.push("/agent-tasks");
-                        }}
-                        tooltip="Agent tasks"
-                      >
-                        <WrenchIcon className="size-4" />
-                        <span>Agent tasks</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                  {user && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                        onClick={() => {
-                          setOpenMobile(false);
-                          router.push("/preferences");
-                        }}
-                        tooltip="Preferences"
-                      >
-                        <Settings2Icon className="size-4" />
-                        <span>Preferences</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                  {user && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        className="rounded-lg text-sidebar-foreground/40 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
-                        onClick={() => setShowDeleteAllDialog(true)}
-                        tooltip="Delete All Chats"
-                      >
-                        <TrashIcon className="size-4" />
-                        <span className="text-[13px]">Delete all</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+        {isMobile ? (
+          <div className="shrink-0 border-b border-sidebar-border/70 bg-sidebar px-1.5 pb-2 pt-1">
+            <SidebarPrimaryNav
+              onRequestDeleteAll={() => setShowDeleteAllDialog(true)}
+              user={user}
+            />
           </div>
-          <div className="flex min-h-0 flex-col max-md:flex-none max-md:overflow-visible md:flex-1 md:overflow-y-auto">
+        ) : null}
+        <SidebarContent
+          className={cn(
+            isMobile
+              ? "flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overscroll-y-contain px-0 pt-1"
+              : "max-md:flex-none max-md:min-h-0 max-md:overflow-visible"
+          )}
+        >
+          {isMobile ? null : (
+            <div className="shrink-0">
+              <SidebarPrimaryNav
+                onRequestDeleteAll={() => setShowDeleteAllDialog(true)}
+                user={user}
+              />
+            </div>
+          )}
+          <div
+            className={cn(
+              isMobile
+                ? "min-h-0"
+                : "flex min-h-0 flex-col max-md:flex-none max-md:overflow-visible md:flex-1 md:overflow-y-auto"
+            )}
+          >
             <SidebarHistory user={user} />
           </div>
         </SidebarContent>
         <SidebarFooter className="shrink-0 border-t border-sidebar-border pt-2 pb-3 max-md:bg-sidebar">
-          {user && <SidebarUserNav user={user} />}
+          {user ? <SidebarUserNav user={user} /> : null}
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>

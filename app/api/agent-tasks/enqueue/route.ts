@@ -1,6 +1,6 @@
-import { Client } from "@upstash/qstash";
 import { NextResponse } from "next/server";
 import { isAgentTaskTriageEnabled } from "@/lib/agent-tasks/config";
+import { getQStashPublishClient } from "@/lib/qstash/publish-client";
 
 function getBaseUrl(): string {
   if (process.env.VERCEL_URL) {
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const qstash = new Client({ token: qstashToken });
+  const qstash = getQStashPublishClient();
   const base = getBaseUrl();
 
   await qstash.publishJSON({

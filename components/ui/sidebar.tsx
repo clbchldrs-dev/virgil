@@ -188,7 +188,7 @@ function Sidebar({
             <SheetDescription>Displays the mobile sidebar.</SheetDescription>
           </SheetHeader>
           <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-sidebar-foreground/20" />
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden overscroll-y-contain pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {children}
           </div>
         </SheetContent>

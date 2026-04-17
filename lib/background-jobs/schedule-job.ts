@@ -1,7 +1,7 @@
 import "server-only";
 
-import { Client } from "@upstash/qstash";
 import { after } from "next/server";
+import { getQStashPublishClient } from "@/lib/qstash/publish-client";
 import { processBackgroundJobById } from "./process-job";
 
 function getBaseUrl(): string {
@@ -18,7 +18,7 @@ function getBaseUrl(): string {
 export function scheduleBackgroundJobProcessing(jobId: string): void {
   const token = process.env.QSTASH_TOKEN?.trim();
   if (token) {
-    const client = new Client({ token });
+    const client = getQStashPublishClient();
     client
       .publishJSON({
         url: `${getBaseUrl()}/api/background/jobs/run`,

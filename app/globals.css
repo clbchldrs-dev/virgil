@@ -567,7 +567,7 @@ textarea:focus-visible {
   filter: blur(10px);
   opacity: var(--chat-candle-opacity);
   transform-origin: center;
-  animation: candle-flicker 4.8s steps(6, end) infinite;
+  animation: candle-flicker 14s ease-in-out infinite;
 }
 
 .pixel-chat-panel .chat-grain {
@@ -604,6 +604,353 @@ textarea:focus-visible {
   );
 }
 
+/* Invitation empty state: subtle nebula + starfield (see shell.tsx) */
+.pixel-chat-panel .chat-space-atmosphere {
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.pixel-chat-panel .chat-space-nebula {
+  background:
+    radial-gradient(
+      ellipse 90% 55% at 18% 12%,
+      oklch(0.32 0.1 285 / 0.22),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 70% 45% at 88% 72%,
+      oklch(0.28 0.08 58 / 0.18),
+      transparent 52%
+    ),
+    radial-gradient(
+      circle at 48% 96%,
+      oklch(0.14 0.05 58 / 0.35),
+      transparent 42%
+    );
+  inset: 0;
+  opacity: 0.62;
+  position: absolute;
+}
+
+.pixel-chat-panel .chat-space-stars {
+  animation: space-stars-twinkle 18s ease-in-out infinite;
+  background-image:
+    radial-gradient(
+      1.25px 1.25px at 8% 12%,
+      oklch(0.96 0.03 58 / 0.95),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 22% 38%,
+      oklch(0.9 0.04 58 / 0.88),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 41% 9%,
+      oklch(0.94 0.03 58 / 0.92),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 55% 44%,
+      oklch(0.86 0.03 58 / 0.82),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 71% 18%,
+      oklch(0.96 0.03 58 / 0.94),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 84% 52%,
+      oklch(0.82 0.03 58 / 0.78),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 93% 28%,
+      oklch(0.92 0.03 58 / 0.9),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 12% 58%,
+      oklch(0.88 0.03 58 / 0.85),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 31% 72%,
+      oklch(0.94 0.03 58 / 0.9),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 48% 63%,
+      oklch(0.8 0.03 58 / 0.75),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 64% 81%,
+      oklch(0.9 0.03 58 / 0.86),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 77% 66%,
+      oklch(0.96 0.03 58 / 0.93),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 91% 88%,
+      oklch(0.84 0.03 58 / 0.8),
+      transparent
+    ),
+    radial-gradient(2px 2px at 18% 88%, oklch(0.93 0.04 58 / 0.88), transparent),
+    radial-gradient(2px 2px at 52% 28%, oklch(0.92 0.04 58 / 0.85), transparent),
+    radial-gradient(2px 2px at 66% 42%, oklch(0.88 0.04 58 / 0.82), transparent);
+  background-size: 100% 100%;
+  inset: 0;
+  opacity: 0.68;
+  position: absolute;
+}
+
+/* Extra star layers: ::before mid-bright field, ::after dim depth (offsets from base layer) */
+.pixel-chat-panel .chat-space-stars::before {
+  background-image:
+    radial-gradient(1px 1px at 4% 22%, oklch(0.92 0.03 58 / 0.62), transparent),
+    radial-gradient(1px 1px at 11% 7%, oklch(0.88 0.03 58 / 0.52), transparent),
+    radial-gradient(1px 1px at 16% 46%, oklch(0.94 0.03 58 / 0.7), transparent),
+    radial-gradient(1px 1px at 24% 14%, oklch(0.86 0.03 58 / 0.48), transparent),
+    radial-gradient(1px 1px at 29% 55%, oklch(0.9 0.03 58 / 0.58), transparent),
+    radial-gradient(1px 1px at 33% 31%, oklch(0.84 0.03 58 / 0.45), transparent),
+    radial-gradient(1px 1px at 38% 68%, oklch(0.93 0.03 58 / 0.65), transparent),
+    radial-gradient(1px 1px at 44% 19%, oklch(0.8 0.03 58 / 0.42), transparent),
+    radial-gradient(1px 1px at 49% 41%, oklch(0.91 0.03 58 / 0.55), transparent),
+    radial-gradient(1px 1px at 53% 76%, oklch(0.87 0.03 58 / 0.5), transparent),
+    radial-gradient(1px 1px at 58% 11%, oklch(0.95 0.03 58 / 0.68), transparent),
+    radial-gradient(1px 1px at 62% 48%, oklch(0.82 0.03 58 / 0.44), transparent),
+    radial-gradient(1px 1px at 68% 26%, oklch(0.89 0.03 58 / 0.54), transparent),
+    radial-gradient(1px 1px at 73% 61%, oklch(0.92 0.03 58 / 0.6), transparent),
+    radial-gradient(1px 1px at 78% 8%, oklch(0.85 0.03 58 / 0.46), transparent),
+    radial-gradient(1px 1px at 82% 35%, oklch(0.9 0.03 58 / 0.56), transparent),
+    radial-gradient(1px 1px at 87% 52%, oklch(0.83 0.03 58 / 0.43), transparent),
+    radial-gradient(1px 1px at 91% 19%, oklch(0.94 0.03 58 / 0.64), transparent),
+    radial-gradient(1px 1px at 96% 44%, oklch(0.88 0.03 58 / 0.51), transparent),
+    radial-gradient(1px 1px at 6% 62%, oklch(0.86 0.03 58 / 0.47), transparent),
+    radial-gradient(1px 1px at 14% 84%, oklch(0.91 0.03 58 / 0.57), transparent),
+    radial-gradient(1px 1px at 21% 71%, oklch(0.84 0.03 58 / 0.44), transparent),
+    radial-gradient(1px 1px at 27% 91%, oklch(0.93 0.03 58 / 0.61), transparent),
+    radial-gradient(1px 1px at 35% 78%, oklch(0.8 0.03 58 / 0.4), transparent),
+    radial-gradient(1px 1px at 42% 95%, oklch(0.89 0.03 58 / 0.53), transparent),
+    radial-gradient(1px 1px at 51% 86%, oklch(0.87 0.03 58 / 0.49), transparent),
+    radial-gradient(1px 1px at 59% 93%, oklch(0.92 0.03 58 / 0.58), transparent),
+    radial-gradient(1px 1px at 66% 74%, oklch(0.85 0.03 58 / 0.45), transparent),
+    radial-gradient(1px 1px at 74% 89%, oklch(0.9 0.03 58 / 0.54), transparent),
+    radial-gradient(1px 1px at 81% 97%, oklch(0.82 0.03 58 / 0.41), transparent),
+    radial-gradient(1px 1px at 89% 81%, oklch(0.94 0.03 58 / 0.63), transparent),
+    radial-gradient(1px 1px at 97% 66%, oklch(0.88 0.03 58 / 0.5), transparent),
+    radial-gradient(
+      1.25px 1.25px at 7% 33%,
+      oklch(0.93 0.03 58 / 0.72),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 19% 56%,
+      oklch(0.86 0.03 58 / 0.58),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 31% 17%,
+      oklch(0.91 0.03 58 / 0.66),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 46% 54%,
+      oklch(0.84 0.03 58 / 0.52),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 56% 22%,
+      oklch(0.95 0.03 58 / 0.74),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 70% 57%,
+      oklch(0.88 0.03 58 / 0.59),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 84% 39%,
+      oklch(0.9 0.03 58 / 0.62),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 92% 71%,
+      oklch(0.83 0.03 58 / 0.51),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 13% 39%,
+      oklch(0.92 0.03 58 / 0.67),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 26% 24%,
+      oklch(0.87 0.03 58 / 0.56),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 39% 62%,
+      oklch(0.94 0.03 58 / 0.69),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 61% 66%,
+      oklch(0.81 0.03 58 / 0.48),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 76% 14%,
+      oklch(0.9 0.03 58 / 0.61),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 88% 59%,
+      oklch(0.86 0.03 58 / 0.55),
+      transparent
+    ),
+    radial-gradient(2px 2px at 17% 51%, oklch(0.93 0.04 58 / 0.78), transparent),
+    radial-gradient(2px 2px at 54% 8%, oklch(0.91 0.04 58 / 0.75), transparent),
+    radial-gradient(2px 2px at 72% 46%, oklch(0.89 0.04 58 / 0.72), transparent);
+  background-size: 100% 100%;
+  content: "";
+  inset: 0;
+  opacity: 0.92;
+  pointer-events: none;
+  position: absolute;
+}
+
+.pixel-chat-panel .chat-space-stars::after {
+  background-image:
+    radial-gradient(1px 1px at 2% 41%, oklch(0.9 0.03 58 / 0.38), transparent),
+    radial-gradient(1px 1px at 8% 29%, oklch(0.85 0.03 58 / 0.35), transparent),
+    radial-gradient(1px 1px at 15% 13%, oklch(0.88 0.03 58 / 0.4), transparent),
+    radial-gradient(1px 1px at 23% 67%, oklch(0.82 0.03 58 / 0.33), transparent),
+    radial-gradient(1px 1px at 28% 44%, oklch(0.91 0.03 58 / 0.42), transparent),
+    radial-gradient(1px 1px at 34% 88%, oklch(0.79 0.03 58 / 0.32), transparent),
+    radial-gradient(1px 1px at 40% 3%, oklch(0.87 0.03 58 / 0.37), transparent),
+    radial-gradient(1px 1px at 47% 59%, oklch(0.84 0.03 58 / 0.36), transparent),
+    radial-gradient(1px 1px at 52% 17%, oklch(0.92 0.03 58 / 0.41), transparent),
+    radial-gradient(1px 1px at 60% 39%, oklch(0.8 0.03 58 / 0.31), transparent),
+    radial-gradient(1px 1px at 65% 84%, oklch(0.89 0.03 58 / 0.39), transparent),
+    radial-gradient(1px 1px at 71% 6%, oklch(0.86 0.03 58 / 0.35), transparent),
+    radial-gradient(1px 1px at 79% 28%, oklch(0.93 0.03 58 / 0.43), transparent),
+    radial-gradient(1px 1px at 85% 63%, oklch(0.81 0.03 58 / 0.33), transparent),
+    radial-gradient(1px 1px at 90% 47%, oklch(0.88 0.03 58 / 0.38), transparent),
+    radial-gradient(1px 1px at 98% 14%, oklch(0.83 0.03 58 / 0.34), transparent),
+    radial-gradient(1px 1px at 5% 77%, oklch(0.9 0.03 58 / 0.4), transparent),
+    radial-gradient(1px 1px at 12% 98%, oklch(0.85 0.03 58 / 0.36), transparent),
+    radial-gradient(1px 1px at 20% 59%, oklch(0.87 0.03 58 / 0.37), transparent),
+    radial-gradient(1px 1px at 30% 82%, oklch(0.82 0.03 58 / 0.32), transparent),
+    radial-gradient(1px 1px at 37% 50%, oklch(0.91 0.03 58 / 0.41), transparent),
+    radial-gradient(1px 1px at 43% 27%, oklch(0.78 0.03 58 / 0.3), transparent),
+    radial-gradient(1px 1px at 50% 73%, oklch(0.89 0.03 58 / 0.39), transparent),
+    radial-gradient(1px 1px at 57% 95%, oklch(0.84 0.03 58 / 0.35), transparent),
+    radial-gradient(1px 1px at 64% 16%, oklch(0.92 0.03 58 / 0.42), transparent),
+    radial-gradient(1px 1px at 69% 52%, oklch(0.8 0.03 58 / 0.31), transparent),
+    radial-gradient(1px 1px at 75% 79%, oklch(0.88 0.03 58 / 0.38), transparent),
+    radial-gradient(1px 1px at 83% 11%, oklch(0.86 0.03 58 / 0.36), transparent),
+    radial-gradient(1px 1px at 86% 34%, oklch(0.9 0.03 58 / 0.4), transparent),
+    radial-gradient(1px 1px at 94% 88%, oklch(0.82 0.03 58 / 0.32), transparent),
+    radial-gradient(1px 1px at 1% 54%, oklch(0.87 0.03 58 / 0.37), transparent),
+    radial-gradient(1px 1px at 9% 91%, oklch(0.84 0.03 58 / 0.35), transparent),
+    radial-gradient(1px 1px at 18% 36%, oklch(0.91 0.03 58 / 0.41), transparent),
+    radial-gradient(1px 1px at 25% 3%, oklch(0.79 0.03 58 / 0.31), transparent),
+    radial-gradient(1px 1px at 32% 64%, oklch(0.88 0.03 58 / 0.38), transparent),
+    radial-gradient(1px 1px at 41% 15%, oklch(0.85 0.03 58 / 0.35), transparent),
+    radial-gradient(1px 1px at 48% 47%, oklch(0.93 0.03 58 / 0.43), transparent),
+    radial-gradient(1px 1px at 55% 69%, oklch(0.81 0.03 58 / 0.33), transparent),
+    radial-gradient(1px 1px at 63% 91%, oklch(0.89 0.03 58 / 0.39), transparent),
+    radial-gradient(1px 1px at 72% 38%, oklch(0.83 0.03 58 / 0.34), transparent),
+    radial-gradient(1px 1px at 80% 56%, oklch(0.9 0.03 58 / 0.4), transparent),
+    radial-gradient(1px 1px at 87% 22%, oklch(0.86 0.03 58 / 0.36), transparent),
+    radial-gradient(1px 1px at 93% 61%, oklch(0.82 0.03 58 / 0.32), transparent),
+    radial-gradient(
+      1.25px 1.25px at 6% 18%,
+      oklch(0.9 0.03 58 / 0.48),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 22% 83%,
+      oklch(0.87 0.03 58 / 0.44),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 36% 8%,
+      oklch(0.92 0.03 58 / 0.5),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 50% 34%,
+      oklch(0.84 0.03 58 / 0.42),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 67% 91%,
+      oklch(0.89 0.03 58 / 0.46),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 78% 24%,
+      oklch(0.86 0.03 58 / 0.43),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 91% 41%,
+      oklch(0.91 0.03 58 / 0.49),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 14% 48%,
+      oklch(0.83 0.03 58 / 0.4),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 44% 76%,
+      oklch(0.88 0.03 58 / 0.45),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 59% 4%,
+      oklch(0.85 0.03 58 / 0.42),
+      transparent
+    ),
+    radial-gradient(
+      1.25px 1.25px at 95% 77%,
+      oklch(0.9 0.03 58 / 0.47),
+      transparent
+    ),
+    radial-gradient(2px 2px at 11% 11%, oklch(0.91 0.04 58 / 0.58), transparent),
+    radial-gradient(2px 2px at 63% 29%, oklch(0.88 0.04 58 / 0.54), transparent),
+    radial-gradient(2px 2px at 33% 94%, oklch(0.87 0.04 58 / 0.52), transparent),
+    radial-gradient(2px 2px at 85% 94%, oklch(0.89 0.04 58 / 0.55), transparent);
+  background-size: 100% 100%;
+  content: "";
+  inset: 0;
+  opacity: 0.55;
+  pointer-events: none;
+  position: absolute;
+}
+
+@keyframes space-stars-twinkle {
+  0%,
+  100% {
+    opacity: 0.58;
+  }
+
+  50% {
+    opacity: 0.82;
+  }
+}
+
 /* Empty-state only: pair of glowing eyes near top (see shell.tsx) */
 .pixel-chat-panel .chat-creepy-eyes {
   align-items: center;
@@ -616,6 +963,7 @@ textarea:focus-visible {
   position: absolute;
   top: clamp(2.5rem, 10vh, 5.5rem);
   translate: -50% 0;
+  z-index: 1;
 }
 
 .pixel-chat-panel .chat-creepy-eye {
@@ -673,162 +1021,6 @@ textarea:focus-visible {
     opacity: 0.95;
     transform: scaleY(1.02);
   }
-}
-
-@keyframes candle-flame-flicker {
-  0%,
-  100% {
-    filter: brightness(1);
-    opacity: 1;
-    transform: scale(1, 1) skewX(0deg) translateY(0);
-  }
-  12% {
-    filter: brightness(1.15);
-    opacity: 0.92;
-    transform: scale(0.94, 1.12) skewX(3deg) translateY(-1px);
-  }
-  28% {
-    filter: brightness(0.88);
-    opacity: 0.98;
-    transform: scale(1.06, 0.94) skewX(-2deg) translateY(0.5px);
-  }
-  41% {
-    filter: brightness(1.08);
-    opacity: 0.9;
-    transform: scale(0.98, 1.05) skewX(1.5deg) translateY(-0.5px);
-  }
-  55% {
-    filter: brightness(0.95);
-    opacity: 1;
-    transform: scale(1.02, 0.98) skewX(-1deg) translateY(0);
-  }
-  71% {
-    filter: brightness(1.12);
-    opacity: 0.94;
-    transform: scale(0.96, 1.08) skewX(2.5deg) translateY(-1px);
-  }
-  88% {
-    filter: brightness(0.9);
-    opacity: 0.97;
-    transform: scale(1.04, 0.96) skewX(-1.5deg) translateY(0.5px);
-  }
-}
-
-@keyframes candle-glow-pulse {
-  0%,
-  100% {
-    opacity: 0.45;
-    transform: scale(1);
-  }
-  33% {
-    opacity: 0.62;
-    transform: scale(1.08);
-  }
-  66% {
-    opacity: 0.38;
-    transform: scale(0.94);
-  }
-}
-
-/* Invitation-only: wax candle + flickering flame (see shell.tsx) */
-.pixel-chat-panel .chat-candle-decoration {
-  bottom: clamp(5.5rem, 20vh, 11rem);
-  left: 50%;
-  opacity: 0.88;
-  pointer-events: none;
-  position: absolute;
-  translate: -50% 0;
-  z-index: 0;
-}
-
-.pixel-chat-panel .chat-candle-stack {
-  align-items: center;
-  display: flex;
-  flex-direction: column;
-  width: 3rem;
-}
-
-.pixel-chat-panel .chat-candle-flame-wrap {
-  height: 2.35rem;
-  margin-bottom: -2px;
-  position: relative;
-  width: 1.75rem;
-}
-
-.pixel-chat-panel .chat-candle-flame-glow {
-  animation: candle-glow-pulse 2.8s ease-in-out infinite;
-  background: radial-gradient(
-    ellipse 100% 100% at 50% 75%,
-    oklch(0.72 0.2 58 / 0.55),
-    oklch(0.55 0.16 48 / 0.12) 45%,
-    transparent 70%
-  );
-  filter: blur(5px);
-  inset: -30% -40% -10% -40%;
-  opacity: 0.5;
-  position: absolute;
-}
-
-.pixel-chat-panel .chat-candle-flame {
-  animation: candle-flame-flicker 0.45s steps(3, end) infinite;
-  background: linear-gradient(
-    185deg,
-    oklch(0.95 0.18 95) 0%,
-    oklch(0.82 0.2 65) 35%,
-    oklch(0.62 0.18 48) 72%,
-    oklch(0.42 0.12 40) 100%
-  );
-  border-radius: 50% 50% 50% 50% / 72% 72% 28% 28%;
-  box-shadow:
-    0 0 10px oklch(0.78 0.2 62 / 0.75),
-    0 0 22px oklch(0.65 0.16 55 / 0.35);
-  height: 100%;
-  left: 50%;
-  position: absolute;
-  top: 0;
-  translate: -50% 0;
-  width: 68%;
-}
-
-.pixel-chat-panel .chat-candle-flame-core {
-  animation: candle-flame-flicker 0.38s steps(2, end) infinite reverse;
-  background: radial-gradient(
-    ellipse 80% 90% at 50% 35%,
-    oklch(0.98 0.1 95 / 0.95),
-    oklch(0.92 0.12 85 / 0.4) 45%,
-    transparent 72%
-  );
-  border-radius: 50%;
-  height: 42%;
-  left: 50%;
-  opacity: 0.85;
-  position: absolute;
-  top: 8%;
-  translate: -50% 0;
-  width: 38%;
-}
-
-.pixel-chat-panel .chat-candle-wick {
-  background: linear-gradient(180deg, oklch(0.12 0.02 58), oklch(0.08 0.01 58));
-  border-radius: 1px;
-  height: 5px;
-  margin-bottom: -1px;
-  width: 3px;
-}
-
-.pixel-chat-panel .chat-candle-body {
-  background: linear-gradient(
-    90deg,
-    oklch(0.22 0.03 55),
-    oklch(0.32 0.04 58) 45%,
-    oklch(0.2 0.025 52)
-  );
-  border-radius: 2px 2px 3px 3px;
-  box-shadow:
-    inset 0 1px 0 oklch(0.95 0.04 75 / 0.12),
-    0 2px 8px oklch(0 0 0 / 0.45);
-  height: 3.25rem;
-  width: 1.65rem;
 }
 
 /* Empty chat: spooky pixel dialogue (theme tokens — invitation + session) */
@@ -994,54 +1186,6 @@ textarea:focus-visible {
   color: oklch(0.92 0.04 58);
 }
 
-.suggestion-pill-12f-loop {
-  animation: suggestion-pill-12f 720ms steps(12, end) infinite;
-  transform-origin: center;
-  will-change: transform;
-}
-
-@keyframes suggestion-pill-12f {
-  0% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  8.333% {
-    transform: translate(-2px, -1px) rotate(-1.2deg);
-  }
-  16.666% {
-    transform: translate(1px, -3px) rotate(0.8deg);
-  }
-  25% {
-    transform: translate(-1px, 1px) rotate(-0.8deg);
-  }
-  33.333% {
-    transform: translate(2px, -2px) rotate(1deg);
-  }
-  41.666% {
-    transform: translate(-2px, 2px) rotate(-1.1deg);
-  }
-  50% {
-    transform: translate(1px, 2px) rotate(0.9deg);
-  }
-  58.333% {
-    transform: translate(-1px, -2px) rotate(-0.7deg);
-  }
-  66.666% {
-    transform: translate(2px, 1px) rotate(0.7deg);
-  }
-  75% {
-    transform: translate(-2px, 0) rotate(-0.9deg);
-  }
-  83.333% {
-    transform: translate(1px, -1px) rotate(0.6deg);
-  }
-  91.666% {
-    transform: translate(0, 1px) rotate(-0.5deg);
-  }
-  100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-}
-
 /* Line labels inside pills inherit hover color (invitation span rule is more specific otherwise). */
 .pixel-chat-root [data-suggestion-pill="true"] span {
   color: inherit;
@@ -1109,25 +1253,16 @@ textarea:focus-visible {
     animation: none;
   }
 
+  .pixel-chat-panel .chat-space-stars {
+    animation: none;
+    opacity: 0.68;
+  }
+
   .pixel-chat-panel .chat-creepy-eye {
     animation: none;
     filter: brightness(1);
     opacity: 0.75;
     transform: none;
-  }
-
-  .pixel-chat-panel .chat-candle-flame,
-  .pixel-chat-panel .chat-candle-flame-core {
-    animation: none;
-    filter: brightness(1);
-    opacity: 1;
-    transform: translate(-50%, 0) scale(1, 1);
-  }
-
-  .pixel-chat-panel .chat-candle-flame-glow {
-    animation: none;
-    opacity: 0.48;
-    transform: scale(1);
   }
 
   .pixel-chat-root,

@@ -187,6 +187,12 @@ Do these in order. Paste each value on **one line** with no spaces around `=`.
 3. Copy the entire output (one line).
 4. Paste after `AUTH_SECRET=` in `.env.local` (no quotes unless the secret contains special characters that break the file—usually no quotes needed).
 
+### Email-only sign-in (optional)
+
+When **`VIRGIL_PASSWORDLESS_LOGIN=1`** and **`VIRGIL_PASSWORDLESS_EMAILS`** is a non-empty comma-separated list, the app **disables password authentication** and signs in anyone who submits a matching email (case-insensitive) for an **existing** user row. New accounts still use **Register** with email only; the server stores a random password hash you never use.
+
+**Security:** This is **not** proof of email ownership—only use on **trusted networks** or where you accept single-owner / obscurity risk. On a **public URL**, prefer keeping password auth or adding a real magic-link flow later.
+
 ### 1.2 `POSTGRES_URL` (Neon **or** Supabase)
 
 Use any standard Postgres provider. Two tested options:
@@ -242,7 +248,8 @@ Use any standard Postgres provider. Two tested options:
 1. In the [Upstash Console](https://console.upstash.com), go to **QStash** (same account as Redis).
 2. Open the **Details** tab.
 3. Copy **QSTASH_TOKEN**, **QSTASH_CURRENT_SIGNING_KEY**, and **QSTASH_NEXT_SIGNING_KEY**.
-4. Paste each into `.env.local`.
+4. Paste each into `.env.local` (and Vercel env when deployed).
+5. **Region / `QSTASH_URL`:** The official JS client defaults to the **EU** API host (`https://qstash.upstash.io`) when `QSTASH_URL` is unset. If your QStash resource is in the **US** region, set **`QSTASH_URL=https://qstash-us-east-1.upstash.io`** (use the exact base URL shown in the console). EU can use `https://qstash.upstash.io` or `https://qstash-eu-central-1.upstash.io`. Mismatch produces errors like *user … not found in this region (eu-central-1)*. See [Upstash multi-region QStash](https://upstash.com/docs/qstash/howto/multi-region).
 
 ### 1.7 `RESEND_API_KEY` (Resend)
 
@@ -383,6 +390,8 @@ The app listens on **all interfaces** inside the container (`HOSTNAME=0.0.0.0`);
 | Night review enqueue | `/api/night-review/enqueue` | 03:00 (`0 3 * * *`) |
 | Daily digest | `/api/digest` | 08:00 (`0 8 * * *`) |
 
+**Daily digest → Slack (optional):** When `VIRGIL_SLACK_CHECKIN_WEBHOOK_URL` or (`SLACK_BOT_TOKEN` + `VIRGIL_SLACK_CHECKIN_CHANNEL_ID`) is set, each digest run also posts the same plaintext body to Slack after building it (email send failures do not block Slack). See [docs/operator-integrations-runbook.md](docs/operator-integrations-runbook.md). Interactive sends remain on **OpenClaw** / **Digital Self** when configured.
+
 **Requirements**
 
 - The running app must have **`CRON_SECRET`** set to the same value you send in the header.
@@ -487,7 +496,9 @@ Each pass prints **first-token latency** (`first_token_ms`), **total wall time**
 pnpm db:seed
 ```
 
-Creates a demo user (see `lib/db/seed.ts`). Use only on a dev database.
+Creates or updates the demo user `demo@virgil.local` with a bcrypt password so **Sign in** works. Default password is `virgil-demo` unless you set **`VIRGIL_SEED_DEMO_PASSWORD`**. If the demo row already existed with `password: null`, seed backfills the hash. Use only on a dev database.
+
+**Locked out of a non-demo account locally?** After `POSTGRES_URL` is set: `pnpm db:set-password you@example.com 'your-new-password'` (no forgot-password UI yet).
 
 ---
 
@@ -595,12 +606,15 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `BLOB_READ_WRITE_TOKEN` | Yes           | Yes                | Vercel Blob for file uploads             |
 | `AI_GATEWAY_API_KEY`  | Yes              | **No** (OIDC)      | Only needed outside Vercel               |
 | `QSTASH_TOKEN`        | Yes              | Yes                | Upstash QStash for reminders             |
+| `QSTASH_URL`          | If US region     | If US region       | API base; SDK defaults to EU if unset — must match token region |
 | `QSTASH_CURRENT_SIGNING_KEY` | Yes       | Yes                | QStash webhook verification              |
 | `QSTASH_NEXT_SIGNING_KEY` | Yes          | Yes                | QStash webhook verification (rotation)   |
 | `RESEND_API_KEY`      | Yes              | Yes                | Resend for reminder and digest emails    |
 | `CRON_SECRET`         | Yes              | Yes                | Protects `/api/digest` and `/api/night-review/enqueue` cron endpoints |
 | `AUTH_URL`            | If not localhost | If not localhost   | Must match the **exact origin** users open (scheme + host + port). Required for NextAuth cookies on LAN or custom domain. See [Setup checklist § LAN](#access-from-another-device-on-your-lan-eg-gaming-pc-as-server) |
 | `NEXT_PUBLIC_APP_URL` | If not localhost | If not localhost   | Same origin as `AUTH_URL` for client; **build-time** for Next. Off Vercel, **required** for correct absolute URLs (e.g. night-review enqueue → QStash → `POST /api/night-review/run`). |
+| `VIRGIL_PASSWORDLESS_LOGIN` | No | No | Set to `1` with `VIRGIL_PASSWORDLESS_EMAILS` to disable password auth and use email-only sign-in for allowlisted addresses (trusted / single-owner only; see Setup checklist). |
+| `VIRGIL_PASSWORDLESS_EMAILS` | With passwordless | Same | Comma-separated emails allowed for passwordless sign-in (case-insensitive). |
 | `VERCEL_URL`          | No               | Set by Vercel      | Used when present to derive base URL for enqueue; absent on self-hosted — then `NEXT_PUBLIC_APP_URL` applies. |
 | `OLLAMA_BASE_URL`     | If using Ollama  | If using Ollama    | Default `http://127.0.0.1:11434` local; Docker/LAN: see [Setup checklist](#setup-checklist) / [beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md). |
 | `VIRGIL_OPEN_URL`     | No               | No                 | Optional; launcher / smoke open URL (packaging). |
@@ -647,19 +661,32 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `VIRGIL_GIT_SIGNALS` | No | No | Reserved: set to `1` when Git/Vercel commit signals for study momentum are implemented |
 | `VIRGIL_JOURNAL_FILE_PARSE` | No | No | Set to `1` for `GET/POST /api/journal/parse` (Bearer `CRON_SECRET`); uses `NIGHT_REVIEW_MODEL`. On Vercel, POST JSON `{ "content": "…" }` instead of filesystem. |
 | `VIRGIL_JOURNAL_FILE_PATH` | No | No | Markdown path (default `workspace/journal/today.md`); relative paths resolve from repo cwd. |
+| `VIRGIL_WIKI_OPS_ENABLED` | No | No | Set to `1` to enable manual admin wiki ops at `POST /api/wiki/ops` (requires `Authorization: Bearer $CRON_SECRET`). Supports `ingest`, `query`, and `lint` actions for the Virgil 1.1 wiki bridge. |
+| `VIRGIL_WIKI_ROOT` | No | No | Optional wiki root path for bridge memory operations (default `workspace/wiki-starter`). Useful when running a separate wiki repo or host-specific mount path. |
+| `VIRGIL_WIKI_DAILY_ENABLED` | No | No | Set to `1` to enable daily maintenance at `GET /api/wiki/daily` (requires `Authorization: Bearer $CRON_SECRET`). Writes a daily review page plus index/log updates for the wiki bridge. |
 | `GITHUB_REPOSITORY` | No | No | `owner/repo` — enables `submitProductOpportunity` (gateway models); see [docs/github-product-opportunity.md](docs/github-product-opportunity.md) |
 | `GITHUB_PRODUCT_OPPORTUNITY_TOKEN` or `GITHUB_TOKEN` | No | No | PAT with `issues: write` on that repo |
 | `GITHUB_PRODUCT_OPPORTUNITY_LABELS` | No | No | Optional comma-separated issue labels |
 | `AGENT_TASK_TRIAGE_ENABLED` | No | No | Set to `1` to enable background triage of submitted agent tasks via local Ollama |
 | `AGENT_TASK_TRIAGE_MODEL` | No | No | Model id for triage worker (default `ollama/qwen2.5:7b-instruct`) |
+| `VIRGIL_DELEGATION_BACKEND` | No | No | Delegation provider selector for the Virgil 1.1 bridge (`openclaw` or `hermes`; default `openclaw`). During rollout, treat `hermes` as opt-in and keep OpenClaw-compatible paths available. |
 | `OPENCLAW_URL` | No | No | Optional OpenClaw gateway. Hardened default is a local tunnel (`ws://127.0.0.1:13100`) on the Mac: set `OPENCLAW_SSH_HOST` and run `pnpm openclaw:tunnel` (see [docs/openclaw-ssh-tunnel-hardening.md](docs/openclaw-ssh-tunnel-hardening.md) for SSH target and owner reference host). Bridge behavior: [docs/openclaw-bridge.md](docs/openclaw-bridge.md) |
 | `OPENCLAW_HTTP_URL` | No | No | Explicit HTTP origin for OpenClaw REST (defaults from `OPENCLAW_URL`). Hardened tunnel value: `http://127.0.0.1:13100` |
 | `OPENCLAW_EXECUTE_PATH` | No | No | POST path for intents (default `/api/execute`) |
 | `OPENCLAW_SKILLS_PATH` | No | No | GET path for skills (default `/api/skills`) |
 | `OPENCLAW_HEALTH_PATH` | No | No | GET path for health ping (default `/health`) |
+| `HERMES_HTTP_URL` | No | No | Optional Hermes bridge HTTP origin for Virgil 1.1 delegation (example local default `http://127.0.0.1:8765`). Keep loopback or tunnel-only exposure unless explicitly hardened. |
+| `HERMES_EXECUTE_PATH` | No | No | Hermes execute path for delegated actions (default `/api/execute`) in the 1.1 bridge contract. |
+| `HERMES_PENDING_PATH` | No | No | Hermes pending-intent listing path (default `/api/pending`) for approval UX parity with existing pending queues. |
+| `HERMES_HEALTH_PATH` | No | No | Hermes health probe path (default `/health`) used for backend availability checks. |
+| `HERMES_SHARED_SECRET` | No | No | Optional shared bearer for non-local Hermes bridge calls. Required when Hermes is reachable beyond loopback/tunnel boundaries. |
+| `VIRGIL_HERMES_BRIDGE_STUB_ENABLED` | No | No | Set to `1` to expose local stub routes (`/api/hermes/health`, `/api/hermes/execute`, `/api/hermes/pending`) when testing the Virgil 1.1 Hermes path without an external Hermes HTTP bridge. |
 | `DIGITAL_SELF_BASE_URL` | No | No | Optional **Digital Self** orchestrator origin (`digital-self/` package); `GET /api/digital-self/bridge-health` pings `/health`; see [docs/digital-self-bridge.md](docs/digital-self-bridge.md) |
 | `DIGITAL_SELF_SERVICE_TOKEN` | No | No | Optional; same token as orchestrator for future server-to-server `/v1/*` calls from Virgil |
 | `VIRGIL_BRIDGE_WEBHOOK_SECRET` | No | No | Optional shared bearer for `POST /api/digital-self/webhook` when the orchestrator notifies Virgil (`VIRGIL_BRIDGE_WEBHOOK_URL` + secret on the **digital-self** side); see [docs/digital-self-bridge.md](docs/digital-self-bridge.md) |
+| `VIRGIL_SLACK_CHECKIN_WEBHOOK_URL` | No | No | Incoming webhook URL; mirrors `GET /api/digest` body to Slack per eligible user (see [docs/operator-integrations-runbook.md](docs/operator-integrations-runbook.md)) |
+| `SLACK_BOT_TOKEN` | No | No | Bot token (`xoxb-…`) for `chat.postMessage` when webhook URL is not used |
+| `VIRGIL_SLACK_CHECKIN_CHANNEL_ID` | With bot token | Same | Channel id (e.g. `C…`) for digest mirror; required with `SLACK_BOT_TOKEN` when webhook unset |
 | `VIRGIL_MULTI_AGENT_ENABLED` | No | No | Set to `1` / `true` for gateway-only planner+executor pass before `streamText` (extra cost/latency) |
 | `VIRGIL_MULTI_AGENT_PLANNER_MODEL` | No | No | Optional model id for the planner when different from the chat model |
 | `BOTID_ENFORCE` | No | No | Set to `1` / `true` to return 403 on `POST /api/chat` when BotID classifies an unverified bot; default is log-only in production (`lib/security/botid-chat.ts`) |
@@ -758,6 +785,7 @@ Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](doc
 - **OpenClaw bridge** (optional): `delegateTask` / `approveOpenClawIntent`, `PendingIntent` queue, `GET/PATCH /api/openclaw/pending` — [docs/openclaw-bridge.md](docs/openclaw-bridge.md), [docs/DECISIONS.md](docs/DECISIONS.md).
 - **Complementarity framing (2026-04-06 ADR):** optional OpenClaw = breadth/orchestration integration; Virgil = cognitive brain; Hermes-style learning specialist + ACP = future intent only ([docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md) §2b) — [docs/DECISIONS.md](docs/DECISIONS.md).
 - **Mobile browser / local LLM (2026-04-06 ADR):** phone (e.g. Pixel) is **not** a required on-device or LAN-direct Ollama target; chat inference stays on the **server** that serves `/api/chat`—avoids unnecessary VPN/tunnel/split-stack design — [docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md), [docs/DECISIONS.md](docs/DECISIONS.md).
+- **Virgil 1.1 bridge (2026-04-16 ADR):** current-shell bridge for **Hermes harness + LLM Wiki memory layer** (`raw/`, `wiki/`, `schema/`) while preserving existing escalation/approval/safety controls and keeping v2 as a separate greenfield track — [docs/DECISIONS.md](docs/DECISIONS.md), [workspace/wiki-starter/README.md](workspace/wiki-starter/README.md).
 - **Chat fallback cascade** (`VIRGIL_CHAT_FALLBACK=1`): when a local Ollama model fails (unreachable, missing model, timeout), the chat route automatically escalates to direct Gemini (personal API key), then Vercel AI Gateway. No mid-stream fallback; escalation uses gateway-style prompt and full tool set. See [docs/DECISIONS.md](docs/DECISIONS.md) (2026-04-04).
 - **Gateway → Gemini direct → Ollama** (`GOOGLE_GENERATIVE_AI_API_KEY` + optional `VIRGIL_GATEWAY_FALLBACK_GEMINI_MODEL`, then `VIRGIL_GATEWAY_FALLBACK_OLLAMA=1`): when a **gateway** chat request fails with an eligible **pre-stream** error (including many rate limits), try **direct Gemini**, then optional **local Ollama** with **`DEFAULT_GATEWAY_FALLBACK_OLLAMA_MODEL`**. **Not** mid-stream. See [docs/tickets/2026-04-06-on-device-gemma-android-spike.md](docs/tickets/2026-04-06-on-device-gemma-android-spike.md) § Mid-stream follow-up.
 

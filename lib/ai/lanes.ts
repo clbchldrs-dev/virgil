@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { delegationBackendShortPhrase } from "@/lib/integrations/delegation-labels";
+import type { DelegationBackend } from "@/lib/integrations/delegation-provider";
 
 /**
  * Delegation lanes: route work to the right executor instead of one overloaded turn.
@@ -10,13 +12,25 @@ export type VirgilLaneId = (typeof VIRGIL_LANE_IDS)[number];
 
 export const virgilLaneIdSchema = z.enum(VIRGIL_LANE_IDS);
 
+export type VirgilLaneDelegationHint = {
+  enabled: boolean;
+  backend: DelegationBackend;
+};
+
 /**
  * System-prompt block for gateway tool-capable chat (injected in companion prompt).
  */
-export function buildVirgilLaneGuidanceBlock(): string {
+export function buildVirgilLaneGuidanceBlock(
+  delegation?: VirgilLaneDelegationHint
+): string {
+  const homeLine =
+    delegation?.enabled === true
+      ? `- **home** — Execution on the user's LAN or messaging/files/shell outside this app: prefer **delegateTask** (${delegationBackendShortPhrase(delegation.backend)}) when that tool is in your list; pair with calendar reads in-process if needed.`
+      : "- **home** — Execution outside this app: use **delegateTask** only when it appears in your tool list (operator configures OpenClaw or Hermes). If it is missing, give concrete steps the user can run themselves; do not pretend a bridge exists.";
+
   return `Delegation lanes (pick one mental model per task; avoid mixing unrelated domains in one tool chain when avoidable):
 - **chat** — Answer, plan, and use in-process tools (memory, calendar, documents, weather, goals) yourself.
-- **home** — Execution on the user's LAN or messaging/files/shell outside this app: prefer **delegateTask** (OpenClaw) when OPENCLAW is configured; pair with calendar reads in-process if needed.
+${homeLine}
 - **code** — Improvements to Virgil itself or the repo: use **submitAgentTask** after the user agrees; one focused task per submission.
 - **research** — Web or fetch-backed synthesis: use **fetchUrl** when the hostname is allowlisted; summarize with sources; do not guess URLs.
 

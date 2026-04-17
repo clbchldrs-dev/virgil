@@ -1,7 +1,9 @@
 import { Suspense } from "react";
+import { isPasswordlessLoginConfigured } from "@/lib/passwordless-login";
 import { LoginContent } from "./login-content";
 
 export default function Page() {
+  const passwordless = isPasswordlessLoginConfigured();
   return (
     <Suspense
       fallback={
@@ -13,7 +15,7 @@ export default function Page() {
         </>
       }
     >
-      <LoginContent />
+      <LoginContent passwordless={passwordless} />
     </Suspense>
   );
 }

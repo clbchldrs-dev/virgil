@@ -2,6 +2,8 @@
 
 Standalone service that ingests normalized messages from **Slack**, **WhatsApp Business**, and **SMS** (iMessage bridges use the SMS adapter shape), runs a **risk policy** + **interference mode**, and either **auto-sends** low-risk replies or **queues drafts** for approval.
 
+**Scheduled digest vs Digital Self:** The main Virgil app can mirror the **daily email digest** to Slack via webhook or bot token ([operator-integrations-runbook.md](../docs/operator-integrations-runbook.md)) without running this service. Use Digital Self for **inbound** Slack events, interference modes, and **approval-gated** outbound messages.
+
 ## Quick start
 
 ```bash

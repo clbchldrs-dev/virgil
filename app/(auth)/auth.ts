@@ -6,6 +6,10 @@ import { getAuthSecretResolved } from "@/lib/auth-secret";
 import { DUMMY_PASSWORD, shouldUseSecureAuthCookie } from "@/lib/constants";
 import { createGuestUser, getUser } from "@/lib/db/queries";
 import { postVirgilDebugIngest } from "@/lib/debug-ingest";
+import {
+  isEmailAllowedForPasswordlessLogin,
+  isPasswordlessLoginConfigured,
+} from "@/lib/passwordless-login";
 import { authConfig } from "./auth.config";
 
 export type UserType = "guest" | "regular";
@@ -42,37 +46,69 @@ export const {
   secret: getAuthSecretResolved(),
   useSecureCookies: shouldUseSecureAuthCookie(),
   providers: [
-    Credentials({
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        const email = String(credentials.email ?? "");
-        const password = String(credentials.password ?? "");
-        const users = await getUser(email);
+    ...(isPasswordlessLoginConfigured()
+      ? [
+          Credentials({
+            id: "passwordless",
+            credentials: {
+              email: { label: "Email", type: "email" },
+            },
+            async authorize(credentials) {
+              if (!isPasswordlessLoginConfigured()) {
+                return null;
+              }
+              const email = String(credentials?.email ?? "");
+              if (!isEmailAllowedForPasswordlessLogin(email)) {
+                return null;
+              }
+              const users = await getUser(email);
+              if (users.length === 0) {
+                return null;
+              }
+              const [found] = users;
+              return {
+                id: found.id,
+                email: found.email,
+                name: found.name,
+                image: found.image,
+                type: "regular" as const,
+              };
+            },
+          }),
+        ]
+      : [
+          Credentials({
+            credentials: {
+              email: { label: "Email", type: "email" },
+              password: { label: "Password", type: "password" },
+            },
+            async authorize(credentials) {
+              const email = String(credentials.email ?? "");
+              const password = String(credentials.password ?? "");
+              const users = await getUser(email);
 
-        if (users.length === 0) {
-          await compare(password, DUMMY_PASSWORD);
-          return null;
-        }
+              if (users.length === 0) {
+                await compare(password, DUMMY_PASSWORD);
+                return null;
+              }
 
-        const [user] = users;
+              const [user] = users;
 
-        if (!user.password) {
-          await compare(password, DUMMY_PASSWORD);
-          return null;
-        }
+              if (!user.password) {
+                await compare(password, DUMMY_PASSWORD);
+                return null;
+              }
 
-        const passwordsMatch = await compare(password, user.password);
+              const passwordsMatch = await compare(password, user.password);
 
-        if (!passwordsMatch) {
-          return null;
-        }
+              if (!passwordsMatch) {
+                return null;
+              }
 
-        return { ...user, type: "regular" };
-      },
-    }),
+              return { ...user, type: "regular" };
+            },
+          }),
+        ]),
     Credentials({
       id: "guest",
       credentials: {},

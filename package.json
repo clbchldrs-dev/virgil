@@ -23,6 +23,7 @@
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
     "db:seed": "npx tsx lib/db/seed.ts",
+    "db:set-password": "npx tsx scripts/set-local-user-password.ts",
     "test": "export PLAYWRIGHT=True && pnpm exec playwright test",
     "test:unit": "node --test --import tsx tests/unit/*.test.ts",
     "ollama:smoke": "pnpm exec tsx scripts/ollama-smoke.ts",

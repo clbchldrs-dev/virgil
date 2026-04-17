@@ -5,6 +5,7 @@ import {
   getRecentMemories,
   getUsersEligibleForCompanionBackgroundJobs,
 } from "@/lib/db/queries";
+import { postDailyDigestToSlack } from "@/lib/integrations/slack-checkin";
 
 function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
@@ -99,12 +100,24 @@ export async function GET(request: Request) {
           : "Daily check-in from Virgil:";
       const body = `${intro}\n\n${sections.join("\n\n")}\n\nHave a good day.`;
 
-      await getResend().emails.send({
-        from: "Assistant <onboarding@resend.dev>",
-        to: owner.email,
-        subject: `Your daily digest — ${new Date().toLocaleDateString()}`,
-        text: body,
-      });
+      try {
+        await getResend().emails.send({
+          from: "Assistant <onboarding@resend.dev>",
+          to: owner.email,
+          subject: `Your daily digest — ${new Date().toLocaleDateString()}`,
+          text: body,
+        });
+      } catch (emailError) {
+        console.error(`Digest email failed for user ${owner.id}:`, emailError);
+      }
+
+      const slack = await postDailyDigestToSlack(body);
+      if (!slack.ok) {
+        console.error(
+          `Digest Slack mirror failed for user ${owner.id}:`,
+          slack.error
+        );
+      }
     } catch (error) {
       console.error(`Digest failed for user ${owner.id}:`, error);
     }
