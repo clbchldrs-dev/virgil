@@ -90,8 +90,8 @@ export function recallMemory({ userId }: { userId: string }) {
             memories: mem0Results.map((m) => ({
               kind: m.categories?.at(0) ?? "note",
               content: m.memory ?? "",
-              savedAt: m.created_at
-                ? new Date(m.created_at).toISOString()
+              savedAt: m.createdAt
+                ? new Date(m.createdAt).toISOString()
                 : new Date().toISOString(),
             })),
           };

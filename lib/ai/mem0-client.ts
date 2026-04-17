@@ -131,7 +131,7 @@ export async function mem0Add(
   }
 
   try {
-    return await client.add(messages, { user_id: userId, metadata });
+    return await client.add(messages, { userId, metadata });
   } catch (error) {
     console.error("[mem0] add failed:", error);
     return null;
@@ -154,11 +154,12 @@ export async function mem0Search(
   }
 
   try {
-    return await client.search(query, {
-      user_id: userId,
-      limit: options?.limit ?? 8,
+    const response = await client.search(query, {
+      filters: { userId },
+      topK: options?.limit ?? 8,
       ...(options?.categories ? { categories: options.categories } : {}),
     });
+    return response.results;
   } catch (error) {
     console.error("[mem0] search failed:", error);
     return [];
