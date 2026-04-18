@@ -24,6 +24,16 @@ test("isRunHourAllowedForOffPeak rejects midday", () => {
   assert.equal(isRunHourAllowedForOffPeak(14, bounds), false);
 });
 
+test("11:05pm America/New_York is enqueue slot when run hour is 23 (EST)", () => {
+  // 2026-01-16 04:05 UTC = Jan 15 23:05 EST (UTC-5); heavy jobs default to 23:00–07:00 local.
+  const jan = new Date("2026-01-16T04:05:00.000Z");
+  assert.equal(
+    isNightReviewCronEnqueueSlot(jan, "America/New_York", bounds, 23),
+    true
+  );
+  assert.equal(getLocalHourMinute(jan, "America/New_York").hour, 23);
+});
+
 test("3am America/New_York is enqueue slot when run hour is 3", () => {
   // 2026-01-15 08:00 UTC = 03:00 EST (UTC-5)
   const jan = new Date("2026-01-15T08:00:00.000Z");

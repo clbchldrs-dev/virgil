@@ -5,7 +5,7 @@ Maps **Virgil features** to **provider quotas** so you can stay within Hobby/fre
 | Provider | Typical free / Hobby cap | Features that consume it |
 |----------|---------------------------|---------------------------|
 | **Vercel Hobby** | 100 GB bandwidth/mo, 1,000 serverless function hours/mo | Every `POST /api/chat`, API routes, page SSR. Heavy chat volume burns **fn-hours** fastest. |
-| **Vercel Cron** | 2 jobs on Hobby (limit reached) | Daily digest (`/api/digest`), night-review enqueue daily UTC (`/api/night-review/enqueue` — align TZ with `vercel.json` schedule). More schedules → **host cron** + `curl` + `CRON_SECRET` (see AGENTS.md). |
+| **Vercel Cron** | 2 jobs on Hobby (limit reached) | Daily digest (`/api/digest`), night-review enqueue (`/api/night-review/enqueue` — `vercel.json` UTC vs `America/New_York` / DST; see AGENTS.md). More schedules → **host cron** + `curl` + `CRON_SECRET`. |
 | **Neon free** (or **Supabase**) | ~512 MB storage, compute hours | All Postgres: chats, messages, `Memory`, reminders metadata, `PendingIntent`, `AgentTask`, etc. |
 | **Upstash Redis** | 10K commands/day | Rate limits, stream/resumable support, Mem0 monthly counters. |
 | **Upstash QStash** | **500 messages/day** | **Each** reminder fire, digest fan-out, night-review **per user** enqueue, agent-task triage deliveries. Batch features and avoid extra workers per lane without counting messages. |

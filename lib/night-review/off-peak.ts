@@ -57,8 +57,8 @@ export function isRunHourAllowedForOffPeak(
  * True when `now` in `timeZone` is the single cron slot: local hour matches
  * `runLocalHour` and that hour falls inside off-peak bounds.
  * Cron should invoke at least once during that local hour (e.g. Vercel daily
- * `5 11 * * *` UTC — pick UTC time so it falls in the target local hour; Hobby
- * cannot use hourly schedules).
+ * UTC — see `vercel.json`; align UTC with `NIGHT_REVIEW_TIMEZONE` and
+ * `NIGHT_REVIEW_RUN_LOCAL_HOUR`; Hobby cannot use hourly schedules).
  */
 export function isNightReviewCronEnqueueSlot(
   now: Date,

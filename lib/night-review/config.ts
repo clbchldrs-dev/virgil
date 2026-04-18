@@ -33,14 +33,14 @@ export function getNightReviewOffPeakBounds(): OffPeakBounds {
 
 /**
  * Local clock hour (0–23 in {@link getNightReviewTimezone}) when cron should enqueue
- * exactly once per night. Must fall inside the off-peak band (default 03:00).
+ * exactly once per night. Must fall inside the off-peak band (default **23** = 11:00pm).
  */
 export function getNightReviewRunLocalHour(): number {
-  return parseHourEnv(process.env.NIGHT_REVIEW_RUN_LOCAL_HOUR, 3);
+  return parseHourEnv(process.env.NIGHT_REVIEW_RUN_LOCAL_HOUR, 23);
 }
 
 /**
- * True when the cron caller should enqueue (hourly schedule + local slot).
+ * True when the cron caller should enqueue (scheduled GET + local slot).
  * Manual `/api/night-review/trigger` does not use this — it allows daytime tests.
  */
 export function shouldNightReviewCronEnqueueNow(now: Date): boolean {
@@ -89,7 +89,7 @@ export function getNightReviewStaggerSeconds(): number {
 }
 
 export function getNightReviewTimezone(): string {
-  return process.env.NIGHT_REVIEW_TIMEZONE?.trim() || "UTC";
+  return process.env.NIGHT_REVIEW_TIMEZONE?.trim() || "America/New_York";
 }
 
 /** Calendar key for idempotency (date of window end in configured TZ). */
