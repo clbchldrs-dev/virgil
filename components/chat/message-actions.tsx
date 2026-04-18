@@ -1,6 +1,6 @@
 import equal from "fast-deep-equal";
-import { Volume2Icon } from "lucide-react";
-import { memo, useRef } from "react";
+import { SquareIcon, Volume2Icon } from "lucide-react";
+import { memo } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { useCopyToClipboard } from "usehooks-ts";
@@ -11,6 +11,7 @@ import {
   MessageActions as Actions,
 } from "../ai-elements/message";
 import { CopyIcon, PencilEditIcon, ThumbDownIcon, ThumbUpIcon } from "./icons";
+import { useVirgilSpeech } from "./virgil-speech-provider";
 
 export function PureMessageActions({
   chatId,
@@ -27,7 +28,7 @@ export function PureMessageActions({
 }) {
   const { mutate } = useSWRConfig();
   const [_, copyToClipboard] = useCopyToClipboard();
-  const lastSpokenMessageIdRef = useRef<string | null>(null);
+  const { speak, speakingMessageId } = useVirgilSpeech();
   const ttsPublicEnabled =
     process.env.NEXT_PUBLIC_VIRGIL_TTS_ENABLED === "1" ||
     process.env.NEXT_PUBLIC_VIRGIL_TTS_ENABLED === "true";
@@ -87,22 +88,13 @@ export function PureMessageActions({
       toast.error("Speech is not supported in this browser.");
       return;
     }
-    if (
-      window.speechSynthesis.speaking &&
-      lastSpokenMessageIdRef.current === message.id
-    ) {
-      window.speechSynthesis.cancel();
-      lastSpokenMessageIdRef.current = null;
-      return;
+    const ok = speak(message.id, textFromParts);
+    if (!ok) {
+      toast.error("Nothing left to speak after removing formatting.");
     }
-    window.speechSynthesis.cancel();
-    lastSpokenMessageIdRef.current = message.id;
-    const utterance = new SpeechSynthesisUtterance(textFromParts);
-    utterance.onend = () => {
-      lastSpokenMessageIdRef.current = null;
-    };
-    window.speechSynthesis.speak(utterance);
   };
+
+  const isSpeakingThis = speakingMessageId === message.id;
 
   return (
     <Actions className="-ml-0.5 opacity-0 transition-opacity duration-150 group-hover/message:opacity-100">
@@ -116,12 +108,22 @@ export function PureMessageActions({
 
       {ttsPublicEnabled ? (
         <Action
-          className="text-muted-foreground/50 hover:text-foreground"
+          aria-label={isSpeakingThis ? "Stop speaking" : "Speak message"}
+          aria-pressed={isSpeakingThis}
+          className={
+            isSpeakingThis
+              ? "text-foreground"
+              : "text-muted-foreground/50 hover:text-foreground"
+          }
           onClick={handleSpeak}
-          tooltip="Speak (browser)"
+          tooltip={isSpeakingThis ? "Stop" : "Speak (browser)"}
           type="button"
         >
-          <Volume2Icon size={14} />
+          {isSpeakingThis ? (
+            <SquareIcon className="size-3.5 fill-current" />
+          ) : (
+            <Volume2Icon size={14} />
+          )}
         </Action>
       ) : null}
 
@@ -237,10 +239,16 @@ export function PureMessageActions({
 export const MessageActions = memo(
   PureMessageActions,
   (prevProps, nextProps) => {
+    if (!equal(prevProps.message, nextProps.message)) {
+      return false;
+    }
     if (!equal(prevProps.vote, nextProps.vote)) {
       return false;
     }
     if (prevProps.isLoading !== nextProps.isLoading) {
+      return false;
+    }
+    if (prevProps.chatId !== nextProps.chatId) {
       return false;
     }
 

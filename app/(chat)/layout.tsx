@@ -7,6 +7,7 @@ import { AppSidebar } from "@/components/chat/app-sidebar";
 import { ChatSurfaceLayer } from "@/components/chat/chat-surface-layer";
 import { DataStreamProvider } from "@/components/chat/data-stream-provider";
 import { ModelMetricsProvider } from "@/components/chat/model-metrics-provider";
+import { VirgilSpeechProvider } from "@/components/chat/virgil-speech-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { postVirgilDebugIngest } from "@/lib/debug-ingest";
 import { auth } from "../(auth)/auth";
@@ -27,9 +28,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       />
       <DataStreamProvider>
         <ModelMetricsProvider>
-          <Suspense fallback={<div className="flex h-dvh bg-sidebar" />}>
-            <SidebarShell>{children}</SidebarShell>
-          </Suspense>
+          <VirgilSpeechProvider>
+            <Suspense fallback={<div className="flex h-dvh bg-sidebar" />}>
+              <SidebarShell>{children}</SidebarShell>
+            </Suspense>
+          </VirgilSpeechProvider>
         </ModelMetricsProvider>
       </DataStreamProvider>
     </>
