@@ -8,6 +8,7 @@ import {
   rejectPendingIntent,
   trySendPendingIntentById,
 } from "@/lib/db/queries";
+import { buildPendingIntentApproveResponse } from "@/lib/integrations/delegation-pending-route";
 import {
   getDelegationProvider,
   isDelegationConfigured,
@@ -55,6 +56,7 @@ export async function PATCH(request: Request) {
   }
 
   const userId = session.user.id;
+  const delegationProvider = getDelegationProvider();
 
   let body: unknown;
   try {
@@ -78,31 +80,18 @@ export async function PATCH(request: Request) {
     return Response.json({ ok: true, intent: row });
   }
 
-  const confirmed = await confirmPendingIntent({ id, userId });
-
-  if (!confirmed) {
-    const alreadyConfirmed = await isAlreadyConfirmedUnsent({ id, userId });
-    if (!alreadyConfirmed) {
-      return Response.json(
-        { error: "not found or not awaiting approval" },
-        { status: 404 }
-      );
-    }
-  }
-
   try {
-    const sendResult = await trySendPendingIntentById({ id, userId });
-
-    if (sendResult.skipped) {
-      return Response.json(
-        { error: "intent could not be sent", detail: sendResult.reason },
-        { status: 409 }
-      );
-    }
-
-    return Response.json({
-      ok: sendResult.result.success,
-      result: sendResult.result,
+    const responsePayload = await buildPendingIntentApproveResponse({
+      intentId: id,
+      backend: delegationProvider.backend,
+      confirmPendingIntent: () => confirmPendingIntent({ id, userId }),
+      isAlreadyConfirmedUnsent: () => isAlreadyConfirmedUnsent({ id, userId }),
+      trySendPendingIntentById: () => trySendPendingIntentById({ id, userId }),
+      countDelegationBacklogForUser: () =>
+        countDelegationBacklogForUser(userId),
+    });
+    return Response.json(responsePayload.body, {
+      status: responsePayload.status,
     });
   } catch {
     return Response.json(

@@ -55,6 +55,40 @@ This keeps OpenClaw private on the remote host while Virgil talks only to a loca
 - **`GET/PATCH /api/openclaw/pending`** for UI: list pending approvals, approve/reject.
 - **`dispatchVirgilEventToOpenClaw`** in `lib/events/processors/openclaw-dispatcher.ts` for future event-bus wiring.
 
+### Normalized delegation outcome contract
+
+Delegation tools and `PATCH /api/openclaw/pending` now share one outcome shape via:
+
+- `lib/integrations/delegation-errors.ts`
+
+Shared builders:
+
+- `buildDelegationSkipFailure(...)`
+- `buildDelegationQueuedSuccess(...)`
+- `buildDelegationSendOutcome(...)`
+- `delegationFailureStatusCode(...)`
+
+Common skip failures:
+
+| Error | Reason | Status (route) | Notes |
+|---|---|---|---|
+| `delegation_backend_offline` | `backend_offline` | `503` | Includes backend + queued backlog when available |
+| `intent_awaiting_confirmation` | `awaiting_confirmation` | `409` | Confirmation gate still active |
+| `intent_not_sendable` | `wrong_status` | `409` | Intent is not in a sendable state |
+
+Execution failure from backend:
+
+| Error | Reason | Status (route) | Notes |
+|---|---|---|---|
+| `delegation_execution_failed` | `execution_failed` | `200` with `ok: false` (tool/route outcome payload) | Backend responded but reported failure |
+
+Success outcomes:
+
+| Status | Meaning |
+|---|---|
+| `queued` | Intent accepted and queued (typically confirmation path) |
+| `sent` | Intent was sent to backend; payload includes backend result |
+
 ## Security
 
 - Intents are scoped by **`userId`**; API routes require session auth.

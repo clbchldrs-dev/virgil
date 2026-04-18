@@ -282,6 +282,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
         data-sidebar="rail"
         aria-label="Toggle Sidebar"
         tabIndex={-1}
+        type="button"
         onClick={toggleSidebar}
         className="absolute inset-y-0 left-0 w-4 cursor-w-resize [[data-side=left][data-state=collapsed]_&]:cursor-e-resize"
         {...props}
@@ -289,6 +290,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
       <button
         aria-label="Toggle Sidebar"
         tabIndex={-1}
+        type="button"
         onClick={toggleSidebar}
         className={cn(
           "absolute left-0 h-3 w-3 cursor-e-resize",
@@ -298,6 +300,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
       <button
         aria-label="Toggle Sidebar"
         tabIndex={-1}
+        type="button"
         onClick={toggleSidebar}
         className={cn(
           "absolute left-3 h-[6px] w-[100vw] cursor-e-resize",
@@ -506,6 +509,7 @@ function SidebarMenuButton({
   isActive = false,
   variant = "default",
   size = "default",
+  type = "button",
   tooltip,
   className,
   ...props
@@ -524,6 +528,7 @@ function SidebarMenuButton({
       data-size={size}
       data-active={isActive}
       className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
+      type={asChild ? undefined : type}
       {...props}
     />
   )
@@ -559,6 +564,7 @@ function SidebarMenuAction({
   className,
   asChild = false,
   showOnHover = false,
+  type = "button",
   ...props
 }: React.ComponentProps<"button"> & {
   asChild?: boolean
@@ -570,6 +576,7 @@ function SidebarMenuAction({
     <Comp
       data-slot="sidebar-menu-action"
       data-sidebar="menu-action"
+      type={asChild ? undefined : type}
       className={cn(
         "absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground/40 outline-hidden transition-colors duration-150 group-data-[collapsible=icon]:hidden peer-hover/menu-button:text-sidebar-foreground/60 peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1 after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0",
         showOnHover &&

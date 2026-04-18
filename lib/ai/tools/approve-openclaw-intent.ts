@@ -6,9 +6,10 @@ import {
   trySendPendingIntentById,
 } from "@/lib/db/queries";
 import {
-  buildApproveDelegationIntentToolDescription,
-  delegationUnreachableMessage,
-} from "@/lib/integrations/delegation-labels";
+  buildDelegationSendOutcome,
+  buildDelegationSkipFailure,
+} from "@/lib/integrations/delegation-errors";
+import { buildApproveDelegationIntentToolDescription } from "@/lib/integrations/delegation-labels";
 import { getDelegationProvider } from "@/lib/integrations/delegation-provider";
 
 export function approveOpenClawIntent({ userId }: { userId: string }) {
@@ -32,29 +33,25 @@ export function approveOpenClawIntent({ userId }: { userId: string }) {
       }
       const sendResult = await trySendPendingIntentById({ id, userId });
       if (sendResult.skipped) {
-        if (sendResult.reason === "backend_offline") {
-          const backlog = await countDelegationBacklogForUser(userId);
-          return {
-            ok: false,
-            intentId: id,
-            message: delegationUnreachableMessage(
-              delegationProvider.backend,
-              backlog
-            ),
-          };
-        }
+        const queuedBacklog =
+          sendResult.reason === "backend_offline"
+            ? await countDelegationBacklogForUser(userId)
+            : 0;
+        const failure = buildDelegationSkipFailure({
+          reason: sendResult.reason,
+          backend: delegationProvider.backend,
+          queuedBacklog,
+        });
         return {
-          ok: false,
+          ...failure,
           intentId: id,
-          message: `Intent could not be sent after confirmation (${sendResult.reason}).`,
         };
       }
-      return {
-        ok: sendResult.result.success,
+      return buildDelegationSendOutcome({
+        backend: delegationProvider.backend,
         intentId: id,
-        output: sendResult.result.output,
-        error: sendResult.result.error,
-      };
+        result: sendResult.result,
+      });
     },
   });
 }

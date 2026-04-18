@@ -39,3 +39,13 @@ workspace/wiki-starter/
 - Do not write permanent claims without provenance links.
 - Route high-confidence stable facts into `wiki/`; route uncertain notes as hypotheses.
 - Keep an append-only trail in `wiki/log.md`.
+
+## Operator storage direction (ADR-aligned)
+
+- Durable retrieval for the wiki track targets **local self-hosted Postgres** with:
+  - `pgvector` for semantic similarity
+  - `tsvector` for lexical/full-text retrieval
+- Honcho evaluation should run against the same host-level Postgres footprint (shared instance or adjacent DB), while keeping wiki markdown artifacts and provenance rules as a separate concern.
+- If Hermes scheduling is insufficient for multi-step/crash-safe jobs, prefer a Postgres worker queue (`FOR UPDATE SKIP LOCKED`) before introducing Temporal-class orchestration.
+
+Reference: [`docs/DECISIONS.md`](../../docs/DECISIONS.md) (2026-04-18 ADR).

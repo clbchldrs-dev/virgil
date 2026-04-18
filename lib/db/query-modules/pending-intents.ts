@@ -2,8 +2,11 @@ import "server-only";
 
 import { and, desc, eq, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import { VirgilError } from "@/lib/errors";
+import {
+  getPendingIntentSkipReason,
+  isPendingIntentRetryable,
+} from "@/lib/integrations/delegation-idempotency";
 import { getDelegationProvider } from "@/lib/integrations/delegation-provider";
-import { pendingIntentBlocksImmediateSend } from "@/lib/integrations/openclaw-queue-gate";
 import type { ClawIntent } from "@/lib/integrations/openclaw-types";
 import { db } from "../client";
 import { pendingIntent } from "../schema";
@@ -171,6 +174,15 @@ export function getRetryableOpenClawIntents() {
         isNotNull(pendingIntent.sentAt),
         lt(pendingIntent.sentAt, sql<string>`(now() - interval '5 minutes')`)
       )
+    )
+    .then((rows) =>
+      rows.filter((row) =>
+        isPendingIntentRetryable({
+          status: row.status,
+          sentAt: row.sentAt,
+          result: (row.result ?? null) as Record<string, unknown> | null,
+        })
+      )
     );
 }
 
@@ -207,12 +219,9 @@ export async function trySendPendingIntentById({
     throw new VirgilError("not_found:api", "Intent not found.");
   }
 
-  if (pendingIntentBlocksImmediateSend(row)) {
-    return { skipped: true as const, reason: "awaiting_confirmation" as const };
-  }
-
-  if (row.status !== "pending" && row.status !== "confirmed") {
-    return { skipped: true as const, reason: "wrong_status" as const };
+  const skipReason = getPendingIntentSkipReason(row);
+  if (skipReason) {
+    return { skipped: true as const, reason: skipReason };
   }
 
   const parsed = parseClawIntent(row.intent);

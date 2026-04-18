@@ -7,9 +7,13 @@ import {
   trySendPendingIntentById,
 } from "@/lib/db/queries";
 import {
+  buildDelegationQueuedSuccess,
+  buildDelegationSendOutcome,
+  buildDelegationSkipFailure,
+} from "@/lib/integrations/delegation-errors";
+import {
   buildDelegateTaskToolDescription,
   delegationUnknownSkillMessage,
-  delegationUnreachableMessage,
 } from "@/lib/integrations/delegation-labels";
 import { getDelegationProvider } from "@/lib/integrations/delegation-provider";
 import {
@@ -107,11 +111,14 @@ export function delegateTaskToOpenClaw({
       const online = await delegationProvider.ping();
       if (!online) {
         const backlog = await countDelegationBacklogForUser(userId);
+        const failure = buildDelegationSkipFailure({
+          reason: "backend_offline",
+          backend,
+          queuedBacklog: backlog,
+        });
         return {
-          ok: false,
-          queued: true,
+          ...failure,
           intentId: row.id,
-          message: delegationUnreachableMessage(backend, backlog),
         };
       }
 
@@ -121,38 +128,33 @@ export function delegateTaskToOpenClaw({
           userId,
         });
         if (sendResult.skipped) {
-          if (sendResult.reason === "backend_offline") {
-            const backlog = await countDelegationBacklogForUser(userId);
-            return {
-              ok: false,
-              queued: true,
-              intentId: row.id,
-              message:
-                `Delegation backend is offline. Intent queued (${String(backlog)} task(s) waiting). ` +
-                "Retry later or approve/send when the backend is reachable.",
-            };
-          }
+          const backlog =
+            sendResult.reason === "backend_offline"
+              ? await countDelegationBacklogForUser(userId)
+              : 0;
+          const failure = buildDelegationSkipFailure({
+            reason: sendResult.reason,
+            backend,
+            queuedBacklog: backlog,
+          });
           return {
-            ok: false,
+            ...failure,
             intentId: row.id,
-            message: "Could not send intent (unexpected state).",
           };
         }
-        return {
-          ok: sendResult.result.success,
+        return buildDelegationSendOutcome({
+          backend,
           intentId: row.id,
-          output: sendResult.result.output,
-          error: sendResult.result.error,
-        };
+          result: sendResult.result,
+        });
       }
 
-      return {
-        ok: true,
-        queued: true,
+      return buildDelegationQueuedSuccess({
+        backend,
         intentId: row.id,
         message:
           "This action requires owner confirmation. Approve from notifications or use approveDelegationIntent (or approveOpenClawIntent).",
-      };
+      });
     },
   });
 }

@@ -27,6 +27,7 @@ import type { ClientRoutingHints } from "@/lib/ai/model-routing";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { describeChatError } from "@/lib/chat-error-display";
 import type { Vote } from "@/lib/db/schema";
+import { extractChatIdFromPathname } from "@/lib/path-without-base";
 import type { ChatMessage } from "@/lib/types";
 import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
 
@@ -57,11 +58,6 @@ type ActiveChatContextValue = {
 
 const ActiveChatContext = createContext<ActiveChatContextValue | null>(null);
 
-function extractChatId(pathname: string): string | null {
-  const match = pathname.match(/\/chat\/([^/]+)/);
-  return match ? match[1] : null;
-}
-
 function readClientRoutingHints(): ClientRoutingHints | undefined {
   if (typeof navigator === "undefined") {
     return undefined;
@@ -79,10 +75,11 @@ function readClientRoutingHints(): ClientRoutingHints | undefined {
 
 export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const { setDataStream } = useDataStream();
   const { mutate } = useSWRConfig();
 
-  const chatIdFromUrl = extractChatId(pathname);
+  const chatIdFromUrl = extractChatIdFromPathname(pathname, basePath);
   const isNewChat = !chatIdFromUrl;
   const newChatIdRef = useRef(generateUUID());
   const prevPathnameRef = useRef(pathname);

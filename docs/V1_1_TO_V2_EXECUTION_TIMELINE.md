@@ -17,14 +17,29 @@ This document is operational planning only. It does not declare v2 implementatio
   - [`docs/V1_1_HERMES_WIKI_BOOTSTRAP.md`](V1_1_HERMES_WIKI_BOOTSTRAP.md)
   - [`workspace/wiki-starter/README.md`](../workspace/wiki-starter/README.md)
 
-## Remaining today (manual, interactive terminal)
+### Hermes CLI baseline (reconciled 2026-04-18)
 
-Because setup auth flows require a real TTY, finish these in your local terminal app:
+Machine check on operator Mac Air:
 
-1. Run `hermes setup` (interactive wizard)
-2. Pick model/provider path for bridge work (Gemini now; local model later)
-3. Run `hermes skills list` once to initialize skills index
-4. Run `hermes doctor` again and capture the final status
+- `hermes skills list`: OK — index initialized (79 builtin, 0 hub-installed, 0 local).
+- `hermes doctor` (second pass): Google Gemini OAuth logged in; `~/.hermes/.env` has no generic API key entries (doctor still recommends `hermes setup` for full tool access and optional keys).
+- Optional tools reported missing keys or system deps (OpenRouter, web search, Home Assistant, etc.) — ignore until needed.
+
+**Still on the Hermes CLI side:** run `hermes setup` in a real TTY if you want doctor-clean API key lines and fewer nags; optional `hermes doctor --fix` for auto-fixables; npm audit paths under agent-browser / WhatsApp bridge only if you use those features.
+
+**Separate from the CLI:** Virgil’s HTTP bridge (`HERMES_*` in `.env.local`, health and skills from the Next.js app) — verify when finishing delegation wiring in-repo.
+
+## Remaining on Hermes CLI (manual, interactive terminal)
+
+Done 2026-04-18:
+
+- `hermes skills list` once (initialize index)
+- `hermes doctor` again (snapshot captured in this section)
+
+Because setup auth flows require a real TTY, finish when ready:
+
+1. Run `hermes setup` (interactive wizard) — or defer if Gemini OAuth + current keys are enough for your workflow.
+2. Re-run `hermes doctor` after setup and update this subsection if the baseline changes.
 
 ## Phase A: Virgil 1.1 bridge (before Mac mini)
 

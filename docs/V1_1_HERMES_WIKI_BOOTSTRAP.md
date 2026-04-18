@@ -28,6 +28,17 @@ Use the starter scaffold at [`workspace/wiki-starter/`](../workspace/wiki-starte
 - Memory ingest/query/lint loops keep `wiki/index.md` and `wiki/log.md` consistent.
 - At least one realistic daily workflow uses wiki memory and survives across sessions.
 
+## Storage direction for operators
+
+For the bridge and v2 handoff, wiki retrieval/storage direction is ADR-aligned:
+
+- local self-hosted Postgres first
+- hybrid search posture (`pgvector` + `tsvector`)
+- Honcho evaluated against the same host-level Postgres footprint (shared instance or adjacent DB)
+- scheduling escalation order: Hermes -> Postgres `SKIP LOCKED` queue -> Temporal only if still needed
+
+See [`docs/DECISIONS.md`](DECISIONS.md) (2026-04-18 entry) for the accepted record.
+
 ## Sequencing
 
 For date-based execution (today setup -> June Mac mini -> August tiiny.ai), use:

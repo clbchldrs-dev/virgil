@@ -22,3 +22,16 @@ export function pathnameWithoutBasePath(
 export function isChatSurfacePath(logicalPath: string): boolean {
   return logicalPath === "/" || /^\/chat\/[^/]+$/.test(logicalPath);
 }
+
+/** Resolves `chatId` from the URL whether or not `pathname` includes a Next.js `basePath`. */
+export function extractChatIdFromPathname(
+  pathname: string | null | undefined,
+  basePath: string
+): string | null {
+  if (!pathname) {
+    return null;
+  }
+  const logical = pathnameWithoutBasePath(pathname, basePath);
+  const match = /^\/chat\/([^/]+)$/.exec(logical);
+  return match ? match[1] : null;
+}

@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/sidebar";
 import { cn, generateUUID } from "@/lib/utils";
 
+/** Matches `next.config.ts` / `NEXT_PUBLIC_BASE_PATH` (e.g. `/demo` when `IS_DEMO=1`). */
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 import {
@@ -194,7 +195,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       revalidate: false,
     });
 
-    fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history`, {
+    fetch(`${BASE_PATH}/api/history`, {
       method: "DELETE",
     });
 
@@ -206,8 +207,8 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       <Sidebar collapsible="icon">
         <SidebarHeader
           className={cn(
-            "shrink-0 pb-0 pt-3",
-            "max-md:sticky max-md:top-0 max-md:z-10 max-md:border-b max-md:border-sidebar-border/70 max-md:bg-sidebar"
+            "relative z-30 shrink-0 pb-0 pt-3",
+            "max-md:sticky max-md:top-0 max-md:border-b max-md:border-sidebar-border/70 max-md:bg-sidebar"
           )}
         >
           <SidebarMenu>
@@ -255,6 +256,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
         ) : null}
         <SidebarContent
           className={cn(
+            "relative z-30",
             isMobile
               ? "flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overscroll-y-contain px-0 pt-1"
               : "max-md:flex-none max-md:min-h-0 max-md:overflow-visible"
@@ -278,7 +280,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
             <SidebarHistory user={user} />
           </div>
         </SidebarContent>
-        <SidebarFooter className="shrink-0 border-t border-sidebar-border pt-2 pb-3 max-md:bg-sidebar">
+        <SidebarFooter className="relative z-30 shrink-0 border-t border-sidebar-border pt-2 pb-3 max-md:bg-sidebar">
           {user ? <SidebarUserNav user={user} /> : null}
         </SidebarFooter>
         <SidebarRail />

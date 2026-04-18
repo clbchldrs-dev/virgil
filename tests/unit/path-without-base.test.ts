@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  extractChatIdFromPathname,
   isChatSurfacePath,
   pathnameWithoutBasePath,
 } from "@/lib/path-without-base";
@@ -28,5 +29,23 @@ describe("isChatSurfacePath", () => {
     assert.equal(isChatSurfacePath("/chat/uuid"), true);
     assert.equal(isChatSurfacePath("/night-insights"), false);
     assert.equal(isChatSurfacePath("/sophon"), false);
+  });
+});
+
+describe("extractChatIdFromPathname", () => {
+  it("reads id from /chat/:id", () => {
+    assert.equal(extractChatIdFromPathname("/chat/abc-123", ""), "abc-123");
+  });
+
+  it("strips basePath before reading id", () => {
+    assert.equal(
+      extractChatIdFromPathname("/virgil/chat/xyz", "/virgil"),
+      "xyz"
+    );
+  });
+
+  it("returns null when not on a chat route", () => {
+    assert.equal(extractChatIdFromPathname("/preferences", ""), null);
+    assert.equal(extractChatIdFromPathname(null, ""), null);
   });
 });

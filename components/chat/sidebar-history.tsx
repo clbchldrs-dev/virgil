@@ -25,6 +25,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import type { Chat } from "@/lib/db/schema";
+import {
+  extractChatIdFromPathname,
+  pathnameWithoutBasePath,
+} from "@/lib/path-without-base";
 import { fetcher } from "@/lib/utils";
 import { LoaderIcon } from "./icons";
 import { ChatItem } from "./sidebar-history-item";
@@ -101,7 +105,8 @@ export function getChatHistoryPaginationKey(
 export function SidebarHistory({ user }: { user: User | undefined }) {
   const { setOpenMobile } = useSidebar();
   const pathname = usePathname();
-  const id = pathname?.startsWith("/chat/") ? pathname.split("/")[2] : null;
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const id = extractChatIdFromPathname(pathname, basePath);
 
   const {
     data: paginatedChatHistories,
@@ -129,7 +134,8 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
 
   const handleDelete = () => {
     const chatToDelete = deleteId;
-    const isCurrentChat = pathname === `/chat/${chatToDelete}`;
+    const logicalPath = pathnameWithoutBasePath(pathname ?? "", basePath);
+    const isCurrentChat = logicalPath === `/chat/${chatToDelete}`;
 
     setShowDeleteDialog(false);
 
