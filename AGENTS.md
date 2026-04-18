@@ -273,11 +273,11 @@ Scheduled **night review** uses a larger model to analyze the last 24 hours of c
 2. Set **`NIGHT_REVIEW_MODEL`** to an **`ollama/…`** id only (default `ollama/qwen2.5:7b-review`). Night review never uses Gemini or the AI Gateway — only local Ollama — to avoid cloud token spend. The worker must be able to reach **`OLLAMA_BASE_URL`** (on Vercel that usually means disabling night review or running Ollama behind a reachable endpoint you control).
 3. **Off-peak scheduling (default 11pm–7am local):** Set **`NIGHT_REVIEW_TIMEZONE`** to your wall-clock zone (e.g. `America/New_York`). The enqueue route only publishes work when local time is inside **`NIGHT_REVIEW_OFF_PEAK_START_HOUR`**–**`NIGHT_REVIEW_OFF_PEAK_END_HOUR`** (default **23**–**7**, end exclusive) **and** the local clock hour equals **`NIGHT_REVIEW_RUN_LOCAL_HOUR`** (default **3** = 3:00am). Reuse **`isNowWithinOffPeakLocal`** / **`isHourWithinOffPeak`** from `lib/night-review/off-peak.ts` for other deferred jobs.
 4. Optional: **`NIGHT_REVIEW_STAGGER_SECONDS`** (default `60`) spaces QStash deliveries per owner. **`NIGHT_REVIEW_TIMEZONE`** also defines the calendar **`windowKey`** for idempotency (one completed run per user per local date).
-5. **Cron:** Vercel Cron calls **`GET /api/night-review/enqueue`** **hourly** (`0 * * * *` UTC in [`vercel.json`](vercel.json)); most invocations no-op until the off-peak slot matches. Self-hosted: **`curl` hourly** with the same Bearer secret, or rely on the same endpoint behavior.
+5. **Cron:** On **Vercel** (see [`vercel.json`](vercel.json)), **`GET /api/night-review/enqueue`** runs **once daily** at **`5 11 * * *`** (11:05 UTC) so **Hobby** plans accept the project. Align **`NIGHT_REVIEW_TIMEZONE`** and **`NIGHT_REVIEW_RUN_LOCAL_HOUR`** (and, if needed, a different UTC schedule in `vercel.json`) so that hit lands in the intended **local** clock hour (default **03:00** inside the off-peak window). **Self-hosted:** use **`curl` hourly** with the same Bearer secret if you want the previous “sample every local hour” behavior.
 6. The enqueue endpoint publishes one **QStash** message per **eligible user** (non-guest with **at least one chat** — same rule as the daily digest). Each message hits **`POST /api/night-review/run`** (signed). Findings are stored as **`Memory`** rows with `metadata.source = "night-review"`; completion rows use `metadata.phase = "complete"` for deduplication. Each run also appends a row to **`NightReviewRun`** (duration, outcome, model id).
 7. **Optional email** when there are findings: set **`NIGHT_REVIEW_EMAIL_ON_FINDINGS=1`** (requires `RESEND_API_KEY`). **In-app:** `GET /api/memories/night-review?days=14` (authenticated) returns recent night-review memories for a “Night insights” UI.
 8. **Tool egress:** HTTP from tools uses **`AGENT_FETCH_ALLOWLIST_HOSTS`** (comma-separated hostnames); default allows Open-Meteo hosts used by weather. Extend the list when adding new fetch-based tools.
-9. **Quota:** each eligible user costs **one QStash message per night** in addition to reminders. The free tier is **500 messages/day** on Upstash. The hourly cron adds **~24** lightweight enqueue invocations per day on Vercel.
+9. **Quota:** each eligible user costs **one QStash message per night** in addition to reminders. The free tier is **500 messages/day** on Upstash. The Vercel enqueue cron adds **one** lightweight GET per day (digest cron is separate).
 
 ### 1.10 Google Calendar (read-only, optional)
 
@@ -388,7 +388,7 @@ The app listens on **all interfaces** inside the container (`HOSTNAME=0.0.0.0`);
 
 | Job | Path | Schedule (UTC) |
 |-----|------|----------------|
-| Night review enqueue | `/api/night-review/enqueue` | Hourly (`0 * * * *`; server skips until local off-peak slot — see §1.9) |
+| Night review enqueue | `/api/night-review/enqueue` | Daily 11:05 UTC (`5 11 * * *`; align TZ/run hour — see §1.9) |
 | Daily digest | `/api/digest` | 08:00 (`0 8 * * *`) |
 
 **Daily digest → Slack (optional):** When `VIRGIL_SLACK_CHECKIN_WEBHOOK_URL` or (`SLACK_BOT_TOKEN` + `VIRGIL_SLACK_CHECKIN_CHANNEL_ID`) is set, each digest run also posts the same plaintext body to Slack after building it (email send failures do not block Slack). See [docs/operator-integrations-runbook.md](docs/operator-integrations-runbook.md). Interactive sends remain on **OpenClaw** / **Digital Self** when configured.
