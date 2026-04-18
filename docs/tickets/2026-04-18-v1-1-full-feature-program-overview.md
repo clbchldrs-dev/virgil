@@ -1,6 +1,6 @@
 # Virgil 1.1 full-feature program overview (M1-M5)
 
-**Status:** Planned  
+**Status:** Done  
 **Related plan:** [docs/1_1_RELEASE_PLAN.md](../1_1_RELEASE_PLAN.md)  
 **Goal:** Drive Virgil 1.1 from bridge baseline to full-featured, stable daily operation.
 
@@ -29,14 +29,20 @@ This ticket tracks the coordinated milestone set and completion evidence.
 
 ## Program-level acceptance criteria
 
-- All five milestone tickets are merged or explicitly deferred with rationale.
-- `pnpm stable:check` passes after M5.
-- Final docs reflect implemented behavior:
+- [x] All five milestone tickets are merged or explicitly deferred with rationale.
+- [x] `pnpm stable:check` passes after M5.
+- [x] Final docs reflect implemented behavior:
   - [AGENTS.md](../../AGENTS.md)
   - [docs/DECISIONS.md](../DECISIONS.md)
   - operator runbooks under `docs/`
-- End-to-end evidence exists for:
+- [x] End-to-end evidence exists for:
   - capture input
   - memory/wiki update
   - delegated action proposal and approval
   - auditability of result
+
+## Completion notes
+
+- M1-M4 closed with ticket-level acceptance criteria marked complete.
+- M5 closed with final stability gate and release checklist artifact:
+  - [docs/1_1_RELEASE_CHECKLIST.md](../1_1_RELEASE_CHECKLIST.md)

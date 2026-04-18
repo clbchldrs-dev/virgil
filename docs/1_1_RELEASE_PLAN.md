@@ -1,6 +1,6 @@
 # Virgil 1.1 full-feature release plan
 
-**Status:** Planned  
+**Status:** Completed (M1-M5 closed, 2026-04-18)  
 **Date:** 2026-04-18  
 **Scope:** Move from "bridge shipped" to "full-featured and operator-ready" 1.1.
 
@@ -12,6 +12,7 @@ Related:
 - [docs/V1_1_TO_V2_EXECUTION_TIMELINE.md](V1_1_TO_V2_EXECUTION_TIMELINE.md)
 - [docs/DECISIONS.md](DECISIONS.md)
 - [docs/tickets/2026-04-18-v1-1-full-feature-program-overview.md](tickets/2026-04-18-v1-1-full-feature-program-overview.md)
+- [docs/1_1_RELEASE_CHECKLIST.md](1_1_RELEASE_CHECKLIST.md)
 
 ## Release definition of done
 
