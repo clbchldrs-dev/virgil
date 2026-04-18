@@ -41,11 +41,49 @@ function withEnv(
   }
 }
 
-test("delegation provider defaults to openclaw", () => {
-  withEnv({ VIRGIL_DELEGATION_BACKEND: undefined }, () => {
-    const provider = getDelegationProvider();
-    assert.equal(provider.backend, "openclaw");
-  });
+test("delegation provider defaults to hermes", () => {
+  withEnv(
+    {
+      VIRGIL_DELEGATION_BACKEND: undefined,
+      HERMES_HTTP_URL: undefined,
+      OPENCLAW_URL: undefined,
+      OPENCLAW_HTTP_URL: undefined,
+    },
+    () => {
+      const provider = getDelegationProvider();
+      assert.equal(provider.backend, "hermes");
+    }
+  );
+});
+
+test("delegation provider falls back to openclaw when hermes missing", () => {
+  withEnv(
+    {
+      VIRGIL_DELEGATION_BACKEND: undefined,
+      HERMES_HTTP_URL: undefined,
+      OPENCLAW_URL: "ws://host:13100",
+      OPENCLAW_HTTP_URL: undefined,
+    },
+    () => {
+      const provider = getDelegationProvider();
+      assert.equal(provider.backend, "openclaw");
+    }
+  );
+});
+
+test("delegation provider prefers hermes when both are configured", () => {
+  withEnv(
+    {
+      VIRGIL_DELEGATION_BACKEND: undefined,
+      HERMES_HTTP_URL: "http://host:8765",
+      OPENCLAW_URL: "ws://host:13100",
+      OPENCLAW_HTTP_URL: "http://host:13100",
+    },
+    () => {
+      const provider = getDelegationProvider();
+      assert.equal(provider.backend, "hermes");
+    }
+  );
 });
 
 test("delegation configured follows OpenClaw config on default backend", () => {
@@ -54,6 +92,7 @@ test("delegation configured follows OpenClaw config on default backend", () => {
       VIRGIL_DELEGATION_BACKEND: undefined,
       OPENCLAW_URL: "ws://host:13100",
       OPENCLAW_HTTP_URL: undefined,
+      HERMES_HTTP_URL: undefined,
     },
     () => {
       assert.equal(isDelegationConfigured(), true);

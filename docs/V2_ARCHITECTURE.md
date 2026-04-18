@@ -6,6 +6,8 @@
 
 **Behavioral domain (SPEC):** Goals/habits, project graph, weekly schedule proposals, and morning briefing payload are specified in [docs/V2_BEHAVIORAL_SPECS.md](V2_BEHAVIORAL_SPECS.md). HTTP route sketches: [docs/V2_BEHAVIORAL_API.md](V2_BEHAVIORAL_API.md). Not implemented until the Python backend ships these modules.
 
+**LLM Wiki storage (2026-04-18 ADR):** Durable **LLM Wiki** retrieval targets **operator-controlled Postgres** with **`pgvector`** and **`tsvector`** — see [DECISIONS.md](DECISIONS.md). **Honcho** self-host expects **Postgres + pgvector**; whether wiki tables and Honcho share one database is **TBD at integration**. For durable background work, prefer **Hermes scheduling**, then a **Postgres queue (`FOR UPDATE SKIP LOCKED`)**, before **Temporal**. The SQLite / FTS5 sketch in §8 and the implementation order below describe one v2 implementation path; converge wiki persistence with this ADR when the Hermes-first stack lands.
+
 ---
 
 # Virgil v2.1 — Cursor Implementation Prompt

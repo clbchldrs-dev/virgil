@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { useCallback, useMemo, useState } from "react";
 import useSWR from "swr";
 import { toast } from "@/components/chat/toast";
+import { NightReviewTriggerButton } from "@/components/night-review-trigger-button";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { Memory } from "@/lib/db/schema";
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   initialMemories: Memory[];
+  nightReviewEnabled: boolean;
 };
 
 function nightReviewListUrl(includeDismissed: boolean) {
@@ -27,7 +29,10 @@ function reviewDecision(meta: Record<string, unknown>): string | undefined {
   return meta.reviewDecision as string | undefined;
 }
 
-export function NightInsightsClient({ initialMemories }: Props) {
+export function NightInsightsClient({
+  initialMemories,
+  nightReviewEnabled,
+}: Props) {
   const [showDismissed, setShowDismissed] = useState(false);
   const listUrl = useMemo(
     () => nightReviewListUrl(showDismissed),
@@ -176,9 +181,14 @@ export function NightInsightsClient({ initialMemories }: Props) {
       <div className="space-y-4">
         {listHeader}
         <p className="text-muted-foreground text-sm">
-          No night-review insights yet. When night review runs and finds
-          something worth remembering, it will show up here.
+          No night-review insights yet. A scheduled job can produce these, or
+          you can queue a run now (the same control exists under Background
+          activity).
         </p>
+        <NightReviewTriggerButton
+          nightReviewEnabled={nightReviewEnabled}
+          size="sm"
+        />
       </div>
     );
   }

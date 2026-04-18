@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -108,11 +108,14 @@ test("lintWiki reports provenance and orphan issues", async () => {
     );
     const result = await lintWiki();
     assert.equal(result.action, "lint");
-    const orphan = result.issues.find((issue) => issue.file === "entities/orphan.md");
+    const orphan = result.issues.find(
+      (issue) => issue.file === "entities/orphan.md"
+    );
     assert.ok(orphan);
     assert.equal(orphan?.code, "missing_provenance");
     const orphanInbound = result.issues.find(
-      (issue) => issue.file === "entities/orphan.md" && issue.code === "orphan_page"
+      (issue) =>
+        issue.file === "entities/orphan.md" && issue.code === "orphan_page"
     );
     assert.ok(orphanInbound);
   });

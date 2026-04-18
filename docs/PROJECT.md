@@ -2,7 +2,7 @@
 
 This file is the **single entrypoint** for intent, documentation map, architecture overview, and **handoff** when starting a new Cursor chat or onboarding an agent to the repo. It does not duplicate env tables or deploy steps—those stay in linked docs.
 
-## Intent (Ghost of Virgil — v1 target; **Virgil 0.5** today)
+## Intent (Ghost of Virgil — v1 target; **Virgil 1.1** today)
 
 ### What “Ghost of Virgil” means
 
@@ -26,7 +26,7 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 
 ## Deployment tracks (v1 vs v2)
 
-- **v1 (target stack for Virgil 1.0):** The default **hosted** stack for this repo is **Vercel** (Next.js app) plus **Neon** Postgres, **Upstash** Redis and QStash, **Resend**, and **Vercel Blob**—aligned with free/hobby tiers and documented in [AGENTS.md](../AGENTS.md) (setup checklist and deployment table) and [docs/vercel-env-setup.md](vercel-env-setup.md). **Today’s product label is Virgil 0.5** (pre-stable); **v1.0** is the stabilization milestone before June 2026. Env vars are **not** duplicated here.
+- **v1 (target stack for Virgil 1.0):** The default **hosted** stack for this repo is **Vercel** (Next.js app) plus **Neon** Postgres, **Upstash** Redis and QStash, **Resend**, and **Vercel Blob**—aligned with free/hobby tiers and documented in [AGENTS.md](../AGENTS.md) (setup checklist and deployment table) and [docs/vercel-env-setup.md](vercel-env-setup.md). **Today’s product label is Virgil 1.1** (1.1 bridge — Hermes delegation path + LLM Wiki behind env flags); **v1.0** is the stabilization milestone before June 2026. Env vars are **not** duplicated here.
 - **v2 (planned):** **Mac mini** (or equivalent home host) as the primary place for **local Ollama** and the **headless Python backend** described in [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md), with the **Next.js UI** still able to live on Vercel and talk to that backend over a secure tunnel (see migration doc). This path **leverages hardware and open-source inference** rather than maximizing managed free tiers for the runtime.
 - **v2 data layer (two valid tracks):** Operators may run **Postgres on the Mac mini (or LAN)** to preserve schema parity when migrating from v1, **or** follow the **greenfield** blueprint of **SQLite + Mem0** in [docs/V2_MIGRATION.md](V2_MIGRATION.md). The choice is an environment decision, not a single locked stack.
 - **Risks that slow v2 work** are summarized in [docs/V1_V2_RISK_AUDIT.md](V1_V2_RISK_AUDIT.md); groundwork tickets **T1–T8** ([overview](tickets/2026-04-01-v2-groundwork-overview.md)) reduce reverse-engineering.

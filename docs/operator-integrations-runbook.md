@@ -70,3 +70,4 @@ Digest and night review **complement** each other; neither replaces the other wi
 
 - [integration-test-matrix.md](integration-test-matrix.md) — regression-style matrix.
 - [manos-performance.md](manos-performance.md) — LAN inference tuning for **virgil-manos**.
+- [alexa-channel.md](alexa-channel.md) — Alexa webhook bridge contract and Lambda forwarder example.

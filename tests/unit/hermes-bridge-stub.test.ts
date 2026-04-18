@@ -6,7 +6,10 @@ import {
   isHermesBridgeRequestAuthorized,
 } from "../../lib/integrations/hermes-bridge-stub";
 
-const ENV_KEYS = ["VIRGIL_HERMES_BRIDGE_STUB_ENABLED", "HERMES_SHARED_SECRET"] as const;
+const ENV_KEYS = [
+  "VIRGIL_HERMES_BRIDGE_STUB_ENABLED",
+  "HERMES_SHARED_SECRET",
+] as const;
 
 function withEnv(
   overrides: Partial<Record<(typeof ENV_KEYS)[number], string | undefined>>,
@@ -62,9 +65,12 @@ test("isHermesBridgeRequestAuthorized requires matching bearer token when shared
     const authorized = new Request("http://localhost:3000/api/hermes/execute", {
       headers: { Authorization: "Bearer bridge-secret" },
     });
-    const unauthorized = new Request("http://localhost:3000/api/hermes/execute", {
-      headers: { Authorization: "Bearer wrong" },
-    });
+    const unauthorized = new Request(
+      "http://localhost:3000/api/hermes/execute",
+      {
+        headers: { Authorization: "Bearer wrong" },
+      }
+    );
     assert.equal(isHermesBridgeRequestAuthorized(authorized), true);
     assert.equal(isHermesBridgeRequestAuthorized(unauthorized), false);
   });

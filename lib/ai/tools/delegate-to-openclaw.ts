@@ -2,7 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { virgilLaneIdSchema } from "@/lib/ai/lanes";
 import {
-  countOpenClawBacklogForUser,
+  countDelegationBacklogForUser,
   queuePendingIntent,
   trySendPendingIntentById,
 } from "@/lib/db/queries";
@@ -106,7 +106,7 @@ export function delegateTaskToOpenClaw({
 
       const online = await delegationProvider.ping();
       if (!online) {
-        const backlog = await countOpenClawBacklogForUser(userId);
+        const backlog = await countDelegationBacklogForUser(userId);
         return {
           ok: false,
           queued: true,
@@ -122,7 +122,7 @@ export function delegateTaskToOpenClaw({
         });
         if (sendResult.skipped) {
           if (sendResult.reason === "backend_offline") {
-            const backlog = await countOpenClawBacklogForUser(userId);
+            const backlog = await countDelegationBacklogForUser(userId);
             return {
               ok: false,
               queued: true,
@@ -151,7 +151,7 @@ export function delegateTaskToOpenClaw({
         queued: true,
         intentId: row.id,
         message:
-          "This action requires owner confirmation. Approve from notifications or use approveOpenClawIntent.",
+          "This action requires owner confirmation. Approve from notifications or use approveDelegationIntent (or approveOpenClawIntent).",
       };
     },
   });

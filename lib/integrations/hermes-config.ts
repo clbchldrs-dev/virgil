@@ -30,6 +30,10 @@ export function getHermesPendingPath(): string {
   return process.env.HERMES_PENDING_PATH?.trim() || "/api/pending";
 }
 
+export function getHermesSkillsPath(): string {
+  return process.env.HERMES_SKILLS_PATH?.trim() || "/api/skills";
+}
+
 export function getHermesHealthPath(): string {
   return process.env.HERMES_HEALTH_PATH?.trim() || "/health";
 }

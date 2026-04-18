@@ -3,6 +3,7 @@ import {
   getHermesHealthPath,
   getHermesHttpOrigin,
   getHermesSharedSecret,
+  getHermesSkillsPath,
 } from "@/lib/integrations/hermes-config";
 import type { ClawIntent, ClawResult } from "@/lib/integrations/openclaw-types";
 
@@ -31,6 +32,49 @@ function truncateError(msg: string): string {
     : stripped;
 }
 
+function parseSkillName(raw: unknown): string | null {
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+  if (typeof raw === "object" && raw !== null) {
+    const record = raw as { id?: unknown; name?: unknown; slug?: unknown };
+    const maybeId = record.id;
+    const maybeName = record.name;
+    const maybeSlug = record.slug;
+    for (const value of [maybeId, maybeName, maybeSlug]) {
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (trimmed.length > 0) {
+          return trimmed;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function normalizeSkillNames(payload: unknown): string[] {
+  const values: unknown[] = [];
+  if (Array.isArray(payload)) {
+    values.push(...payload);
+  } else if (typeof payload === "object" && payload !== null) {
+    const skills = "skills" in payload ? payload.skills : undefined;
+    if (Array.isArray(skills)) {
+      values.push(...skills);
+    }
+  }
+
+  const deduped = new Set<string>();
+  for (const value of values) {
+    const skillName = parseSkillName(value);
+    if (skillName) {
+      deduped.add(skillName);
+    }
+  }
+  return [...deduped];
+}
+
 export async function pingHermes(): Promise<boolean> {
   const base = getHermesHttpOrigin();
   if (!base) {
@@ -51,7 +95,9 @@ export async function pingHermes(): Promise<boolean> {
   }
 }
 
-export async function sendHermesIntent(intent: ClawIntent): Promise<ClawResult> {
+export async function sendHermesIntent(
+  intent: ClawIntent
+): Promise<ClawResult> {
   const base = getHermesHttpOrigin();
   const executedAt = new Date().toISOString();
   if (!base) {
@@ -104,9 +150,35 @@ export async function sendHermesIntent(intent: ClawIntent): Promise<ClawResult> 
     return {
       success: false,
       error:
-        error instanceof Error ? truncateError(error.message) : "Request failed",
+        error instanceof Error
+          ? truncateError(error.message)
+          : "Request failed",
       skill: intent.skill,
       executedAt,
     };
+  }
+}
+
+export async function listHermesSkillNames(): Promise<string[]> {
+  const base = getHermesHttpOrigin();
+  if (!base) {
+    return [];
+  }
+  const skillsPath = getHermesSkillsPath();
+  try {
+    const res = await fetchWithTimeout(`${base}${skillsPath}`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        ...buildAuthHeaders(),
+      },
+    });
+    if (!res.ok) {
+      return [];
+    }
+    const payload: unknown = await res.json();
+    return normalizeSkillNames(payload);
+  } catch {
+    return [];
   }
 }

@@ -39,7 +39,7 @@ const fetcher = async (url: string): Promise<OpenClawPendingResponse> => {
     };
   }
   if (!res.ok) {
-    throw new Error("Failed to load OpenClaw queue");
+    throw new Error("Failed to load delegation queue");
   }
   return res.json() as Promise<OpenClawPendingResponse>;
 };
@@ -87,6 +87,7 @@ export function OpenClawPendingBanner() {
 
   const [actingId, setActingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
+  const activeBackendLabel = data ? backendLabel(data) : "Delegation backend";
 
   const patchIntent = useCallback(
     async (id: string, action: "approve" | "reject", reason?: string) => {
@@ -114,7 +115,9 @@ export function OpenClawPendingBanner() {
         toast({
           type: "success",
           description:
-            action === "approve" ? "Sent to OpenClaw." : "Delegation rejected.",
+            action === "approve"
+              ? `Sent to ${activeBackendLabel}.`
+              : "Delegation rejected.",
         });
       } catch (e) {
         toast({
@@ -126,7 +129,7 @@ export function OpenClawPendingBanner() {
         setActingId(null);
       }
     },
-    [mutate, url]
+    [mutate, url, activeBackendLabel]
   );
 
   if (error || !data) {
@@ -154,7 +157,7 @@ export function OpenClawPendingBanner() {
                 key={row.id}
               >
                 <p className="font-medium text-foreground text-xs md:text-sm">
-                  Approve OpenClaw task
+                  Approve delegation task
                 </p>
                 <p className="mt-1 text-muted-foreground text-xs leading-relaxed">
                   <span className="font-mono text-[11px]">

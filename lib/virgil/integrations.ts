@@ -29,6 +29,11 @@ export function isVirgilJournalFileParseEnabled(): boolean {
   return process.env.VIRGIL_JOURNAL_FILE_PARSE === "1";
 }
 
+/** Alexa channel webhook for low-friction voice ingress. */
+export function isVirgilAlexaEnabled(): boolean {
+  return process.env.VIRGIL_ALEXA_ENABLED === "1";
+}
+
 /** Default relative to process.cwd() when `VIRGIL_JOURNAL_FILE_PATH` is unset. */
 export function getVirgilJournalFilePath(): string {
   const raw = process.env.VIRGIL_JOURNAL_FILE_PATH?.trim();

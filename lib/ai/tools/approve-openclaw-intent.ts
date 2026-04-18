@@ -2,9 +2,14 @@ import { tool } from "ai";
 import { z } from "zod";
 import {
   confirmPendingIntent,
+  countDelegationBacklogForUser,
   trySendPendingIntentById,
 } from "@/lib/db/queries";
-import { buildApproveDelegationIntentToolDescription } from "@/lib/integrations/delegation-labels";
+import {
+  buildApproveDelegationIntentToolDescription,
+  delegationUnreachableMessage,
+} from "@/lib/integrations/delegation-labels";
+import { getDelegationProvider } from "@/lib/integrations/delegation-provider";
 
 export function approveOpenClawIntent({ userId }: { userId: string }) {
   return tool({
@@ -16,6 +21,7 @@ export function approveOpenClawIntent({ userId }: { userId: string }) {
         .describe("Pending intent id returned by delegateTask"),
     }),
     execute: async ({ id }) => {
+      const delegationProvider = getDelegationProvider();
       const confirmed = await confirmPendingIntent({ id, userId });
       if (!confirmed) {
         return {
@@ -26,10 +32,21 @@ export function approveOpenClawIntent({ userId }: { userId: string }) {
       }
       const sendResult = await trySendPendingIntentById({ id, userId });
       if (sendResult.skipped) {
+        if (sendResult.reason === "backend_offline") {
+          const backlog = await countDelegationBacklogForUser(userId);
+          return {
+            ok: false,
+            intentId: id,
+            message: delegationUnreachableMessage(
+              delegationProvider.backend,
+              backlog
+            ),
+          };
+        }
         return {
           ok: false,
           intentId: id,
-          message: "Intent could not be sent after confirmation.",
+          message: `Intent could not be sent after confirmation (${sendResult.reason}).`,
         };
       }
       return {

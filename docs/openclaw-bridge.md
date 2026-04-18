@@ -8,6 +8,24 @@ The bridge is **optional**. If `OPENCLAW_URL` / `OPENCLAW_HTTP_URL` is unset, de
 
 This doc is **execution delegation** (optional LAN gateway). It is separate from **E6** in [ENHANCEMENTS.md](ENHANCEMENTS.md): E6 uses OpenClaw (and similar) **communities as a source of product ideas** for Virgil scope via `submitProductOpportunity` — not runtime execution through this bridge.
 
+## Hermes as main driver (human steps)
+
+Use this when you want Hermes to be the default delegation backend and keep OpenClaw as compatibility fallback.
+
+1. In `.env.local`, set:
+   - `VIRGIL_DELEGATION_BACKEND=hermes` (explicit override)
+   - `HERMES_HTTP_URL=http://<host>:8765`
+   - `HERMES_EXECUTE_PATH=/api/execute`
+   - `HERMES_HEALTH_PATH=/health`
+   - `HERMES_SKILLS_PATH=/api/skills`
+   - `HERMES_SHARED_SECRET=<secret>` (required off-loopback)
+2. Restart the app (`pnpm dev`) so the server reads updated env vars.
+3. Keep `OPENCLAW_*` vars only if you want fallback compatibility; remove them if you want hard-fail behavior when Hermes is down.
+4. Sign in, then verify end-to-end:
+   - `GET /api/delegation/health` confirms selected backend, online state, discovered skills, and queue depth.
+   - `GET /api/openclaw/pending` confirms pending approvals and backlog behavior in the existing queue UI.
+5. Run one safe delegated task first (for example a read-only status query) before enabling higher-risk skills.
+
 ## Environment
 
 | Variable | Purpose |
@@ -17,6 +35,7 @@ This doc is **execution delegation** (optional LAN gateway). It is separate from
 | `OPENCLAW_EXECUTE_PATH` | POST path for intents (default `/api/execute`). |
 | `OPENCLAW_SKILLS_PATH` | GET path for skill list (default `/api/skills`). |
 | `OPENCLAW_HEALTH_PATH` | GET path for `ping()` (default `/health`). |
+| `HERMES_SKILLS_PATH` | Hermes skills-list path used for delegation skill discovery (default `/api/skills`). |
 
 Adapt paths to match your OpenClaw gateway’s real routes.
 

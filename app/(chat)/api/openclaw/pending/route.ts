@@ -2,7 +2,7 @@ import { z } from "zod";
 import { auth } from "@/app/(auth)/auth";
 import {
   confirmPendingIntent,
-  countOpenClawBacklogForUser,
+  countDelegationBacklogForUser,
   getPendingConfirmationsForUser,
   isAlreadyConfirmedUnsent,
   rejectPendingIntent,
@@ -30,7 +30,7 @@ export async function GET() {
   const configured = isDelegationConfigured();
   const pendingConfirmations = await getPendingConfirmationsForUser(userId);
   const online = configured ? await delegationProvider.ping() : false;
-  const queuedBacklog = await countOpenClawBacklogForUser(userId);
+  const queuedBacklog = await countDelegationBacklogForUser(userId);
   const backendLabel =
     delegationProvider.backend === "hermes" ? "Hermes" : "OpenClaw";
 

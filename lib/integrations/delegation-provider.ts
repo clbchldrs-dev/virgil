@@ -1,4 +1,8 @@
-import { pingHermes, sendHermesIntent } from "@/lib/integrations/hermes-client";
+import {
+  listHermesSkillNames,
+  pingHermes,
+  sendHermesIntent,
+} from "@/lib/integrations/hermes-client";
 import { isHermesConfigured } from "@/lib/integrations/hermes-config";
 import {
   getCachedOpenClawSkillNames,
@@ -19,9 +23,19 @@ export type DelegationProvider = {
 };
 
 function getRequestedDelegationBackend(): DelegationBackend {
-  return process.env.VIRGIL_DELEGATION_BACKEND === "hermes"
-    ? "hermes"
-    : "openclaw";
+  const explicit = process.env.VIRGIL_DELEGATION_BACKEND;
+  if (explicit === "hermes" || explicit === "openclaw") {
+    return explicit;
+  }
+
+  // Hermes-first default for Virgil 1.1+, with OpenClaw compatibility fallback.
+  if (isHermesConfigured()) {
+    return "hermes";
+  }
+  if (isOpenClawConfigured()) {
+    return "openclaw";
+  }
+  return "hermes";
 }
 
 const openClawProvider: DelegationProvider = {
@@ -36,7 +50,7 @@ const hermesProvider: DelegationProvider = {
   backend: "hermes",
   isConfigured: isHermesConfigured,
   ping: pingHermes,
-  listSkillNames: async () => [],
+  listSkillNames: listHermesSkillNames,
   sendIntent: sendHermesIntent,
 };
 

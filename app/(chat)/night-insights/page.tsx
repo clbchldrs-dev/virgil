@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/app/(auth)/auth";
 import { getNightReviewMemoriesForUser } from "@/lib/db/queries";
+import { isNightReviewEnabled } from "@/lib/night-review/config";
 import { NightInsightsClient } from "./night-insights-client";
 
 export default async function NightInsightsPage() {
@@ -16,6 +17,7 @@ export default async function NightInsightsPage() {
     limit: 60,
     includeDismissed: false,
   });
+  const nightReviewEnabled = isNightReviewEnabled();
 
   return (
     <div className="flex min-h-dvh items-start justify-center bg-background p-4 pt-12 md:pt-20">
@@ -29,7 +31,10 @@ export default async function NightInsightsPage() {
             keep in mind, or dismiss noise.
           </p>
         </div>
-        <NightInsightsClient initialMemories={memories} />
+        <NightInsightsClient
+          initialMemories={memories}
+          nightReviewEnabled={nightReviewEnabled}
+        />
       </div>
     </div>
   );

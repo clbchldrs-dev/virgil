@@ -15,7 +15,10 @@ const executeBodySchema = z.object({
 
 export async function POST(request: Request) {
   if (!hermesBridgeStubEnabled()) {
-    return Response.json({ error: "hermes_bridge_stub_disabled" }, { status: 403 });
+    return Response.json(
+      { error: "hermes_bridge_stub_disabled" },
+      { status: 403 }
+    );
   }
   if (!isHermesBridgeRequestAuthorized(request)) {
     return Response.json({ error: "unauthorized" }, { status: 401 });

@@ -607,6 +607,9 @@ export async function POST(request: Request) {
                 userId: session.user.id,
                 chatId: id,
               }),
+              approveDelegationIntent: approveOpenClawIntent({
+                userId: session.user.id,
+              }),
               approveOpenClawIntent: approveOpenClawIntent({
                 userId: session.user.id,
               }),
@@ -614,7 +617,11 @@ export async function POST(request: Request) {
           : undefined;
 
         const openClawToolNames = openClawPersonalEnabled
-          ? (["delegateTask", "approveOpenClawIntent"] as const)
+          ? ([
+              "delegateTask",
+              "approveDelegationIntent",
+              "approveOpenClawIntent",
+            ] as const)
           : [];
 
         const gatewayExtraTools = {

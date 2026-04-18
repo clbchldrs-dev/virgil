@@ -3,9 +3,12 @@ import {
   isHermesBridgeRequestAuthorized,
 } from "@/lib/integrations/hermes-bridge-stub";
 
-export async function GET(request: Request) {
+export function GET(request: Request) {
   if (!hermesBridgeStubEnabled()) {
-    return Response.json({ error: "hermes_bridge_stub_disabled" }, { status: 403 });
+    return Response.json(
+      { error: "hermes_bridge_stub_disabled" },
+      { status: 403 }
+    );
   }
   if (!isHermesBridgeRequestAuthorized(request)) {
     return Response.json({ error: "unauthorized" }, { status: 401 });

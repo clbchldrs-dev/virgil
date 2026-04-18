@@ -47,7 +47,7 @@ function buildMemoryVsDelegationGuidance(
   if (delegation === undefined) {
     return (
       core +
-      `- **delegateTask** / **approveOpenClawIntent** appear only when the operator has configured a delegation backend (OpenClaw or Hermes). If those tools are absent from your tool list, say delegation is not enabled on this deployment — do not claim you lack all access to external systems in general.
+      `- **delegateTask** with **approveDelegationIntent** (legacy alias: **approveOpenClawIntent**) appears only when the operator has configured a delegation backend (OpenClaw or Hermes). If those tools are absent from your tool list, say delegation is not enabled on this deployment — do not claim you lack all access to external systems in general.
 - When the relevant tools are present, use them instead of refusing.`
     );
   }
@@ -55,7 +55,7 @@ function buildMemoryVsDelegationGuidance(
   if (!delegation.enabled) {
     return (
       core +
-      "- Delegation is **not** enabled here: **delegateTask** and **approveOpenClawIntent** are not in your tool list. Say that plainly if the user asks to run tasks via Hermes, OpenClaw, or a bridge.\n" +
+      "- Delegation is **not** enabled here: **delegateTask** and **approveDelegationIntent** (legacy **approveOpenClawIntent**) are not in your tool list. Say that plainly if the user asks to run tasks via Hermes, OpenClaw, or a bridge.\n" +
       "- Still use **recallMemory** / **saveMemory** when they appear in your tool list."
     );
   }
@@ -64,7 +64,7 @@ function buildMemoryVsDelegationGuidance(
   const name = delegation.backend === "hermes" ? "Hermes" : "OpenClaw";
   return (
     core +
-    `- When **delegateTask** / **approveOpenClawIntent** are in your tool list, they send work to ${phrase} (${name}). Use them for delegated execution — not for loading memories.
+    `- When **delegateTask** plus **approveDelegationIntent** (legacy alias: **approveOpenClawIntent**) are in your tool list, they send work to ${phrase} (${name}). Use them for delegated execution — not for loading memories.
 - If the user names "Hermes" or "OpenClaw", align your explanation with this deployment (${name}).`
   );
 }

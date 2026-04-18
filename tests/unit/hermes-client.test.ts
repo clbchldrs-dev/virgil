@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  listHermesSkillNames,
   pingHermes,
   sendHermesIntent,
 } from "../../lib/integrations/hermes-client";
@@ -9,6 +10,7 @@ import type { ClawIntent } from "../../lib/integrations/openclaw-types";
 const ENV_KEYS = [
   "HERMES_HTTP_URL",
   "HERMES_EXECUTE_PATH",
+  "HERMES_SKILLS_PATH",
   "HERMES_HEALTH_PATH",
   "HERMES_SHARED_SECRET",
 ] as const;
@@ -216,6 +218,66 @@ test("sendHermesIntent sanitizes and truncates non-2xx error payload", async () 
         assert.ok(result.error);
         assert.equal(result.error?.includes("<b>"), false);
         assert.ok((result.error?.length ?? 0) <= 501);
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    }
+  );
+});
+
+test("listHermesSkillNames returns [] when base URL missing", async () => {
+  await withEnv(
+    {
+      HERMES_HTTP_URL: undefined,
+      HERMES_SKILLS_PATH: undefined,
+      HERMES_SHARED_SECRET: undefined,
+    },
+    async () => {
+      assert.deepEqual(await listHermesSkillNames(), []);
+    }
+  );
+});
+
+test("listHermesSkillNames parses mixed skill payloads", async () => {
+  await withEnv(
+    {
+      HERMES_HTTP_URL: "http://127.0.0.1:8765",
+      HERMES_SKILLS_PATH: "/api/skills",
+      HERMES_SHARED_SECRET: "secret-token",
+    },
+    async () => {
+      const originalFetch = globalThis.fetch;
+      const seenAuthHeaders: Array<string | null> = [];
+      globalThis.fetch = ((
+        _input: string | URL | Request,
+        init?: RequestInit
+      ) => {
+        const headers = new Headers(init?.headers);
+        seenAuthHeaders.push(headers.get("authorization"));
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              skills: [
+                "send-whatsapp",
+                { id: "read-email" },
+                { name: "send-whatsapp" },
+                { slug: "open-calendar" },
+                { ignored: true },
+              ],
+            }),
+            { status: 200 }
+          )
+        );
+      }) as typeof fetch;
+
+      try {
+        const skills = await listHermesSkillNames();
+        assert.deepEqual(skills, [
+          "send-whatsapp",
+          "read-email",
+          "open-calendar",
+        ]);
+        assert.deepEqual(seenAuthHeaders, ["Bearer secret-token"]);
       } finally {
         globalThis.fetch = originalFetch;
       }

@@ -6,6 +6,7 @@ import {
   getHermesHttpOrigin,
   getHermesPendingPath,
   getHermesSharedSecret,
+  getHermesSkillsPath,
   isHermesConfigured,
 } from "../../lib/integrations/hermes-config";
 
@@ -13,6 +14,7 @@ const KEYS = [
   "HERMES_HTTP_URL",
   "HERMES_EXECUTE_PATH",
   "HERMES_PENDING_PATH",
+  "HERMES_SKILLS_PATH",
   "HERMES_HEALTH_PATH",
   "HERMES_SHARED_SECRET",
 ] as const;
@@ -74,11 +76,13 @@ test("Hermes path helpers return defaults", () => {
     {
       HERMES_EXECUTE_PATH: undefined,
       HERMES_PENDING_PATH: undefined,
+      HERMES_SKILLS_PATH: undefined,
       HERMES_HEALTH_PATH: undefined,
     },
     () => {
       assert.equal(getHermesExecutePath(), "/api/execute");
       assert.equal(getHermesPendingPath(), "/api/pending");
+      assert.equal(getHermesSkillsPath(), "/api/skills");
       assert.equal(getHermesHealthPath(), "/health");
     }
   );
@@ -89,11 +93,13 @@ test("Hermes path helpers use env overrides", () => {
     {
       HERMES_EXECUTE_PATH: "/v2/execute",
       HERMES_PENDING_PATH: "/v2/pending",
+      HERMES_SKILLS_PATH: "/v2/skills",
       HERMES_HEALTH_PATH: "/v2/health",
     },
     () => {
       assert.equal(getHermesExecutePath(), "/v2/execute");
       assert.equal(getHermesPendingPath(), "/v2/pending");
+      assert.equal(getHermesSkillsPath(), "/v2/skills");
       assert.equal(getHermesHealthPath(), "/v2/health");
     }
   );

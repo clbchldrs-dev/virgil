@@ -251,8 +251,8 @@ export async function trySendPendingIntentById({
   return { skipped: false as const, result };
 }
 
-/** OpenClaw offline: pending rows that never left the queue (for owner messaging). */
-export async function countOpenClawBacklogForUser(userId: string) {
+/** Delegation backlog: pending rows that never left the queue (for owner messaging). */
+export async function countDelegationBacklogForUser(userId: string) {
   const rows = await db
     .select({ id: pendingIntent.id })
     .from(pendingIntent)
@@ -268,3 +268,6 @@ export async function countOpenClawBacklogForUser(userId: string) {
     );
   return rows.length;
 }
+
+/** Backward-compatible alias while callers migrate naming. */
+export const countOpenClawBacklogForUser = countDelegationBacklogForUser;

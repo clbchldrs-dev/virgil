@@ -1,6 +1,6 @@
 # Virgil
 
-**Product version: Virgil 0.5** (pre-stable). Goal is a declared **v1.0** before June 2026; the **v2** Python-backend architecture remains planned ([docs/V2_ARCHITECTURE.md](docs/V2_ARCHITECTURE.md)). The repo `package.json` version tracks this label.
+**Product version: Virgil 1.1** — bridge release ([docs/DECISIONS.md](docs/DECISIONS.md), 2026-04-16): optional **Hermes** HTTP delegation (`HERMES_*`), **OpenClaw** compatibility, and gated **LLM Wiki** ops (`VIRGIL_WIKI_*`). A **declared stable v1.0** (deploy and verification bar: [docs/STABILITY_TRACK.md](docs/STABILITY_TRACK.md)) remains the goal before June 2026; the **v2** Python-backend architecture is still planned ([docs/V2_ARCHITECTURE.md](docs/V2_ARCHITECTURE.md)). The repo `package.json` **version** tracks this label.
 
 Virgil is a personal AI assistant with a **hosted-primary** default (AI Gateway tool-capable models) and **local Ollama** as a strong option for privacy, cost, or resilience.
 

@@ -4,6 +4,25 @@ Significant, stable choices for Virgil. New entries go at the **top** (reverse c
 
 ---
 
+## 2026-04-18 — LLM Wiki storage: local Postgres (pgvector + tsvector); Honcho evaluation; queue ordering before Temporal — Accepted
+
+**Context:** v2 founding architecture (local-first / ADR-002 in owner founding docs) rejects cloud-default storage for the personal ontology. Separately, the v1 app already uses hybrid recall (**pgvector** then **FTS** on Postgres) for `Memory` rows when enabled. The **LLM Wiki** (markdown knowledge base + retrieval) needs a durable, local-first backing store that supports both lexical and semantic search without treating “managed Postgres” or vendor sponsorship as the architecture.
+
+**Decision:**
+
+1. **LLM Wiki** durable storage and retrieval use **self-hosted Postgres on the LAN** (or equivalent single-tenant operator control), not a cloud-only default. Indexes: **`pgvector`** for embeddings and **`tsvector`** (full-text) for lexical/hybrid retrieval — same hybrid pattern as semantic + keyword search, with FTS retained as a first-class path (consistent with 2026-04-02 / E11 recall direction, but **scoped here to the wiki artifact** and **explicitly local-first**).
+2. **Neon / other hosted sponsorship narratives** are **out of scope** for this decision: they do not define the architecture. Operators may still use any Postgres that meets extensions and sovereignty needs; the **default intent** is **on-premises Postgres** aligned with local-first posture.
+3. **Honcho** (Hermes pluggable memory): **Evaluate** pointing Honcho’s self-hosted stack at the **same** Postgres instance (or a dedicated database on the same server). Honcho’s self-hosted path expects **PostgreSQL with `pgvector`**; dialectic/worker tables are Honcho-owned. The **LLM Wiki** remains a **distinct** concern (curated markdown + provenance); coexistence is **integration work**, not automatic. If Honcho cannot share the wiki tables cleanly, run **two databases on the same host** or sync at the application layer — **decide at Hermes + Honcho wiring time**, not now.
+4. **Durable execution / scheduling:** If **Hermes** native scheduling is insufficient for multi-step or crash-safe work, prefer a **Postgres-backed job queue** using row locking (**`FOR UPDATE SKIP LOCKED`**) for workers — **before** adopting **Temporal** (or similar external orchestrators). This keeps complexity proportional to Virgil’s agent problems; infrastructure replacement is not the goal.
+
+**Non-decisions (explicit):** PostgREST or “eliminate your API layer” patterns; “replace your entire stack” product framing; any commitment that Virgil’s hard problems are solved by swapping hosting brands.
+
+**Consequences:** Greenfield Hermes/v2 wiki work targets **one** lexical + vector SQL story on **operator-controlled Postgres**. Honcho evaluation has a clear technical gate (**pgvector Postgres**). Background job escalation has an ordered ladder: **Hermes → Postgres queue → Temporal** (last resort).
+
+**Links:** [docs/V2_ARCHITECTURE.md](V2_ARCHITECTURE.md), [docs/tickets/2026-04-04-pgvector-memory-design.md](tickets/2026-04-04-pgvector-memory-design.md) (v1 `Memory` sketch — pattern alignment, different surface)
+
+---
+
 ## 2026-04-16 — Virgil 1.1 bridge: Hermes harness + LLM Wiki memory layer — Accepted
 
 **Context:** The v2 target remains a greenfield Python backend, but the owner wants a near-term **Virgil 1.1** bridge in this repo that validates Hermes-backed delegation and compounding memory behavior before full cutover. Existing docs positioned Hermes as future intent only and kept OpenClaw as the optional shipped delegation layer.

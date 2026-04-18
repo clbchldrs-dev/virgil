@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/app/(auth)/auth";
+import { NightReviewTriggerButton } from "@/components/night-review-trigger-button";
 import { Button } from "@/components/ui/button";
 import {
   countActionableNightReviewInsights,
@@ -86,9 +87,14 @@ export default async function BackgroundActivityPage() {
                 you can accept or dismiss on Night insights.
               </p>
             </div>
-            <Button asChild className="shrink-0" variant="secondary">
-              <Link href="/night-insights">Open night insights</Link>
-            </Button>
+            <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+              <NightReviewTriggerButton
+                nightReviewEnabled={nightReviewEnabled}
+              />
+              <Button asChild variant="secondary">
+                <Link href="/night-insights">Open night insights</Link>
+              </Button>
+            </div>
           </div>
 
           <dl className="grid gap-3 text-sm sm:grid-cols-2">

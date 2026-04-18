@@ -3,15 +3,15 @@ description: Product version, stabilization priorities, LAN OpenClaw/Ollama post
 alwaysApply: true
 ---
 
-# Virgil stabilization (0.5 → v1 → v2)
+# Virgil stabilization (1.1 bridge → stable v1.0 → v2)
 
 ## Product version
 
-- **Current:** **Virgil 0.5** — useful and deployable, not yet a declared stable **v1.0**.
-- **Near-term goal:** **v1.0** before **June 2026** — stability, predictable behavior, docs and verification gates (`pnpm stable:check`, [docs/STABILITY_TRACK.md](docs/STABILITY_TRACK.md)) match what operators run in production.
+- **Current:** **Virgil 1.1** — 1.1 bridge shipped in-repo (Hermes delegation + LLM Wiki ops behind flags); useful and deployable, not the same as a declared stable **v1.0** ([docs/STABILITY_TRACK.md](docs/STABILITY_TRACK.md)).
+- **Near-term goal:** **v1.0** before **June 2026** — stability, predictable behavior, docs and verification gates (`pnpm stable:check`, STABILITY_TRACK) match what operators run in production.
 - **Later:** **v2** — headless Python backend and home hardware track per [docs/V2_ARCHITECTURE.md](docs/V2_ARCHITECTURE.md) (planned; not implemented in this repo until scoped).
 
-When writing user-facing copy or release notes, prefer **“Virgil 0.5”** over implying GA. The `package.json` **version** field should stay aligned with this product label when bumping releases.
+When writing user-facing copy or release notes, prefer **“Virgil 1.1”** for the current product line; do not imply GA until STABILITY_TRACK / v1.0 criteria are met. The `package.json` **version** field should stay aligned with this product label when bumping releases.
 
 ## Cost and inference posture
 

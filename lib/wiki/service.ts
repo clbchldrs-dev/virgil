@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 type WikiAction = "ingest" | "query" | "lint";
@@ -147,12 +147,15 @@ export async function ingestWikiSource(
 
   const sourceText = await readFile(rawPath, "utf8");
   const summaryLines = extractSummary(sourceText);
-  const summary = summaryLines.length > 0 ? summaryLines[0] : "No summary available.";
+  const summary =
+    summaryLines.length > 0 ? summaryLines[0] : "No summary available.";
   const slug = sourcePageSlug(sourceRelativePath);
   const sourcePagesDir = path.join(root, "wiki", "sources");
   await mkdir(sourcePagesDir, { recursive: true });
   const pagePath = path.join(sourcePagesDir, `${slug}.md`);
-  const sourceRef = path.posix.join("raw", sourceRelativePath).replaceAll("\\", "/");
+  const sourceRef = path.posix
+    .join("raw", sourceRelativePath)
+    .replaceAll("\\", "/");
   const pageRelativePath = `sources/${slug}`;
   const pageBody = `---
 type: source-note
@@ -267,7 +270,11 @@ export async function lintWiki(): Promise<WikiLintResult> {
   const issues: WikiLintResult["issues"] = [];
 
   const linkTargets = new Set<string>();
-  const pagePaths: Array<{ filePath: string; relNoExt: string; content: string }> = [];
+  const pagePaths: Array<{
+    filePath: string;
+    relNoExt: string;
+    content: string;
+  }> = [];
 
   for (const filePath of files) {
     const rel = path

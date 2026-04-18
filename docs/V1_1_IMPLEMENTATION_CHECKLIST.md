@@ -1,5 +1,7 @@
 # Virgil 1.1 implementation checklist (Hermes harness + LLM Wiki)
 
+**Shipped 2026-04-18** as **Virgil 1.1** (`package.json` **1.1.0**). Use the **Done criteria** section below to verify *your* deployment (Hermes URL reachable, wiki flags, repeated `delegateTask` workflow). Historical PR slices remain as a record of how the bridge landed.
+
 Execution checklist for building the **Virgil 1.1 bridge** in this repo with small, reviewable PRs.
 
 Use this with:
@@ -39,7 +41,7 @@ Create a provider interface so chat/tool code no longer knows backend-specific d
 
 Add these as **new env vars** during implementation PRs:
 
-- `VIRGIL_DELEGATION_BACKEND=openclaw|hermes` (default `openclaw`)
+- `VIRGIL_DELEGATION_BACKEND=openclaw|hermes` (runtime default: prefer `hermes` when configured, else `openclaw`)
 - `HERMES_HTTP_URL=` (e.g. `http://127.0.0.1:8765`)
 - `HERMES_EXECUTE_PATH=/api/execute`
 - `HERMES_PENDING_PATH=/api/pending`

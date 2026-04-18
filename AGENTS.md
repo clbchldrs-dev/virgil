@@ -4,7 +4,7 @@ This file is for AI agents working on this codebase. Read it before making chang
 
 ## Release status (product version)
 
-- **Virgil 0.5** — current label (`package.json` **version**). The app is **usable and deployable** but **not** yet a declared stable **v1.0**.
+- **Virgil 1.1** — current label (`package.json` **version**). Ships the **1.1 bridge** in this repo: optional **Hermes** HTTP delegation (`HERMES_*`, `VIRGIL_DELEGATION_BACKEND`), **OpenClaw** compatibility, and **LLM Wiki** maintenance (`VIRGIL_WIKI_*`, `lib/wiki/`). The app is **usable and deployable**; a **declared stable v1.0** ([docs/STABILITY_TRACK.md](docs/STABILITY_TRACK.md)) remains targeted before **June 2026**.
 - **v1.0 target:** before **June 2026** — stability, docs, and verification (`pnpm stable:check`, [docs/STABILITY_TRACK.md](docs/STABILITY_TRACK.md)) aligned with what owners run in production.
 - **v2:** planned architecture (Python backend, home hardware); **not** in active development in this repo until explicitly scoped — [docs/V2_ARCHITECTURE.md](docs/V2_ARCHITECTURE.md).
 
@@ -655,6 +655,9 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `VIRGIL_INGEST_ENABLED` | No | No | Set to `1` for `POST /api/ingest` (Bearer `VIRGIL_INGEST_SECRET` → `VIRGIL_INGEST_USER_ID`). |
 | `VIRGIL_INGEST_SECRET` | When general ingest on | Same | High-privilege bearer for scripted context capture. |
 | `VIRGIL_INGEST_USER_ID` | When general ingest on | Same | Postgres `User.id` UUID for bearer ingest + email ingest + optional journal cron. |
+| `VIRGIL_ALEXA_ENABLED` | No | No | Set to `1` for `POST /api/channels/alexa` (single-owner voice ingress). |
+| `VIRGIL_ALEXA_SECRET` | When Alexa on | Same | Bearer shared secret required by `/api/channels/alexa`. |
+| `VIRGIL_ALEXA_USER_ID` | When Alexa on | Same | Postgres `User.id` UUID that Alexa channel requests are mapped to. |
 | `RESEND_WEBHOOK_SECRET` | When inbound email on | Same | Svix signing secret from Resend **Webhooks** (verify `POST /api/ingest/email`). |
 | `VIRGIL_EMAIL_INGEST_ENABLED` | No | No | Set to `1` for Resend `email.received` → Memory (requires `RESEND_WEBHOOK_SECRET`, `RESEND_API_KEY`, allowlist). |
 | `VIRGIL_EMAIL_INGEST_ALLOWED_FROM` | When email ingest on | Same | Comma-separated sender emails (lowercased match). |
@@ -669,7 +672,7 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `GITHUB_PRODUCT_OPPORTUNITY_LABELS` | No | No | Optional comma-separated issue labels |
 | `AGENT_TASK_TRIAGE_ENABLED` | No | No | Set to `1` to enable background triage of submitted agent tasks via local Ollama |
 | `AGENT_TASK_TRIAGE_MODEL` | No | No | Model id for triage worker (default `ollama/qwen2.5:7b-instruct`) |
-| `VIRGIL_DELEGATION_BACKEND` | No | No | Delegation provider selector for the Virgil 1.1 bridge (`openclaw` or `hermes`; default `openclaw`). During rollout, treat `hermes` as opt-in and keep OpenClaw-compatible paths available. |
+| `VIRGIL_DELEGATION_BACKEND` | No | No | Delegation provider selector for the Virgil 1.1 bridge (`openclaw` or `hermes`). When unset, Virgil now prefers `hermes` when configured and falls back to `openclaw`. |
 | `OPENCLAW_URL` | No | No | Optional OpenClaw gateway. Hardened default is a local tunnel (`ws://127.0.0.1:13100`) on the Mac: set `OPENCLAW_SSH_HOST` and run `pnpm openclaw:tunnel` (see [docs/openclaw-ssh-tunnel-hardening.md](docs/openclaw-ssh-tunnel-hardening.md) for SSH target and owner reference host). Bridge behavior: [docs/openclaw-bridge.md](docs/openclaw-bridge.md) |
 | `OPENCLAW_HTTP_URL` | No | No | Explicit HTTP origin for OpenClaw REST (defaults from `OPENCLAW_URL`). Hardened tunnel value: `http://127.0.0.1:13100` |
 | `OPENCLAW_EXECUTE_PATH` | No | No | POST path for intents (default `/api/execute`) |
@@ -678,6 +681,7 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `HERMES_HTTP_URL` | No | No | Optional Hermes bridge HTTP origin for Virgil 1.1 delegation (example local default `http://127.0.0.1:8765`). Keep loopback or tunnel-only exposure unless explicitly hardened. |
 | `HERMES_EXECUTE_PATH` | No | No | Hermes execute path for delegated actions (default `/api/execute`) in the 1.1 bridge contract. |
 | `HERMES_PENDING_PATH` | No | No | Hermes pending-intent listing path (default `/api/pending`) for approval UX parity with existing pending queues. |
+| `HERMES_SKILLS_PATH` | No | No | Hermes skills-list path (default `/api/skills`) used for backend skill discovery and matching in `delegateTask`. |
 | `HERMES_HEALTH_PATH` | No | No | Hermes health probe path (default `/health`) used for backend availability checks. |
 | `HERMES_SHARED_SECRET` | No | No | Optional shared bearer for non-local Hermes bridge calls. Required when Hermes is reachable beyond loopback/tunnel boundaries. |
 | `VIRGIL_HERMES_BRIDGE_STUB_ENABLED` | No | No | Set to `1` to expose local stub routes (`/api/hermes/health`, `/api/hermes/execute`, `/api/hermes/pending`) when testing the Virgil 1.1 Hermes path without an external Hermes HTTP bridge. |
@@ -786,6 +790,7 @@ Summaries only; traceable ADRs with context and dates: **[docs/DECISIONS.md](doc
 - **Complementarity framing (2026-04-06 ADR):** optional OpenClaw = breadth/orchestration integration; Virgil = cognitive brain; Hermes-style learning specialist + ACP = future intent only ([docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md) §2b) — [docs/DECISIONS.md](docs/DECISIONS.md).
 - **Mobile browser / local LLM (2026-04-06 ADR):** phone (e.g. Pixel) is **not** a required on-device or LAN-direct Ollama target; chat inference stays on the **server** that serves `/api/chat`—avoids unnecessary VPN/tunnel/split-stack design — [docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md), [docs/DECISIONS.md](docs/DECISIONS.md).
 - **Virgil 1.1 bridge (2026-04-16 ADR):** current-shell bridge for **Hermes harness + LLM Wiki memory layer** (`raw/`, `wiki/`, `schema/`) while preserving existing escalation/approval/safety controls and keeping v2 as a separate greenfield track — [docs/DECISIONS.md](docs/DECISIONS.md), [workspace/wiki-starter/README.md](workspace/wiki-starter/README.md).
+- **LLM Wiki storage (2026-04-18 ADR):** **local self-hosted Postgres** with **`pgvector` + `tsvector`** for wiki retrieval; **evaluate** Honcho against the same pgvector Postgres (or adjacent DB on host); **Postgres `SKIP LOCKED` queue** before Temporal if Hermes scheduling is insufficient — [docs/DECISIONS.md](docs/DECISIONS.md).
 - **Chat fallback cascade** (`VIRGIL_CHAT_FALLBACK=1`): when a local Ollama model fails (unreachable, missing model, timeout), the chat route automatically escalates to direct Gemini (personal API key), then Vercel AI Gateway. No mid-stream fallback; escalation uses gateway-style prompt and full tool set. See [docs/DECISIONS.md](docs/DECISIONS.md) (2026-04-04).
 - **Gateway → Gemini direct → Ollama** (`GOOGLE_GENERATIVE_AI_API_KEY` + optional `VIRGIL_GATEWAY_FALLBACK_GEMINI_MODEL`, then `VIRGIL_GATEWAY_FALLBACK_OLLAMA=1`): when a **gateway** chat request fails with an eligible **pre-stream** error (including many rate limits), try **direct Gemini**, then optional **local Ollama** with **`DEFAULT_GATEWAY_FALLBACK_OLLAMA_MODEL`**. **Not** mid-stream. See [docs/tickets/2026-04-06-on-device-gemma-android-spike.md](docs/tickets/2026-04-06-on-device-gemma-android-spike.md) § Mid-stream follow-up.
 
@@ -824,7 +829,7 @@ Migration path is in [`docs/V2_MIGRATION.md`](docs/V2_MIGRATION.md).
 Hardware decisions are in [`docs/HARDWARE.md`](docs/HARDWARE.md).
 
 **v2 is not in development.** Do not build v2 features in this repo. The current
-focus is stabilizing **Virgil 0.5** toward **v1.0** (before June 2026) and collecting evaluation data in `workspace/v2-eval/`.
+focus is stabilizing **Virgil 1.1** toward **v1.0** (before June 2026) and collecting evaluation data in `workspace/v2-eval/`.
 
 ### Planned v2 Python backend (June 2026)
 

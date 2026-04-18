@@ -10,6 +10,7 @@ Tickets itemize **future work** from the [Linux 24/7 roadmap](../VIRGIL_ROADMAP_
 
 | ID | Ticket file | Enhancement / theme |
 |----|-------------|---------------------|
+| 1.1 program | [2026-04-18-v1-1-full-feature-program-overview.md](2026-04-18-v1-1-full-feature-program-overview.md) | Full-feature 1.1 milestone program (M1-M5: delegation, wiki loop, surfaces, reliability, release readiness) |
 | Tri-layer | [2026-04-05-scheduling-symbolic-grounding-spike.md](2026-04-05-scheduling-symbolic-grounding-spike.md) | v2 spike: bounded scheduling + symbolic grounding (spec only; see [DECISIONS.md](../DECISIONS.md)) |
 | E12 | [2026-04-05-virg-e12-slack-employee-standups.md](2026-04-05-virg-e12-slack-employee-standups.md) | Slack standup loop for Cursor, Clawleb, and Virgil — **partial:** digest → Slack mirror ([operator-integrations-runbook.md](../operator-integrations-runbook.md)) |
 | Future | [2026-04-06-future-journaling-intake.md](2026-04-06-future-journaling-intake.md) | Journaling intake (file/ingest/journal parse hooks) |
