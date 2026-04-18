@@ -167,7 +167,7 @@ const PurePreviewMessage = ({
         (state === "approval-responded" &&
           (part as { approval?: { approved?: boolean } }).approval?.approved ===
             false);
-      const widthClass = "w-[min(100%,450px)]";
+      const widthClass = "min-w-0 w-[min(100%,450px)]";
 
       if (state === "output-available") {
         return (
@@ -258,7 +258,7 @@ const PurePreviewMessage = ({
       if (part.output && "error" in part.output) {
         return (
           <div
-            className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-500 dark:bg-red-950/50"
+            className="min-w-0 max-w-full break-words rounded-lg border border-red-200 bg-red-50 p-4 text-red-500 dark:bg-red-950/50"
             key={toolCallId}
           >
             Error creating document: {String(part.output.error)}
@@ -281,7 +281,7 @@ const PurePreviewMessage = ({
       if (part.output && "error" in part.output) {
         return (
           <div
-            className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-500 dark:bg-red-950/50"
+            className="min-w-0 max-w-full break-words rounded-lg border border-red-200 bg-red-50 p-4 text-red-500 dark:bg-red-950/50"
             key={toolCallId}
           >
             Error updating document: {String(part.output.error)}
@@ -305,7 +305,7 @@ const PurePreviewMessage = ({
 
       return (
         <Tool
-          className="w-[min(100%,450px)]"
+          className="min-w-0 w-[min(100%,450px)]"
           defaultOpen={true}
           key={toolCallId}
         >
@@ -317,7 +317,7 @@ const PurePreviewMessage = ({
                 errorText={undefined}
                 output={
                   "error" in part.output ? (
-                    <div className="rounded border p-2 text-red-500">
+                    <div className="min-w-0 max-w-full break-words rounded border p-2 text-red-500">
                       Error: {String(part.output.error)}
                     </div>
                   ) : (
@@ -341,7 +341,7 @@ const PurePreviewMessage = ({
       const isDenied =
         state === "output-denied" ||
         (state === "approval-responded" && part.approval?.approved === false);
-      const widthClass = "w-[min(100%,450px)]";
+      const widthClass = "min-w-0 w-[min(100%,450px)]";
 
       const header =
         part.type === "dynamic-tool" ? (

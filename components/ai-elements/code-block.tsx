@@ -103,6 +103,8 @@ type CodeBlockProps = HTMLAttributes<HTMLDivElement> & {
   code: string;
   language: BundledLanguage;
   showLineNumbers?: boolean;
+  /** When true, long lines wrap instead of forcing horizontal scroll (e.g. chat tool panels). */
+  wrapLines?: boolean;
 };
 
 interface TokenizedCode {
@@ -254,10 +256,12 @@ const CodeBlockBody = memo(
   ({
     tokenized,
     showLineNumbers,
+    wrapLines,
     className,
   }: {
     tokenized: TokenizedCode;
     showLineNumbers: boolean;
+    wrapLines?: boolean;
     className?: string;
   }) => {
     const preStyle = useMemo(
@@ -277,6 +281,8 @@ const CodeBlockBody = memo(
       <pre
         className={cn(
           "dark:!bg-[var(--shiki-dark-bg)] dark:!text-[var(--shiki-dark)] m-0 p-4 text-sm",
+          wrapLines &&
+            "min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]",
           className
         )}
         style={preStyle}
@@ -301,6 +307,7 @@ const CodeBlockBody = memo(
   (prevProps, nextProps) =>
     prevProps.tokenized === nextProps.tokenized &&
     prevProps.showLineNumbers === nextProps.showLineNumbers &&
+    prevProps.wrapLines === nextProps.wrapLines &&
     prevProps.className === nextProps.className
 );
 
@@ -380,10 +387,12 @@ export const CodeBlockContent = ({
   code,
   language,
   showLineNumbers = false,
+  wrapLines = false,
 }: {
   code: string;
   language: BundledLanguage;
   showLineNumbers?: boolean;
+  wrapLines?: boolean;
 }) => {
   // Memoized raw tokens for immediate display
   const rawTokens = useMemo(() => createRawTokens(code), [code]);
@@ -412,8 +421,19 @@ export const CodeBlockContent = ({
   }, [code, language, rawTokens]);
 
   return (
-    <div className="relative overflow-auto">
-      <CodeBlockBody showLineNumbers={showLineNumbers} tokenized={tokenized} />
+    <div
+      className={cn(
+        "relative",
+        wrapLines
+          ? "max-w-full min-w-0 overflow-x-hidden overflow-y-auto"
+          : "overflow-auto"
+      )}
+    >
+      <CodeBlockBody
+        showLineNumbers={showLineNumbers}
+        tokenized={tokenized}
+        wrapLines={wrapLines}
+      />
     </div>
   );
 };
@@ -422,6 +442,7 @@ export const CodeBlock = ({
   code,
   language,
   showLineNumbers = false,
+  wrapLines = false,
   className,
   children,
   ...props
@@ -430,12 +451,17 @@ export const CodeBlock = ({
 
   return (
     <CodeBlockContext.Provider value={contextValue}>
-      <CodeBlockContainer className={className} language={language} {...props}>
+      <CodeBlockContainer
+        className={cn(wrapLines && "min-w-0 max-w-full", className)}
+        language={language}
+        {...props}
+      >
         {children}
         <CodeBlockContent
           code={code}
           language={language}
           showLineNumbers={showLineNumbers}
+          wrapLines={wrapLines}
         />
       </CodeBlockContainer>
     </CodeBlockContext.Provider>
