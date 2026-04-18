@@ -1,14 +1,22 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Read environment variables from file.
+ * Read environment variables from file (local dev only).
+ * In CI, rely on workflow env — loading `.env.local` can mask missing vars.
  * https://github.com/motdotla/dotenv
  */
 import { config } from "dotenv";
 
-config({
-  path: ".env.local",
-});
+if (!process.env.CI) {
+  config({
+    path: ".env.local",
+  });
+}
+
+/** Matches `.github/workflows/playwright.yml` service Postgres. */
+const CI_POSTGRES_URL =
+  "postgresql://postgres:postgres@localhost:5432/virgil_ci";
+const CI_AUTH_SECRET = "ci-playwright-insecure-secret-not-for-production";
 
 /* Use process.env.PORT by default and fallback to port 3000 */
 const PORT = process.env.PORT || 3000;
@@ -96,5 +104,14 @@ export default defineConfig({
     url: `${baseURL}/ping`,
     timeout: 120 * 1000,
     reuseExistingServer: !process.env.CI,
+    // Ensure Next.js sees DB auth even if the child process does not inherit the runner env.
+    ...(process.env.CI
+      ? {
+          env: {
+            POSTGRES_URL: process.env.POSTGRES_URL ?? CI_POSTGRES_URL,
+            AUTH_SECRET: process.env.AUTH_SECRET ?? CI_AUTH_SECRET,
+          },
+        }
+      : {}),
   },
 });
