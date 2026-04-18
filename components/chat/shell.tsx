@@ -71,8 +71,11 @@ export function ChatShell() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
   const { setArtifact } = useArtifact();
+  /** Empty `/chat/:id` uses invitation (orange, eyes) like `/`; stay on session while history is loading so existing threads do not flash orange. */
   const chatPhase =
-    messages.length > 0 || isConcreteChatRoute ? "session" : "invitation";
+    messages.length > 0 || (isConcreteChatRoute && isLoading)
+      ? "session"
+      : "invitation";
 
   const stopRef = useRef(stop);
   stopRef.current = stop;
