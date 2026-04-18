@@ -10,7 +10,11 @@ import { Button } from "@/components/ui/button";
 import type { AgentTask } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
 
-type Props = { initialTasks: AgentTask[] };
+type Props = {
+  initialTasks: AgentTask[];
+  /** From `?status=` when linked from Background, etc. */
+  initialStatus?: string;
+};
 
 const ALL_STATUSES = [
   "all",
@@ -26,8 +30,8 @@ type StatusFilter = (typeof ALL_STATUSES)[number];
 const STATUS_LABELS: Record<string, string> = {
   all: "All",
   submitted: "Submitted",
-  approved: "Approved",
-  in_progress: "In progress",
+  approved: "Approved to run",
+  in_progress: "With agent",
   done: "Done",
   rejected: "Rejected",
 };
@@ -56,36 +60,90 @@ function apiUrl(status: StatusFilter) {
   return `${base}/api/agent-tasks${q}`;
 }
 
-function statusTransitions(
-  current: string
-): Array<{ status: string; label: string }> {
+type StatusTransition =
+  | { kind: "status"; status: string; label: string }
+  | { kind: "delegate"; label: string };
+
+function statusTransitions(current: string): StatusTransition[] {
   switch (current) {
     case "submitted":
       return [
-        { status: "approved", label: "Approve" },
-        { status: "rejected", label: "Reject" },
+        { kind: "status", status: "approved", label: "Approve for agents" },
+        { kind: "status", status: "rejected", label: "Reject" },
       ];
     case "approved":
       return [
-        { status: "in_progress", label: "Start" },
-        { status: "rejected", label: "Reject" },
+        { kind: "delegate", label: "Send to agent" },
+        { kind: "status", status: "rejected", label: "Reject" },
       ];
     case "in_progress":
       return [
-        { status: "done", label: "Done" },
-        { status: "rejected", label: "Reject" },
+        { kind: "status", status: "done", label: "Done" },
+        { kind: "status", status: "rejected", label: "Reject" },
       ];
     case "rejected":
-      return [{ status: "submitted", label: "Reopen" }];
+      return [{ kind: "status", status: "submitted", label: "Reopen" }];
     case "done":
-      return [{ status: "submitted", label: "Reopen" }];
+      return [{ kind: "status", status: "submitted", label: "Reopen" }];
     default:
       return [];
   }
 }
 
-export function AgentTasksClient({ initialTasks }: Props) {
-  const [filter, setFilter] = useState<StatusFilter>("all");
+type DelegationPayload = {
+  ok: boolean;
+  message?: string;
+  error?: string;
+  intentId?: string;
+  status?: string;
+};
+
+function toastForDelegation(delegation: DelegationPayload): {
+  type: "success" | "error";
+  description: string;
+} {
+  if (delegation.ok) {
+    return {
+      type: "success",
+      description:
+        delegation.message ??
+        (delegation.status === "sent"
+          ? "Sent to the delegation backend."
+          : "Delegated — intent queued for the execution agent."),
+    };
+  }
+  if (
+    delegation.error === "delegation_backend_offline" &&
+    delegation.intentId
+  ) {
+    return {
+      type: "success",
+      description:
+        delegation.message ??
+        "Delegated — intent is queued; backend was unreachable.",
+    };
+  }
+  return {
+    type: "error",
+    description:
+      delegation.message ??
+      "Delegation did not complete. Check pending intents.",
+  };
+}
+
+function parseStatusFilter(raw: string | undefined): StatusFilter {
+  if (!raw) {
+    return "all";
+  }
+  return ALL_STATUSES.includes(raw as StatusFilter)
+    ? (raw as StatusFilter)
+    : "all";
+}
+
+export function AgentTasksClient({ initialTasks, initialStatus }: Props) {
+  const [filter, setFilter] = useState<StatusFilter>(() =>
+    parseStatusFilter(initialStatus)
+  );
   const url = useMemo(() => apiUrl(filter), [filter]);
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<{
@@ -159,6 +217,46 @@ export function AgentTasksClient({ initialTasks }: Props) {
     [mutate]
   );
 
+  const delegateTask = useCallback(
+    async (id: string) => {
+      setPending(id);
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/agent-tasks/delegate`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          }
+        );
+        const j = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          delegation?: DelegationPayload;
+          code?: string;
+        };
+        if (!res.ok) {
+          throw new Error(
+            typeof j.error === "string" ? j.error : "Delegation failed"
+          );
+        }
+        await mutate();
+        const { type, description } = toastForDelegation(
+          j.delegation ?? { ok: false }
+        );
+        toast({ type, description });
+      } catch (e) {
+        toast({
+          type: "error",
+          description:
+            e instanceof Error ? e.message : "Could not delegate task.",
+        });
+      } finally {
+        setPending(null);
+      }
+    },
+    [mutate]
+  );
+
   const filterBar = (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap gap-1.5">
@@ -203,7 +301,7 @@ export function AgentTasksClient({ initialTasks }: Props) {
         {filterBar}
         <p className="text-muted-foreground text-sm">
           {filter === "all"
-            ? "No agent tasks yet. Submit one via chat using a gateway model."
+            ? "No tasks yet. Submit one from chat (gateway model) — then approve here so execution agents can run it."
             : `No tasks with status "${STATUS_LABELS[filter]}".`}
         </p>
       </div>
@@ -272,12 +370,18 @@ export function AgentTasksClient({ initialTasks }: Props) {
                       <Button
                         className="h-8 min-h-10 text-xs sm:min-h-8"
                         disabled={pending === task.id}
-                        key={t.status}
-                        onClick={() => patchStatus(task.id, t.status)}
+                        key={t.kind === "delegate" ? "delegate" : t.status}
+                        onClick={() =>
+                          t.kind === "delegate"
+                            ? delegateTask(task.id)
+                            : patchStatus(task.id, t.status)
+                        }
                         size="sm"
                         type="button"
                         variant={
-                          t.status === "rejected" ? "outline" : "secondary"
+                          t.kind === "status" && t.status === "rejected"
+                            ? "outline"
+                            : "secondary"
                         }
                       >
                         {t.label}

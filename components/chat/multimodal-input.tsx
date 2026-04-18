@@ -21,6 +21,7 @@ import {
   type SetStateAction,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -44,6 +45,7 @@ import {
   DEFAULT_CHAT_MODEL,
   isLocalModel,
   type ModelCapabilities,
+  VIRGIL_AUTO_MODEL_ID,
 } from "@/lib/ai/models";
 import { applyGoalRoutingHint } from "@/lib/chat/goal-routing-hint";
 import {
@@ -679,7 +681,7 @@ function PureAttachmentsButton({
   const { data: modelsResponse } = useSWR(
     `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/models`,
     (url: string) => fetch(url).then((r) => r.json()),
-    { revalidateOnFocus: false, dedupingInterval: 3_600_000 }
+    { revalidateOnFocus: true, dedupingInterval: 120_000 }
   );
 
   const caps: Record<string, ModelCapabilities> | undefined =
@@ -730,13 +732,32 @@ function PureModelSelectorCompact({
   const { data: modelsData } = useSWR(
     `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/models`,
     (url: string) => fetch(url).then((r) => r.json()),
-    { revalidateOnFocus: false, dedupingInterval: 3_600_000 }
+    { revalidateOnFocus: true, dedupingInterval: 120_000 }
   );
 
   const capabilities: Record<string, ModelCapabilities> | undefined =
     modelsData?.capabilities ?? modelsData;
   const dynamicModels: ChatModel[] | undefined = modelsData?.models;
-  const activeModels = dynamicModels ?? chatModels;
+  const activeModels =
+    dynamicModels ??
+    chatModels.filter(
+      (m) => !isLocalModel(m.id) || m.id === VIRGIL_AUTO_MODEL_ID
+    );
+
+  const modelIdsAvailable = useMemo(
+    () => new Set(activeModels.map((m) => m.id)),
+    [activeModels]
+  );
+
+  useEffect(() => {
+    if (!modelsData?.models?.length) {
+      return;
+    }
+    if (!modelIdsAvailable.has(selectedModelId)) {
+      onModelChange?.(DEFAULT_CHAT_MODEL);
+      setCookie("chat-model", DEFAULT_CHAT_MODEL);
+    }
+  }, [modelsData?.models, modelIdsAvailable, onModelChange, selectedModelId]);
 
   const selectedModel =
     activeModels.find((m: ChatModel) => m.id === selectedModelId) ??
@@ -776,12 +797,7 @@ function PureModelSelectorCompact({
         <ModelSelectorList>
           {(() => {
             const curatedIds = new Set(chatModels.map((m) => m.id));
-            const allModels = dynamicModels
-              ? [
-                  ...chatModels,
-                  ...dynamicModels.filter((m) => !curatedIds.has(m.id)),
-                ]
-              : chatModels;
+            const allModels = activeModels;
 
             type Entry = { model: ChatModel; curated: boolean };
             const localEntries: Entry[] = [];

@@ -4,7 +4,11 @@ import {
   getCapabilities,
   isDemo,
 } from "@/lib/ai/models";
-import { getDiscoveredOllamaChatModels } from "@/lib/ai/ollama-discovery";
+import {
+  filterChatModelsByAvailableOllamaTags,
+  getDiscoveredOllamaChatModels,
+  getOllamaTagNames,
+} from "@/lib/ai/ollama-discovery";
 
 export async function GET() {
   const headers = {
@@ -12,6 +16,11 @@ export async function GET() {
       "public, max-age=120, s-maxage=120, stale-while-revalidate=600",
   };
 
+  const tagNames = await getOllamaTagNames();
+  const curatedFiltered = filterChatModelsByAvailableOllamaTags(
+    chatModels,
+    tagNames
+  );
   const curatedCapabilities = await getCapabilities();
   const discovered = await getDiscoveredOllamaChatModels();
   const discoveredCaps = Object.fromEntries(
@@ -20,8 +29,13 @@ export async function GET() {
       { tools: false, vision: false, reasoning: false },
     ])
   );
-  const mergedCapabilities = { ...curatedCapabilities, ...discoveredCaps };
-  const mergedModels = [...chatModels, ...discovered];
+  const mergedModels = [...curatedFiltered, ...discovered];
+  const modelIds = new Set(mergedModels.map((m) => m.id));
+  const mergedCapabilities = Object.fromEntries(
+    Object.entries({ ...curatedCapabilities, ...discoveredCaps }).filter(
+      ([id]) => modelIds.has(id)
+    )
+  );
 
   if (isDemo) {
     const models = await getAllGatewayModels();

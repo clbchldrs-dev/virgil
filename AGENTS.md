@@ -270,13 +270,14 @@ Use any standard Postgres provider. Two tested options:
 Scheduled **night review** uses a larger model to analyze the last 24 hours of chat (rollup + excerpts), guided by Markdown under [`workspace/night/`](workspace/night/) (`HEARTBEAT.md`, `SOUL.md`, `SKILLS.md`) — same *idea* as [OpenClaw heartbeat / workspace files](https://docs.openclaw.ai/gateway/heartbeat) and [NemoClaw workspace layout](https://docs.nvidia.com/nemoclaw/latest/workspace/workspace-files.html), implemented inside Virgil only.
 
 1. **Vercel production:** night review is **on by default** when `NIGHT_REVIEW_ENABLED` is unset (so the `vercel.json` cron is not a no-op). Set **`NIGHT_REVIEW_ENABLED=0`** to turn it off. **Local, preview, and self-hosted:** set **`NIGHT_REVIEW_ENABLED=1`** when you want the enqueue/worker path to run.
-2. Set **`NIGHT_REVIEW_MODEL`** only to an allowed id: **`ollama/…`** (local; Ollama must be reachable from the worker) or **`google/…`** (Gemini — bills your Google AI key, not Vercel AI Gateway). Example hosted: `NIGHT_REVIEW_MODEL=google/gemini-2.5-flash-lite` plus **`GOOGLE_GENERATIVE_AI_API_KEY`** from [Google AI Studio](https://aistudio.google.com/apikey). DeepSeek, Mistral, and other gateway-only ids are **blocked** for night review to limit token spend.
-3. Optional: **`NIGHT_REVIEW_STAGGER_SECONDS`** (default `60`) spaces QStash deliveries per owner. **`NIGHT_REVIEW_TIMEZONE`** (default `UTC`) defines the calendar **`windowKey`** for idempotency (one completed run per user per local date).
-4. **Cron:** Vercel Cron calls **`GET /api/night-review/enqueue`** with `Authorization: Bearer $CRON_SECRET` (see [`vercel.json`](vercel.json), `0 3 * * *` UTC). Self-hosted: use the same request from `cron` or Task Scheduler against your public base URL.
-5. The enqueue endpoint publishes one **QStash** message per **eligible user** (non-guest with **at least one chat** — same rule as the daily digest). Each message hits **`POST /api/night-review/run`** (signed). Findings are stored as **`Memory`** rows with `metadata.source = "night-review"`; completion rows use `metadata.phase = "complete"` for deduplication. Each run also appends a row to **`NightReviewRun`** (duration, outcome, model id).
-6. **Optional email** when there are findings: set **`NIGHT_REVIEW_EMAIL_ON_FINDINGS=1`** (requires `RESEND_API_KEY`). **In-app:** `GET /api/memories/night-review?days=14` (authenticated) returns recent night-review memories for a “Night insights” UI.
-7. **Tool egress:** HTTP from tools uses **`AGENT_FETCH_ALLOWLIST_HOSTS`** (comma-separated hostnames); default allows Open-Meteo hosts used by weather. Extend the list when adding new fetch-based tools.
-8. **Quota:** each eligible user costs **one QStash message per night** in addition to reminders. The free tier is **500 messages/day** on Upstash.
+2. Set **`NIGHT_REVIEW_MODEL`** to an **`ollama/…`** id only (default `ollama/qwen2.5:7b-review`). Night review never uses Gemini or the AI Gateway — only local Ollama — to avoid cloud token spend. The worker must be able to reach **`OLLAMA_BASE_URL`** (on Vercel that usually means disabling night review or running Ollama behind a reachable endpoint you control).
+3. **Off-peak scheduling (default 11pm–7am local):** Set **`NIGHT_REVIEW_TIMEZONE`** to your wall-clock zone (e.g. `America/New_York`). The enqueue route only publishes work when local time is inside **`NIGHT_REVIEW_OFF_PEAK_START_HOUR`**–**`NIGHT_REVIEW_OFF_PEAK_END_HOUR`** (default **23**–**7**, end exclusive) **and** the local clock hour equals **`NIGHT_REVIEW_RUN_LOCAL_HOUR`** (default **3** = 3:00am). Reuse **`isNowWithinOffPeakLocal`** / **`isHourWithinOffPeak`** from `lib/night-review/off-peak.ts` for other deferred jobs.
+4. Optional: **`NIGHT_REVIEW_STAGGER_SECONDS`** (default `60`) spaces QStash deliveries per owner. **`NIGHT_REVIEW_TIMEZONE`** also defines the calendar **`windowKey`** for idempotency (one completed run per user per local date).
+5. **Cron:** Vercel Cron calls **`GET /api/night-review/enqueue`** **hourly** (`0 * * * *` UTC in [`vercel.json`](vercel.json)); most invocations no-op until the off-peak slot matches. Self-hosted: **`curl` hourly** with the same Bearer secret, or rely on the same endpoint behavior.
+6. The enqueue endpoint publishes one **QStash** message per **eligible user** (non-guest with **at least one chat** — same rule as the daily digest). Each message hits **`POST /api/night-review/run`** (signed). Findings are stored as **`Memory`** rows with `metadata.source = "night-review"`; completion rows use `metadata.phase = "complete"` for deduplication. Each run also appends a row to **`NightReviewRun`** (duration, outcome, model id).
+7. **Optional email** when there are findings: set **`NIGHT_REVIEW_EMAIL_ON_FINDINGS=1`** (requires `RESEND_API_KEY`). **In-app:** `GET /api/memories/night-review?days=14` (authenticated) returns recent night-review memories for a “Night insights” UI.
+8. **Tool egress:** HTTP from tools uses **`AGENT_FETCH_ALLOWLIST_HOSTS`** (comma-separated hostnames); default allows Open-Meteo hosts used by weather. Extend the list when adding new fetch-based tools.
+9. **Quota:** each eligible user costs **one QStash message per night** in addition to reminders. The free tier is **500 messages/day** on Upstash. The hourly cron adds **~24** lightweight enqueue invocations per day on Vercel.
 
 ### 1.10 Google Calendar (read-only, optional)
 
@@ -387,7 +388,7 @@ The app listens on **all interfaces** inside the container (`HOSTNAME=0.0.0.0`);
 
 | Job | Path | Schedule (UTC) |
 |-----|------|----------------|
-| Night review enqueue | `/api/night-review/enqueue` | 03:00 (`0 3 * * *`) |
+| Night review enqueue | `/api/night-review/enqueue` | Hourly (`0 * * * *`; server skips until local off-peak slot — see §1.9) |
 | Daily digest | `/api/digest` | 08:00 (`0 8 * * *`) |
 
 **Daily digest → Slack (optional):** When `VIRGIL_SLACK_CHECKIN_WEBHOOK_URL` or (`SLACK_BOT_TOKEN` + `VIRGIL_SLACK_CHECKIN_CHANNEL_ID`) is set, each digest run also posts the same plaintext body to Slack after building it (email send failures do not block Slack). See [docs/operator-integrations-runbook.md](docs/operator-integrations-runbook.md). Interactive sends remain on **OpenClaw** / **Digital Self** when configured.
@@ -404,11 +405,11 @@ The app listens on **all interfaces** inside the container (`HOSTNAME=0.0.0.0`);
 APP_URL='http://192.168.1.50:3000'
 CRON_SECRET='(same value as in .env.docker / process env)'
 
-0 3 * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/night-review/enqueue"
+0 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/night-review/enqueue"
 0 8 * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/digest"
 ```
 
-**`systemd` example** — `virgil-night-enqueue.service` + `virgil-night-enqueue.timer` (mirror for digest at 08:00 UTC). Put `CRON_SECRET=…` and `APP_URL=…` in `/etc/virgil/cron.env` (`chmod 600`).
+**`systemd` example** — `virgil-night-enqueue.service` + `virgil-night-enqueue.timer` with **`OnCalendar=hourly`** (or `*-*-* *:00:00`) so behavior matches Vercel’s hourly hit; mirror for digest at 08:00 UTC. Put `CRON_SECRET=…` and `APP_URL=…` in `/etc/virgil/cron.env` (`chmod 600`).
 
 `/etc/systemd/system/virgil-night-enqueue.service`:
 
@@ -426,17 +427,17 @@ ExecStart=/usr/bin/curl -fsS -H "Authorization: Bearer ${CRON_SECRET}" "${APP_UR
 
 ```ini
 [Unit]
-Description=Run Virgil night-review enqueue daily (UTC)
+Description=Run Virgil night-review enqueue hourly (server picks local off-peak slot)
 
 [Timer]
-OnCalendar=*-*-* 03:00:00
+OnCalendar=hourly
 Persistent=true
 
 [Install]
 WantedBy=timers.target
 ```
 
-Then: `systemctl daemon-reload && systemctl enable --now virgil-night-enqueue.timer`. Use `timedatectl` if the host is not UTC and you want calendar times interpreted in local time — prefer matching **`vercel.json`** with a UTC `OnCalendar` or set the timer unit `Timezone=UTC` (systemd 242+).
+Then: `systemctl daemon-reload && systemctl enable --now virgil-night-enqueue.timer`. The app’s enqueue handler no-ops until **`NIGHT_REVIEW_TIMEZONE`** + off-peak env match (default 3:00 local). Use `timedatectl` if the host is not UTC and you want calendar times interpreted in local time — prefer matching **`vercel.json`** with a UTC `OnCalendar` or set the timer unit `Timezone=UTC` (systemd 242+).
 
 **LAN IP / firewall / sleep:** [docs/beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md).
 
@@ -577,8 +578,8 @@ npm i -g vercel
 # Link your project
 vercel link
 
-# Pull production env vars into .env.local
-vercel env pull
+# Pull Development env vars from Vercel into .env.local (see docs/vercel-env-setup.md)
+pnpm env:vercel:pull
 
 # Deploy
 vercel --prod
@@ -620,13 +621,15 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `VIRGIL_OPEN_URL`     | No               | No                 | Optional; launcher / smoke open URL (packaging). |
 | `WARMUP_MODEL`        | No               | No                 | Optional; `pnpm warmup:ollama` target id (defaults to `DEFAULT_CHAT_MODEL`). |
 | `NIGHT_REVIEW_ENABLED` | Local/preview/self-hosted: set `1` to enable | Vercel prod: default on if unset; set `0` to disable | Scheduled night review enqueue + worker |
-| `NIGHT_REVIEW_MODEL`  | No               | No                 | Default `ollama/qwen2.5:7b-review`. Only **`ollama/…`** or **`google/…`** allowed. |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | When using `google/…` for night review | Same | Gemini API key for scheduled night review only (not used for chat unless you pick a Gemini model there too). |
+| `NIGHT_REVIEW_MODEL`  | No               | No                 | Default `ollama/qwen2.5:7b-review`. Only **`ollama/…`** (local Ollama; no Gemini). |
 | `NIGHT_REVIEW_STAGGER_SECONDS` | No      | No                 | Delay between per-user QStash jobs (default `60`) |
-| `NIGHT_REVIEW_TIMEZONE` | No             | No                 | IANA tz for idempotency window key (default `UTC`) |
+| `NIGHT_REVIEW_TIMEZONE` | No             | No                 | IANA tz for idempotency `windowKey` and off-peak local wall clock (default `UTC`) |
+| `NIGHT_REVIEW_OFF_PEAK_START_HOUR` | No | No | Inclusive 0–23 (default `23`) |
+| `NIGHT_REVIEW_OFF_PEAK_END_HOUR` | No | No | Exclusive 0–23 (default `7`) — off-peak is start through before this hour |
+| `NIGHT_REVIEW_RUN_LOCAL_HOUR` | No | No | Local hour 0–23 when hourly cron should enqueue (default `3`) |
 | `NIGHT_REVIEW_EMAIL_ON_FINDINGS` | No   | No                 | Set to `1` to email when review finds material (needs Resend) |
 | `AGENT_FETCH_ALLOWLIST_HOSTS` | No      | No                 | Comma-separated hostnames for tool `fetch` (defaults include Open-Meteo) |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | No | No | Direct Gemini API key (personal plan). Enables Gemini as chat fallback tier and night-review model. Get a key at https://aistudio.google.com/apikey |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | No | No | Direct Gemini API key (personal plan). Enables Gemini as chat fallback tier and related features. Get a key at https://aistudio.google.com/apikey |
 | `VIRGIL_CHAT_FALLBACK` | No | No | Set to `1` to enable Ollama → Gemini → Gateway cascade on local model failure |
 | `VIRGIL_GATEWAY_FALLBACK_OLLAMA` | No | No | Set to `1` to retry with local Ollama when **gateway** (and optional Gemini direct) fail with an eligible **pre-stream** error (requires reachable Ollama) |
 | `VIRGIL_GATEWAY_FALLBACK_GEMINI_MODEL` | No | No | Bare Gemini model name when falling back from AI Gateway to **direct Google API** (default: same as `VIRGIL_FALLBACK_GEMINI_MODEL` / `gemini-2.5-flash`). Requires `GOOGLE_GENERATIVE_AI_API_KEY`. |
@@ -761,7 +764,7 @@ Virgil can accept self-improvement tasks via chat (`submitAgentTask` tool, gatew
 
 When `AGENT_TASK_TRIAGE_ENABLED=1`, a cron job (`GET /api/agent-tasks/enqueue`, same auth as night review) fans out via QStash to a triage worker that uses local Ollama (`generateObject`) to analyze submitted tasks against project principles. The worker writes `agentNotes` (alignment analysis, scope estimate, suggested files, risks) but does **not** auto-approve — the owner must approve via the API.
 
-**Scheduling:** Vercel Hobby is at the 2-cron limit (digest + night-review). Use self-hosted cron for the triage enqueue (e.g. `0 */6 * * *` every 6 hours, or piggyback on the `0 3 * * *` slot via a script that curls both endpoints). See [Scheduled jobs on the host](#scheduled-jobs-on-the-host-no-vercel-cron).
+**Scheduling:** Vercel Hobby is at the 2-cron limit (digest + night-review). Use self-hosted cron for the triage enqueue (e.g. `0 */6 * * *` every 6 hours). See [Scheduled jobs on the host](#scheduled-jobs-on-the-host-no-vercel-cron).
 
 ### API
 

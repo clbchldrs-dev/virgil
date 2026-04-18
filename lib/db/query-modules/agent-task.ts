@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 import { VirgilError } from "@/lib/errors";
 import { db } from "../client";
 import { agentTask } from "../schema";
@@ -75,6 +75,41 @@ export async function listAgentTasks({
   }
 }
 
+const AGENT_TASK_STATUSES = [
+  "submitted",
+  "approved",
+  "in_progress",
+  "done",
+  "rejected",
+] as const;
+
+export type AgentTaskStatus = (typeof AGENT_TASK_STATUSES)[number];
+
+export async function countAgentTasksForUser({
+  userId,
+  statuses,
+}: {
+  userId: string;
+  statuses?: readonly AgentTaskStatus[];
+}) {
+  try {
+    const condition =
+      statuses && statuses.length > 0
+        ? and(eq(agentTask.userId, userId), inArray(agentTask.status, statuses))
+        : eq(agentTask.userId, userId);
+    const [row] = await db
+      .select({ c: count() })
+      .from(agentTask)
+      .where(condition);
+    return Number(row?.c ?? 0);
+  } catch (_error) {
+    throw new VirgilError(
+      "bad_request:database",
+      "Failed to count agent tasks"
+    );
+  }
+}
+
 export async function updateAgentTaskStatus({
   id,
   userId,
@@ -135,6 +170,55 @@ export async function getAgentTaskById({ id }: { id: string }) {
     return rows.at(0) ?? null;
   } catch (_error) {
     throw new VirgilError("bad_request:database", "Failed to get agent task");
+  }
+}
+
+/** Moves an approved task to `in_progress` and records delegation metadata. */
+export async function updateAgentTaskDelegatedSnapshot({
+  id,
+  userId,
+  intentId,
+  backend,
+  outcomeSummary,
+}: {
+  id: string;
+  userId: string;
+  intentId: string;
+  backend: string;
+  outcomeSummary: Record<string, unknown>;
+}) {
+  try {
+    const existing = await getAgentTaskById({ id });
+    if (!existing || existing.userId !== userId) {
+      return null;
+    }
+    if (existing.status !== "approved") {
+      return null;
+    }
+
+    const metadata: Record<string, unknown> = {
+      ...existing.metadata,
+      lastDelegationIntentId: intentId,
+      lastDelegationBackend: backend,
+      lastDelegatedAt: new Date().toISOString(),
+      lastDelegationOutcome: outcomeSummary,
+    };
+
+    const [row] = await db
+      .update(agentTask)
+      .set({
+        status: "in_progress",
+        metadata,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(agentTask.id, id), eq(agentTask.userId, userId)))
+      .returning();
+    return row ?? null;
+  } catch (_error) {
+    throw new VirgilError(
+      "bad_request:database",
+      "Failed to update agent task delegation snapshot"
+    );
   }
 }
 

@@ -190,6 +190,16 @@ curl -sS "http://localhost:3000/api/channels/alexa" \
   }'
 ```
 
+## Expected failure behavior
+
+| Condition | Route response | Alexa-safe behavior |
+|---|---|---|
+| `VIRGIL_ALEXA_ENABLED` not `1` | `403` with `{ "error": "alexa_disabled" }` | Bridge should return a generic unavailable speech response |
+| Missing/invalid bearer secret | `401` with `{ "error": "unauthorized" }` | Bridge should not expose secrets; return generic auth failure speech |
+| Missing `VIRGIL_ALEXA_SECRET` or `VIRGIL_ALEXA_USER_ID` | `500` with `{ "error": "alexa_misconfigured" }` | Route fails closed; operator fixes env before retry |
+| Invalid JSON/envelope | `400` with `invalid_json` or `invalid_body` | Bridge can reply with "I did not catch that" style fallback |
+| Unknown intent | `200` Alexa speech payload | Spoken guidance asks user to try capture or status |
+
 ## Security notes
 
 - Keep `VIRGIL_ALEXA_SECRET` private and rotate if exposed.

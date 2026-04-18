@@ -38,7 +38,13 @@ Runs `stable:check`, then `pnpm build`.
 
 **Optional:** `pnpm ollama:smoke` after model/routing changes; `pnpm test` for Playwright when UI/auth paths change.
 
-For chat startup latency budgeting, set `V2_TRACE_LOGGING=true` temporarily and inspect `workspace/v2-eval/traces.jsonl` for `preStreamTimingsMs` (`authAndBotCheck`, `promptContextLoad`, `totalBeforeFirstModelCall`).
+For chat observability/cost checks, use the v2-eval flags exactly as implemented in `app/(chat)/api/chat/route.ts`:
+
+- **`V2_TRACE_LOGGING=true`** -> writes decision traces to `workspace/v2-eval/traces.jsonl` via `logDecisionTrace(...)`, including `preStreamTimingsMs` (`authAndBotCheck`, `promptContextLoad`, `totalBeforeFirstModelCall`).
+- **`V2_EVAL_LOGGING=true`** -> writes interaction records to `workspace/v2-eval/interactions.jsonl` via `logInteraction(...)`; also enables cost log writes.
+- **`V2_COST_LOGGING=true`** -> enables `workspace/v2-eval/costs.jsonl` writes via `logGatewayCost(...)` even when `V2_EVAL_LOGGING` is off.
+
+Cost log nuance: `costs.jsonl` only records fallback tiers `gateway` and `gemini` (local-only ollama turns are intentionally skipped).
 
 ---
 
@@ -68,7 +74,11 @@ For chat startup latency budgeting, set `V2_TRACE_LOGGING=true` temporarily and 
 
 ### Phase E — Product feedback (non-blocking)
 
-- [ ] Use [workspace/v2-eval/README.md](../workspace/v2-eval/README.md) to capture misses/noise; optional `V2_EVAL_LOGGING` when instrumented.
+- [ ] Use [workspace/v2-eval/README.md](../workspace/v2-eval/README.md) to capture misses/noise.
+- [ ] Enable eval flags intentionally when collecting evidence:
+  - `V2_TRACE_LOGGING=true` (startup timing / routing trace)
+  - `V2_EVAL_LOGGING=true` (interaction log + gateway/gemini cost log)
+  - `V2_COST_LOGGING=true` (cost log only, if you want minimal overhead)
 
 ---
 

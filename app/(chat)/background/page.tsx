@@ -6,6 +6,8 @@ import { NightReviewTriggerButton } from "@/components/night-review-trigger-butt
 import { Button } from "@/components/ui/button";
 import {
   countActionableNightReviewInsights,
+  countAgentTasksForUser,
+  countDelegationBacklogForUser,
   countPendingProposalsForUser,
   getRecentNightReviewRunsForUser,
   listBackgroundJobsForUser,
@@ -53,14 +55,25 @@ export default async function BackgroundActivityPage() {
   const userId = session.user.id;
   const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
   const sinceProposals = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-  const [recentRuns, actionableInsightsCount, pendingProposalsCount, jobs] =
-    await Promise.all([
-      getRecentNightReviewRunsForUser({ userId, limit: 10 }),
-      countActionableNightReviewInsights({ userId, since }),
-      countPendingProposalsForUser({ userId, since: sinceProposals }),
-      listBackgroundJobsForUser({ userId, limit: 30 }),
-    ]);
+  const [
+    recentRuns,
+    actionableInsightsCount,
+    pendingProposalsCount,
+    jobs,
+    inProgressAgentTasks,
+    delegationBacklog,
+  ] = await Promise.all([
+    getRecentNightReviewRunsForUser({ userId, limit: 10 }),
+    countActionableNightReviewInsights({ userId, since }),
+    countPendingProposalsForUser({ userId, since: sinceProposals }),
+    listBackgroundJobsForUser({ userId, limit: 30 }),
+    countAgentTasksForUser({ userId, statuses: ["in_progress"] }),
+    countDelegationBacklogForUser(userId),
+  ]);
   const nightReviewEnabled = isNightReviewEnabled();
+  const activeBackgroundJobs = jobs.filter(
+    (j) => j.status === "running" || j.status === "approving"
+  ).length;
 
   const lastRun = recentRuns[0];
 
@@ -72,11 +85,67 @@ export default async function BackgroundActivityPage() {
             Background activity
           </h1>
           <p className="text-muted-foreground">
-            Work Virgil does on a schedule or in the background. Suggestions
-            stay in review until you accept or dismiss them—nothing important
-            changes without your say-so.
+            Scheduled and asynchronous work: night review, jobs, and execution
+            agents. Use{" "}
+            <Link
+              className="text-primary underline-offset-4 hover:underline"
+              href="/agent-tasks"
+            >
+              Agent approvals
+            </Link>{" "}
+            when you need to greenlight tasks for agents—not a human checklist.
           </p>
         </div>
+
+        <section className="space-y-4 rounded-xl border border-border/60 bg-card/30 p-6 shadow-[var(--shadow-float)]">
+          <div>
+            <h2 className="text-lg font-medium">
+              Execution agents &amp; queues
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              Sub-agent and bridge work: tasks handed to OpenClaw/Hermes/Cursor,
+              intents waiting on the delegation queue, and active background
+              jobs.
+            </p>
+          </div>
+          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground">Agent tasks in progress</dt>
+              <dd className="font-medium">
+                {inProgressAgentTasks}{" "}
+                <Link
+                  className="text-primary text-xs underline-offset-4 hover:underline"
+                  href="/agent-tasks?status=in_progress"
+                >
+                  View
+                </Link>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">
+                Delegation queue (unsent)
+              </dt>
+              <dd className="font-medium">{delegationBacklog}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Active background jobs</dt>
+              <dd className="font-medium">
+                {activeBackgroundJobs}
+                {jobs.length > 0 ? (
+                  <>
+                    {" "}
+                    <Link
+                      className="text-primary text-xs underline-offset-4 hover:underline"
+                      href="#background-jobs-list"
+                    >
+                      Jump to list
+                    </Link>
+                  </>
+                ) : null}
+              </dd>
+            </div>
+          </dl>
+        </section>
 
         <section className="space-y-4 rounded-xl border border-border/60 bg-card/30 p-6 shadow-[var(--shadow-float)]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -161,7 +230,10 @@ export default async function BackgroundActivityPage() {
           ) : null}
         </section>
 
-        <section className="space-y-4 rounded-xl border border-border/60 bg-card/30 p-6 shadow-[var(--shadow-float)]">
+        <section
+          className="space-y-4 rounded-xl border border-border/60 bg-card/30 p-6 shadow-[var(--shadow-float)]"
+          id="background-jobs-list"
+        >
           <div>
             <h2 className="text-lg font-medium">Background jobs</h2>
             <p className="text-muted-foreground text-sm">

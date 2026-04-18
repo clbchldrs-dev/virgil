@@ -5,6 +5,7 @@ import {
   inferLocalModelClassFromOllamaTag,
   isLocalModel,
   resolveRuntimeModelId,
+  VIRGIL_AUTO_MODEL_ID,
 } from "./models";
 import { getOllamaBaseUrl } from "./providers";
 
@@ -39,6 +40,33 @@ export async function getOllamaTagNames(): Promise<string[]> {
   } catch {
     return tagNamesCache?.names ?? [];
   }
+}
+
+/**
+ * Drops curated and discovered Ollama entries when the server cannot list matching tags
+ * (Ollama unreachable, empty registry, or tag not pulled). Keeps {@link VIRGIL_AUTO_MODEL_ID}
+ * so routing can still fall back to hosted models.
+ */
+export function filterChatModelsByAvailableOllamaTags(
+  models: ChatModel[],
+  tagNames: string[]
+): ChatModel[] {
+  if (tagNames.length === 0) {
+    return models.filter(
+      (m) => !isLocalModel(m.id) || m.id === VIRGIL_AUTO_MODEL_ID
+    );
+  }
+  const nameSet = new Set(tagNames);
+  return models.filter((m) => {
+    if (m.id === VIRGIL_AUTO_MODEL_ID) {
+      return true;
+    }
+    if (!isLocalModel(m.id)) {
+      return true;
+    }
+    const tag = resolveRuntimeModelId(m.id).replace(/^ollama\//, "");
+    return nameSet.has(tag);
+  });
 }
 
 /** True if this id is allowed: curated roster, or local model whose tag exists in Ollama. */

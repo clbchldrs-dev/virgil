@@ -1,18 +1,21 @@
-import { NextResponse } from "next/server";
 import { getUsersEligibleForCompanionBackgroundJobs } from "@/lib/db/queries";
 import {
   computeNightReviewWindow,
   computeWindowKey,
   getNightReviewModelId,
+  getNightReviewOffPeakBounds,
+  getNightReviewRunLocalHour,
   getNightReviewStaggerSeconds,
   getNightReviewTimezone,
   isNightReviewEnabled,
+  shouldNightReviewCronEnqueueNow,
 } from "@/lib/night-review/config";
 import {
   getNightReviewChatModelProfile,
   resolveNightReviewLanguageModel,
 } from "@/lib/night-review/night-review-model";
 import { getQStashPublishClient } from "@/lib/qstash/publish-client";
+import { handleNightReviewEnqueueGet } from "@/lib/reliability/night-review-enqueue-handler";
 import { generateUUID } from "@/lib/utils";
 
 function getBaseUrl(): string {
@@ -22,75 +25,31 @@ function getBaseUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 }
 
-export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  if (!isNightReviewEnabled()) {
-    return NextResponse.json({ ok: true, skipped: true, reason: "disabled" });
-  }
-
-  const nightModelId = getNightReviewModelId();
-  const nightModelResolved = resolveNightReviewLanguageModel(
-    nightModelId,
-    getNightReviewChatModelProfile(nightModelId)?.ollamaOptions
-  );
-  if (!nightModelResolved.ok) {
-    return NextResponse.json({
-      ok: true,
-      skipped: true,
-      reason: "night_review_model_not_allowed",
-      detail: nightModelResolved.reason,
-    });
-  }
-
-  const qstashToken = process.env.QSTASH_TOKEN;
-  if (!qstashToken) {
-    return NextResponse.json(
-      { ok: false, error: "QSTASH_TOKEN is not set" },
-      { status: 500 }
-    );
-  }
-
-  const qstash = getQStashPublishClient();
-
-  const now = new Date();
-  const { windowStart, windowEnd } = computeNightReviewWindow(now);
-  const windowKey = computeWindowKey(windowEnd, getNightReviewTimezone());
-  const runId = generateUUID();
-  const base = getBaseUrl();
-  const stagger = getNightReviewStaggerSeconds();
-
-  const owners = await getUsersEligibleForCompanionBackgroundJobs();
-  let enqueued = 0;
-  let index = 0;
-
-  for (const owner of owners) {
-    if (owner.email.startsWith("guest-")) {
-      continue;
-    }
-    await qstash.publishJSON({
-      url: `${base}/api/night-review/run`,
-      body: {
-        userId: owner.id,
-        windowStart: windowStart.toISOString(),
-        windowEnd: windowEnd.toISOString(),
-        runId,
-        windowKey,
-      },
-      delay: index * stagger,
-    });
-    index += 1;
-    enqueued += 1;
-  }
-
-  return NextResponse.json({
-    ok: true,
-    runId,
-    windowKey,
-    enqueued,
-    staggerSeconds: stagger,
+export function GET(request: Request) {
+  return handleNightReviewEnqueueGet(request, {
+    cronSecret: process.env.CRON_SECRET,
+    isEnabled: isNightReviewEnabled,
+    shouldEnqueueNow: shouldNightReviewCronEnqueueNow,
+    getTimezone: getNightReviewTimezone,
+    getOffPeakBounds: getNightReviewOffPeakBounds,
+    getRunLocalHour: getNightReviewRunLocalHour,
+    getModelId: getNightReviewModelId,
+    resolveModel: (modelId) => {
+      return resolveNightReviewLanguageModel(
+        modelId,
+        getNightReviewChatModelProfile(modelId)?.ollamaOptions
+      );
+    },
+    isQstashConfigured: () => Boolean(process.env.QSTASH_TOKEN?.trim()),
+    getOwners: getUsersEligibleForCompanionBackgroundJobs,
+    computeWindow: computeNightReviewWindow,
+    computeWindowKey,
+    generateRunId: generateUUID,
+    getBaseUrl,
+    getStaggerSeconds: getNightReviewStaggerSeconds,
+    publish: async ({ url, body, delay }) => {
+      await getQStashPublishClient().publishJSON({ url, body, delay });
+    },
+    now: () => new Date(),
   });
 }

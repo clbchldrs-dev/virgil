@@ -5,14 +5,14 @@ Maps **Virgil features** to **provider quotas** so you can stay within Hobby/fre
 | Provider | Typical free / Hobby cap | Features that consume it |
 |----------|---------------------------|---------------------------|
 | **Vercel Hobby** | 100 GB bandwidth/mo, 1,000 serverless function hours/mo | Every `POST /api/chat`, API routes, page SSR. Heavy chat volume burns **fn-hours** fastest. |
-| **Vercel Cron** | 2 jobs on Hobby (limit reached) | Daily digest (`/api/digest`), night-review enqueue (`/api/night-review/enqueue`). More schedules → **host cron** + `curl` + `CRON_SECRET` (see AGENTS.md). |
+| **Vercel Cron** | 2 jobs on Hobby (limit reached) | Daily digest (`/api/digest`), night-review enqueue hourly (`/api/night-review/enqueue` — lightweight no-ops until off-peak). More schedules → **host cron** + `curl` + `CRON_SECRET` (see AGENTS.md). |
 | **Neon free** (or **Supabase**) | ~512 MB storage, compute hours | All Postgres: chats, messages, `Memory`, reminders metadata, `PendingIntent`, `AgentTask`, etc. |
 | **Upstash Redis** | 10K commands/day | Rate limits, stream/resumable support, Mem0 monthly counters. |
 | **Upstash QStash** | **500 messages/day** | **Each** reminder fire, digest fan-out, night-review **per user** enqueue, agent-task triage deliveries. Batch features and avoid extra workers per lane without counting messages. |
 | **Resend** | 100 emails/day, 3k/mo | Reminder emails, daily digest, optional night-review email. |
 | **Vercel Blob** | 1 GB Hobby | Chat attachments / document artifacts. |
 | **AI Gateway** | Account / plan credits | **Default chat** and tool calls on gateway models; monitor dashboard usage. |
-| **Google Generative AI** (optional key) | Gemini free/paid per Google | `VIRGIL_CHAT_FALLBACK` Gemini tier, optional Gemini chat models, night review when `NIGHT_REVIEW_MODEL=google/…`. |
+| **Google Generative AI** (optional key) | Gemini free/paid per Google | `VIRGIL_CHAT_FALLBACK` Gemini tier, optional Gemini chat models. Night review stays on **local Ollama** only. |
 | **Mem0** (optional) | API plan | `recallMemory` / sync when `MEM0_API_KEY` set; caps via `MEM0_MONTHLY_*_LIMIT`. |
 
 ## Optional context ingress (personal automation)
@@ -21,7 +21,7 @@ Maps **Virgil features** to **provider quotas** so you can stay within Hobby/fre
 |---------|----------------|------|
 | `POST /api/ingest` | Vercel fn time | One short DB write per call; optional Ollama embedding (no extra gateway call). |
 | PWA share → `/api/ingest/share` | Same | Same as a small authenticated POST. |
-| `GET/POST /api/journal/parse` | **Gemini or Ollama** per successful run | Uses `NIGHT_REVIEW_MODEL` (`ollama/…` or `google/…` only). Prefer **host cron** on self-hosted; on Vercel use **POST** with `content` (no filesystem). |
+| `GET/POST /api/journal/parse` | **Ollama** per successful run | Uses `NIGHT_REVIEW_MODEL` (`ollama/…` only). Prefer **host cron** on self-hosted; on Vercel use **POST** with `content` (no filesystem). |
 | `POST /api/ingest/email` | Fn time + **Resend Receiving API** + optional confirmation email | Webhook verify only; keep allowlist tight. Inbound needs a **verified receiving domain** (not just `onboarding@resend.dev` for arbitrary senders). |
 
 ## LLM and fallback paths

@@ -1,7 +1,56 @@
 import "server-only";
 
+import {
+  isNightReviewCronEnqueueSlot,
+  type OffPeakBounds,
+} from "@/lib/night-review/off-peak";
+
 const TRUE = new Set(["1", "true", "yes"]);
 const FALSE = new Set(["0", "false", "no", "off"]);
+
+function parseHourEnv(raw: string | undefined, fallback: number): number {
+  const t = raw?.trim();
+  if (!t) {
+    return fallback;
+  }
+  const n = Number(t);
+  if (!Number.isFinite(n) || n < 0 || n > 23) {
+    return fallback;
+  }
+  return Math.floor(n);
+}
+
+/** Local off-peak band for deferred night jobs (default 23:00–07:00, end exclusive). */
+export function getNightReviewOffPeakBounds(): OffPeakBounds {
+  return {
+    startHour: parseHourEnv(process.env.NIGHT_REVIEW_OFF_PEAK_START_HOUR, 23),
+    endHourExclusive: parseHourEnv(
+      process.env.NIGHT_REVIEW_OFF_PEAK_END_HOUR,
+      7
+    ),
+  };
+}
+
+/**
+ * Local clock hour (0–23 in {@link getNightReviewTimezone}) when cron should enqueue
+ * exactly once per night. Must fall inside the off-peak band (default 03:00).
+ */
+export function getNightReviewRunLocalHour(): number {
+  return parseHourEnv(process.env.NIGHT_REVIEW_RUN_LOCAL_HOUR, 3);
+}
+
+/**
+ * True when the cron caller should enqueue (hourly schedule + local slot).
+ * Manual `/api/night-review/trigger` does not use this — it allows daytime tests.
+ */
+export function shouldNightReviewCronEnqueueNow(now: Date): boolean {
+  return isNightReviewCronEnqueueSlot(
+    now,
+    getNightReviewTimezone(),
+    getNightReviewOffPeakBounds(),
+    getNightReviewRunLocalHour()
+  );
+}
 
 /**
  * Night review enqueue (`/api/night-review/enqueue`) runs only when this is true.
@@ -28,8 +77,7 @@ export function isNightReviewEnabled(): boolean {
 }
 
 /**
- * Model id for night-review `generateObject`. Must be `ollama/…` (local) or `google/…`
- * (Gemini with `GOOGLE_GENERATIVE_AI_API_KEY`). Other gateway ids are rejected.
+ * Model id for night-review `generateObject`. Must be `ollama/…` only (local inference).
  */
 export function getNightReviewModelId(): string {
   return process.env.NIGHT_REVIEW_MODEL?.trim() || "ollama/qwen2.5:7b-review";

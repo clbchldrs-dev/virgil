@@ -4,6 +4,22 @@ Use this when deploying Virgil to **Vercel** so auth, the client, cron, and back
 
 Authoritative reference: [AGENTS.md](../AGENTS.md) (full table and provider links). This page is a **copy order** and Vercel-specific notes.
 
+## Syncing Vercel with `.env.local` (stop editing twice)
+
+You still have **two stores** (Vercel + local file), but you do not need to **paste the same values manually** every time.
+
+**Prerequisite:** [Vercel CLI](https://vercel.com/docs/cli) installed (`npm i -g vercel`) and the repo linked once: `vercel link` (creates `.vercel/`, gitignored).
+
+| Goal | Command / action |
+| ---- | ------------------ |
+| **Vercel → laptop** — refresh local env after you (or someone) changed vars in the dashboard | `pnpm env:vercel:pull` (same as `vercel env pull .env.local`). By default this pulls the **Development** environment from the linked project. Re-run whenever dashboard values change. |
+| **Laptop → Vercel** — you added a new var locally and want it on Vercel | `vercel env add NAME` and pick Production / Preview / Development, **or** paste once in **Project → Settings → Environment Variables**, then run `pnpm env:vercel:pull` on other machines. |
+| **Inspect what is stored** (no file write) | `pnpm env:vercel:ls` |
+
+**Local-only variables** (not deployed): e.g. `OLLAMA_BASE_URL`, or `AI_GATEWAY_API_KEY` when you develop off-Vercel. Keep them in `.env.local` **below** the block `vercel env pull` writes, or add them only under **Development** on Vercel so pulls stay complete. Do not point local `POSTGRES_URL` at production unless you intend to.
+
+**Pulling Production into a file** (`vercel env pull .env.production.local --environment=production`) is for debugging or intentional parity; it can install **production database URLs** on your machine — use a Neon **branch** or dev DB for normal local work instead.
+
 ## Before you paste
 
 1. Create accounts and grab credentials:
@@ -43,7 +59,7 @@ After adding or changing **`NEXT_PUBLIC_APP_URL`**, trigger a **new deployment**
 
 Copy from [.env.example](../.env.example) only if you use the feature:
 
-- **Night review** — `NIGHT_REVIEW_ENABLED`, `NIGHT_REVIEW_MODEL` (**`google/…` + `GOOGLE_GENERATIVE_AI_API_KEY`** on Vercel, or `ollama/…` if Ollama is reachable from the runtime), `NIGHT_REVIEW_TIMEZONE`, `NIGHT_REVIEW_EMAIL_ON_FINDINGS`, `AGENT_FETCH_ALLOWLIST_HOSTS`
+- **Night review** — `NIGHT_REVIEW_ENABLED`, `NIGHT_REVIEW_MODEL` (**`ollama/…` only**; worker must reach `OLLAMA_BASE_URL`), `NIGHT_REVIEW_TIMEZONE`, `NIGHT_REVIEW_EMAIL_ON_FINDINGS`, `AGENT_FETCH_ALLOWLIST_HOSTS`
 - **GitHub product opportunities** — `GITHUB_REPOSITORY`, `GITHUB_PRODUCT_OPPORTUNITY_TOKEN` (or `GITHUB_TOKEN`)
 - **Mem0** — `MEM0_API_KEY`, `MEM0_MONTHLY_SEARCH_LIMIT` (default `1000`; caps retrieval API calls per month, falls back to Postgres FTS)
 - **Jira tools** — `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`

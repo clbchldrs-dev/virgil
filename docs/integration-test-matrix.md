@@ -14,6 +14,9 @@ Use this when changing auth, tools, cron, or external I/O. Record pass/fail and 
 | **Night review run** | QStash → worker route | QStash verify | Reject unsigned |
 | **Inbound email → Memory** | Resend webhook → `POST /api/ingest/email` | Svix / `RESEND_WEBHOOK_SECRET` + allowlist | Reject or no-op when disabled |
 | **General ingest** | `POST /api/ingest` | Bearer `VIRGIL_INGEST_SECRET` | 401 |
+| **Share target ingest** | `POST /api/ingest/share` | Session cookie (non-guest) | 401/403/400; no server crash |
+| **Journal parse ingest** | `GET/POST /api/journal/parse` | Bearer `CRON_SECRET` + feature flag | 401/403 when unauthorized/disabled |
+| **Alexa channel** | `POST /api/channels/alexa` (`CaptureIntent`, `StatusIntent`) | Bearer `VIRGIL_ALEXA_SECRET` + feature flag + owner user id | 401/403/500 config errors or safe speech fallback |
 | **OpenClaw delegate** | Chat / bridge | `OPENCLAW_*` reachable | Graceful error in UI or tool result |
 | **Digital Self** | `GET /api/digital-self/bridge-health` | Optional service token | Health JSON or unreachable |
 | **Local Ollama chat** | `POST /api/chat` with `ollama/…` | N/A | No calendar/GitHub tools on default local branch (by design) |

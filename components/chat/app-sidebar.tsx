@@ -8,7 +8,6 @@ import {
   MoonIcon,
   PanelLeftIcon,
   PenSquareIcon,
-  Settings2Icon,
   TrashIcon,
   WrenchIcon,
 } from "lucide-react";
@@ -145,23 +144,10 @@ function SidebarPrimaryNav({
                     setOpenMobile(false);
                     router.push(`${BASE_PATH}/agent-tasks`);
                   }}
-                  tooltip="Agent tasks"
+                  tooltip="Agent approvals"
                 >
                   <WrenchIcon className="size-4" />
-                  <span>Agent tasks</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                  onClick={() => {
-                    setOpenMobile(false);
-                    router.push(`${BASE_PATH}/preferences`);
-                  }}
-                  tooltip="Preferences"
-                >
-                  <Settings2Icon className="size-4" />
-                  <span>Preferences</span>
+                  <span>Agent approvals</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>

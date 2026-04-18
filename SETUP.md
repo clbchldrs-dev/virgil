@@ -9,5 +9,6 @@ Authoritative procedures live in **[AGENTS.md](AGENTS.md)** (Setup checklist, Do
 - **[docs/beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md)** — Ubuntu / LAN home server runbook
 - **[packaging/README.md](packaging/README.md)** — desktop launcher
 - **[DEPLOY.md](DEPLOY.md)** — deployment link hub → [AGENTS.md — Deployment (production)](AGENTS.md#deployment-production)
+- **[docs/vercel-env-setup.md](docs/vercel-env-setup.md)** — Vercel env copy order + **`pnpm env:vercel:pull`** to sync dashboard → `.env.local`
 - **[docs/free-tier-feature-map.md](docs/free-tier-feature-map.md)** — quotas vs features (QStash, Resend, Gateway, etc.)
 - **[docs/digital-self-bridge.md](docs/digital-self-bridge.md)** — optional **Digital Self** orchestrator (`digital-self/` package) for Slack/WhatsApp/SMS policy + approvals

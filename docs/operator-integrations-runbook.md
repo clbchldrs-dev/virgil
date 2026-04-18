@@ -52,6 +52,56 @@ Full variable names: [`.env.example`](../.env.example) and [AGENTS.md](../AGENTS
 
 - `CRON_SECRET` + `Authorization: Bearer …` on `GET /api/digest` and `GET /api/night-review/enqueue` (see AGENTS.md § Scheduled jobs).
 
+### 7. Input channels (capture -> review -> act)
+
+Use at least one payload per route in non-production before calling the channel healthy.
+
+| Channel | Route | Auth / gate | Smoke payload | Expected failure behavior |
+|---|---|---|---|---|
+| Chat | `POST /api/chat` | Session auth (guest/non-guest policy in app) | Send one short note and one actionable request | Model/tool error message in stream; route should not crash |
+| General ingest | `POST /api/ingest` | `VIRGIL_INGEST_ENABLED=1` + `Authorization: Bearer $VIRGIL_INGEST_SECRET` + `VIRGIL_INGEST_USER_ID` | `{ "type":"note", "content":"..." }` JSON | `403 ingest_disabled`, `401 unauthorized`, `400 invalid_json/invalid_body`, `500 ingest_misconfigured` |
+| Share target | `POST /api/ingest/share` | Session auth, non-guest only | Submit share form with at least one of `title/text/url` | `401 unauthorized`, `403 forbidden`, `400 invalid_form/empty_share` |
+| Journal parse | `GET/POST /api/journal/parse` | `VIRGIL_JOURNAL_FILE_PARSE=1` + `Authorization: Bearer $CRON_SECRET` | POST `{ "content":"..." }` for serverless-safe smoke | `403` when disabled, `401` without bearer, parse/model failure JSON |
+| Email ingest | `POST /api/ingest/email` | `VIRGIL_EMAIL_INGEST_ENABLED=1` + Svix signature + allowlist | Send one allowlisted message via Resend receiving | Reject unsigned/non-allowlisted payload; no process crash |
+| Alexa | `POST /api/channels/alexa` | `VIRGIL_ALEXA_ENABLED=1` + `Authorization: Bearer $VIRGIL_ALEXA_SECRET` + `VIRGIL_ALEXA_USER_ID` | `CaptureIntent` then `StatusIntent` | `403 alexa_disabled`, `401 unauthorized`, `500 alexa_misconfigured` or safe speech fallback |
+
+---
+
+## Input-loop metrics (minimum)
+
+Track these before optimizing UI or adding channels:
+
+1. **Capture volume/day** — count new memory rows by channel/source metadata.
+2. **Capture -> review conversion** — share of captured items that appear in a review surface (chat recap, daily digest, night insights, wiki ingest/log).
+3. **Capture -> act signal** — share of captured items that later map to a delegated action/proposal/reminder.
+
+Suggested observation points:
+
+- Database (`Memory`, proposal/reminder/pending-intent tables) with channel metadata (`source`, `metadata.channel`, ingest type).
+- Route-level logs for non-2xx responses on ingest/share/alexa/email.
+- Daily operator checks in digest + night-review outputs to confirm captured notes are surfacing.
+
+Simple SQL starter queries (adapt table names as needed):
+
+```sql
+-- Capture volume by source (last 7 days)
+select
+  coalesce(metadata->>'channel', metadata->>'source', 'unknown') as source,
+  date_trunc('day', createdAt) as day,
+  count(*) as captures
+from "Memory"
+where createdAt >= now() - interval '7 days'
+group by 1, 2
+order by day desc, captures desc;
+```
+
+```sql
+-- Capture-to-action proxy: memories vs pending intents created (last 7 days)
+select
+  (select count(*) from "Memory" where createdAt >= now() - interval '7 days') as memory_captures,
+  (select count(*) from "PendingIntent" where createdAt >= now() - interval '7 days') as delegated_actions;
+```
+
 ---
 
 ## Check-in rhythm (product semantics)
@@ -63,6 +113,105 @@ Full variable names: [`.env.example`](../.env.example) and [AGENTS.md](../AGENTS
 | **Weekly** | Chat + [`/api/goal-guidance/weekly`](../app/(chat)/api/goal-guidance/weekly/route.ts) (GET/POST, session auth) | Structured metrics / snapshots; prompt templates in `lib/ai/goal-guidance-prompt.ts`. |
 
 Digest and night review **complement** each other; neither replaces the other without an explicit product change.
+
+---
+
+## Failure drill: digest delivery degradation
+
+Use this when cron succeeds but owners report missing daily digest/slack posts.
+
+### Symptom
+
+- `GET /api/digest` returns `200`, but output summary shows non-zero `emailFailures`, `slackFailures`, or `ownerFailures`.
+
+### What to check (in order)
+
+1. **Cron auth and trigger path**
+ - Confirm request includes `Authorization: Bearer $CRON_SECRET`.
+ - Re-run manually in non-production:
+   - `curl -sS -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/digest"`
+2. **Route diagnostics payload**
+ - Inspect `summary` and `failures` fields:
+   - `ownersScanned`, `ownersProcessed`, `ownersSkippedNoData`
+   - `emailSent` vs `emailFailures`
+   - `slackPosted` vs `slackFailures`
+   - `ownerFailures` (`stage: fetch|email|slack`)
+3. **Email provider path**
+ - Verify `RESEND_API_KEY` is present on the running host.
+ - If `emailFailures > 0`, validate sender domain / provider status.
+4. **Slack mirror path**
+ - Verify either `VIRGIL_SLACK_CHECKIN_WEBHOOK_URL` or (`SLACK_BOT_TOKEN` + `VIRGIL_SLACK_CHECKIN_CHANNEL_ID`).
+ - If `slackFailures > 0` with email success, treat Slack as degraded mirror path; digest email remains primary.
+5. **Owner data eligibility**
+ - If `ownersSkippedNoData` is high, this is expected when no memories/proposals exist in the window.
+
+### Recovery actions
+
+- Fix missing/bad env vars on the active host and restart app process.
+- Re-run `GET /api/digest` manually once to verify summary counters improve.
+- If only one stage fails, keep service running and open a targeted follow-up (email provider vs Slack integration) instead of disabling the whole cron loop.
+
+---
+
+## Failure drill: night-review enqueue backlog / publish failures
+
+Use this when night review appears idle or only some owners get runs.
+
+### Symptom
+
+- `GET /api/night-review/enqueue` returns `200`, but summary shows `publishFailures > 0` or `enqueued` lower than expected.
+
+### What to check (in order)
+
+1. **Cron auth and slot gating**
+ - Confirm `Authorization: Bearer $CRON_SECRET`.
+ - If response shows `skipped: true`:
+   - `reason: disabled` -> check `NIGHT_REVIEW_ENABLED`
+   - `reason: outside_off_peak_slot` -> verify timezone/off-peak config (`NIGHT_REVIEW_TIMEZONE`, off-peak hour envs)
+2. **Model allowlist gate**
+ - `reason: night_review_model_not_allowed` means `NIGHT_REVIEW_MODEL` is outside allowed ids (`ollama/...` or configured supported set per docs).
+3. **QStash wiring**
+ - Ensure `QSTASH_TOKEN` exists on the running host.
+ - If `publishFailures > 0`, inspect `failures[]` by `ownerId` and retry after token/region fix (`QSTASH_URL` if region mismatch).
+4. **Owner eligibility**
+ - Compare `ownersScanned`, `guestOwnersSkipped`, and `eligibleOwners`.
+ - High guest skip count is expected when many guest rows exist.
+
+### Recovery actions
+
+- Fix env/config, restart app process, then manually re-run enqueue in non-production:
+ - `curl -sS -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/night-review/enqueue"`
+- Confirm `publishFailures` drops and `enqueued` increases.
+- If failures remain owner-specific, inspect that owner's chat/history eligibility and queue visibility before escalating to scheduler changes.
+
+---
+
+## Failure drill: background job worker run failures
+
+Use this when queued jobs remain pending/retrying or worker execution fails.
+
+### Symptom
+
+- `POST /api/background/jobs/run` returns non-2xx, or returns `ok: false` with `job_processing_failed`.
+
+### What to check (in order)
+
+1. **QStash request verification**
+ - `qstash_signing_keys_missing` -> set `QSTASH_CURRENT_SIGNING_KEY` and `QSTASH_NEXT_SIGNING_KEY`.
+ - `missing_signature` / `invalid_signature` -> verify request came from QStash and signature header is intact.
+2. **Payload shape**
+ - `invalid_json` or `missing_job_id` -> publisher payload malformed; inspect enqueue publisher body.
+3. **Job execution**
+ - `job_processing_failed` with `jobId` -> inspect job-specific handler/logs for that id.
+
+### Retry semantics
+
+- Worker route is idempotent per `jobId` contract: rerun should be safe after root cause fix.
+- Preferred recovery flow:
+  1. fix config/dependency failure
+  2. re-dispatch the same `jobId` through queue trigger path
+  3. verify route returns `{ ok: true, jobId }`
+- Avoid bypassing queue policy by inventing ad-hoc job payloads; always retry via the canonical job id.
 
 ---
 

@@ -1,6 +1,5 @@
 import "server-only";
 
-import { google } from "@ai-sdk/google";
 import type { LanguageModel } from "ai";
 
 import {
@@ -14,9 +13,8 @@ import {
 } from "@/lib/ai/providers";
 
 /**
- * Night review uses {@link generateObject} on a schedule. To avoid burning
- * arbitrary AI Gateway credits, only **local Ollama** (`ollama/…`) or **Gemini**
- * via `GOOGLE_GENERATIVE_AI_API_KEY` (`google/…`) are allowed.
+ * Night review uses {@link generateObject} on a schedule. Only **local Ollama**
+ * (`ollama/…`) is allowed — no Gemini or AI Gateway — to avoid cloud token spend.
  */
 export function resolveNightReviewLanguageModel(
   modelId: string,
@@ -29,30 +27,10 @@ export function resolveNightReviewLanguageModel(
     };
   }
 
-  if (modelId.startsWith("google/")) {
-    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim();
-    if (!apiKey) {
-      return {
-        ok: false,
-        reason:
-          "Set GOOGLE_GENERATIVE_AI_API_KEY when NIGHT_REVIEW_MODEL is a google/… Gemini id.",
-      };
-    }
-    const geminiModelId = modelId.slice("google/".length).trim();
-    if (!geminiModelId) {
-      return {
-        ok: false,
-        reason:
-          "Invalid NIGHT_REVIEW_MODEL: google/… must include a model name.",
-      };
-    }
-    return { ok: true, model: google(geminiModelId) };
-  }
-
   return {
     ok: false,
     reason:
-      "NIGHT_REVIEW_MODEL must be ollama/… (local) or google/… (Gemini + GOOGLE_GENERATIVE_AI_API_KEY). Other providers are disabled for night review to limit token spend.",
+      "NIGHT_REVIEW_MODEL must be an ollama/… id (local inference only). Gemini and other hosted ids are not used for night review.",
   };
 }
 
