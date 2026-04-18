@@ -10,11 +10,19 @@ import type { ClawIntent, ClawResult } from "@/lib/integrations/openclaw-types";
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_ERROR_LENGTH = 500;
 
-function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
+function fetchHermesWithTimeout(
+  url: string,
+  init?: RequestInit,
+  timeoutMs: number = FETCH_TIMEOUT_MS
+): Promise<Response> {
   return fetch(url, {
     ...init,
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
+}
+
+function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
+  return fetchHermesWithTimeout(url, init, FETCH_TIMEOUT_MS);
 }
 
 function buildAuthHeaders(): Record<string, string> {
@@ -96,7 +104,8 @@ export async function pingHermes(): Promise<boolean> {
 }
 
 export async function sendHermesIntent(
-  intent: ClawIntent
+  intent: ClawIntent,
+  options?: { timeoutMs?: number }
 ): Promise<ClawResult> {
   const base = getHermesHttpOrigin();
   const executedAt = new Date().toISOString();
@@ -109,16 +118,21 @@ export async function sendHermesIntent(
     };
   }
   const executePath = getHermesExecutePath();
+  const timeoutMs = options?.timeoutMs ?? FETCH_TIMEOUT_MS;
   try {
-    const res = await fetchWithTimeout(`${base}${executePath}`, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        ...buildAuthHeaders(),
+    const res = await fetchHermesWithTimeout(
+      `${base}${executePath}`,
+      {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...buildAuthHeaders(),
+        },
+        body: JSON.stringify(intent),
       },
-      body: JSON.stringify(intent),
-    });
+      timeoutMs
+    );
     const text = await res.text();
     let output: string | undefined;
     if (text) {

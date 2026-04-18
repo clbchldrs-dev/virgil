@@ -10,7 +10,7 @@
 
 | Path | Tools |
 |------|--------|
-| **Local Ollama** (`isOllamaLocal`) | Only OpenClaw tools **if** `OPENCLAW_*` is configured: `delegateTask`, `approveOpenClawIntent`. Otherwise **no** tools are passed to `streamText`. |
+| **Local Ollama** (`isOllamaLocal`) | Delegation tools **if** `OPENCLAW_*` or `HERMES_*` is configured: `delegateTask`, `approveOpenClawIntent`, and optionally `embedViaDelegation` (unless `VIRGIL_DELEGATION_EMBED_ENABLED=off`). Otherwise **no** tools are passed to `streamText`. |
 | **Gateway (hosted) models** | `baseTools` + `companionTools` + optional `submitProductOpportunity` / `submitAgentTask` + optional OpenClaw block. `baseTools` includes **`fetchUrl`** (allowlisted HTTP GET). `experimental_activeTools` may be empty when the model is “reasoning” without tool support. |
 | **Companion subset on Vercel** | `getCompanionTools()` omits `readFile`, `writeFile`, `executeShell`, `getBriefing` when `VERCEL` is set — only Jira + calendar universal tools remain in the companion object. |
 
@@ -43,6 +43,7 @@
 | `submitAgentTask` | `submit-agent-task.ts` | Gateway only; **off** for local models | Y (DB + optional GitHub) | **Yes** | No | Queues work for humans/agents; optional **`lane`** in `metadata` (default `code`). |
 | `delegateTask` | `delegate-to-openclaw.ts` | Gateway **and** local Ollama when OpenClaw configured | Y (LAN gateway) | **Yes** — `delegationNeedsConfirmation` queues `PendingIntent` | No* | Optional **`lane`** + `virgilLane` in intent params (Ghost ADR). *OpenClaw `allowed_in_night` is product-specific; default deny until policy exists. |
 | `approveOpenClawIntent` | `approve-openclaw-intent.ts` | Same as `delegateTask` | Y (sends queued intent) | N (this **is** the approval step) | No | v2 “approve pending execution” analogue. |
+| `embedViaDelegation` | `delegation-embed.ts` | Same registration as `delegateTask`; **off** when `VIRGIL_DELEGATION_EMBED_ENABLED` is off | N (read-only vectors from LAN embedder) | No | Yes | Synchronous `wiki-embed` (or override) on delegation HTTP; for wiki/hybrid-search experiments vs in-process `embedText`. |
 
 ---
 

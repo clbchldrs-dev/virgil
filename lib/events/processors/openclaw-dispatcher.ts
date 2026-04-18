@@ -1,7 +1,7 @@
 import "server-only";
 
 import { queuePendingIntent, trySendPendingIntentById } from "@/lib/db/queries";
-import { getDelegationProvider } from "@/lib/integrations/delegation-provider";
+import { delegationPing } from "@/lib/integrations/delegation-provider";
 import { buildOpenClawIntentFromVirgilEvent } from "@/lib/integrations/openclaw-actions";
 import type { VirgilBridgeEvent } from "@/lib/integrations/openclaw-types";
 
@@ -31,8 +31,7 @@ export async function dispatchVirgilEventToOpenClaw({
     requiresConfirmation: intent.requiresConfirmation,
   });
 
-  const delegationProvider = getDelegationProvider();
-  const online = await delegationProvider.ping();
+  const online = await delegationPing();
   if (online && !intent.requiresConfirmation) {
     await trySendPendingIntentById({ id: row.id, userId });
   }

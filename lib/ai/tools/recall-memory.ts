@@ -8,6 +8,20 @@ import {
 import type { Memory } from "@/lib/db/schema";
 import { agentIngestLogSession308ef5 } from "@/lib/debug/agent-ingest-log";
 
+/** Raw SQL (`client.unsafe`) often returns timestamps as strings; Drizzle select returns Date. */
+function memorySavedAtIso(createdAt: unknown): string {
+  if (createdAt instanceof Date && !Number.isNaN(createdAt.getTime())) {
+    return createdAt.toISOString();
+  }
+  if (typeof createdAt === "string" || typeof createdAt === "number") {
+    const parsed = new Date(createdAt);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString();
+    }
+  }
+  return new Date().toISOString();
+}
+
 function mapDbMemories(results: Memory[]) {
   return {
     found: true as const,
@@ -15,7 +29,7 @@ function mapDbMemories(results: Memory[]) {
     memories: results.map((m) => ({
       kind: m.kind,
       content: m.content,
-      savedAt: m.createdAt.toISOString(),
+      savedAt: memorySavedAtIso(m.createdAt),
     })),
   };
 }

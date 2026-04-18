@@ -15,7 +15,11 @@ import {
   buildDelegateTaskToolDescription,
   delegationUnknownSkillMessage,
 } from "@/lib/integrations/delegation-labels";
-import { getDelegationProvider } from "@/lib/integrations/delegation-provider";
+import {
+  delegationListSkillNamesUnion,
+  delegationPing,
+  getDelegationProvider,
+} from "@/lib/integrations/delegation-provider";
 import {
   delegationNeedsConfirmation,
   matchSkillFromDescription,
@@ -56,7 +60,7 @@ export function delegateTaskToOpenClaw({
     execute: async ({ description, lane, skill, params, urgent }) => {
       const delegationProvider = getDelegationProvider();
       const backend = delegationProvider.backend;
-      const skills = await delegationProvider.listSkillNames();
+      const skills = await delegationListSkillNamesUnion();
       const skillTrimmed = skill?.trim();
       if (skillTrimmed && skills.length > 0 && !skills.includes(skillTrimmed)) {
         const sample = skills.slice(0, 24).join(", ");
@@ -108,7 +112,7 @@ export function delegateTaskToOpenClaw({
         requiresConfirmation: needsConfirm,
       });
 
-      const online = await delegationProvider.ping();
+      const online = await delegationPing();
       if (!online) {
         const backlog = await countDelegationBacklogForUser(userId);
         const failure = buildDelegationSkipFailure({

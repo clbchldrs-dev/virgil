@@ -2,7 +2,7 @@
 
 Virgil keeps **goals, memory, and proactive logic** in this repo. [OpenClaw](https://github.com/openclaw/openclaw) (or a compatible gateway) can act as **hands**: messaging, shell, files, and skills on the LAN.
 
-**Operator reference:** the always-on LAN gateway for this deployment is named **`virgil-manos`** (Ubuntu). Co-locate **Ollama** on that host (or another LAN box) and set **`OLLAMA_BASE_URL`** on the Virgil server for **local chat inference**; use **`OPENCLAW_*`** here for **delegation**, not as a substitute for the chat LLM.
+**Operator reference:** the always-on LAN host for this deployment is named **`virgil-manos`** (Ubuntu). Co-locate **Ollama** there and set **`OLLAMA_BASE_URL`** on the Virgil server for **local chat inference**. For **delegation**, prefer **`HERMES_*`** (Hermes first) and add **`OPENCLAW_*`** for OpenClaw as second-line / breadth; runtime routing and failover are documented in **[virgil-manos-delegation.md](virgil-manos-delegation.md)**. Delegation is not the primary chat LLM.
 
 The bridge is **optional**. If `OPENCLAW_URL` / `OPENCLAW_HTTP_URL` is unset, delegation tools are not registered.
 
@@ -20,11 +20,58 @@ Use this when you want Hermes to be the default delegation backend and keep Open
    - `HERMES_SKILLS_PATH=/api/skills`
    - `HERMES_SHARED_SECRET=<secret>` (required off-loopback)
 2. Restart the app (`pnpm dev`) so the server reads updated env vars.
-3. Keep `OPENCLAW_*` vars only if you want fallback compatibility; remove them if you want hard-fail behavior when Hermes is down.
+3. Keep `OPENCLAW_*` vars for OpenClaw compatibility; when **both** Hermes and OpenClaw are configured, Virgil **failovers** from Hermes to OpenClaw if Hermes is unreachable unless `VIRGIL_DELEGATION_FAILOVER=0`. See [virgil-manos-delegation.md](virgil-manos-delegation.md).
 4. Sign in, then verify end-to-end:
    - `GET /api/delegation/health` confirms selected backend, online state, discovered skills, and queue depth.
    - `GET /api/openclaw/pending` confirms pending approvals and backlog behavior in the existing queue UI.
 5. Run one safe delegated task first (for example a read-only status query) before enabling higher-risk skills.
+
+## Hermes and Cursor: repository improvements
+
+Virgil does **not** call the Cursor IDE over HTTP. `delegateTask` sends **ClawIntent** JSON to your **Hermes HTTP bridge** (`HERMES_HTTP_URL` + `HERMES_EXECUTE_PATH`). Cursor stays where **you** (or Cursor Agent) edit the repo. Wire three layers: Virgil env → Hermes host permissions → skills list.
+
+### 1. Virgil (this app) — required env
+
+In `.env.local` (restart `pnpm dev` after edits):
+
+| Variable | Purpose |
+|----------|---------|
+| `VIRGIL_DELEGATION_BACKEND` | Set `hermes` to force Hermes even when OpenClaw is also configured (optional; default already prefers Hermes when `HERMES_HTTP_URL` is set). |
+| `HERMES_HTTP_URL` | HTTP **origin** only, e.g. `http://127.0.0.1:8765` — must match the process that serves Hermes. |
+| `HERMES_EXECUTE_PATH` | Default `/api/execute` — must match Hermes. |
+| `HERMES_PENDING_PATH` | Default `/api/pending` — pending-intent parity for approval UIs. |
+| `HERMES_SKILLS_PATH` | Default `/api/skills` — used for `delegateTask` skill discovery (`listHermesSkillNames`). |
+| `HERMES_HEALTH_PATH` | Default `/health` — used for online/offline banner + health route. |
+| `HERMES_SHARED_SECRET` | Shared bearer for `Authorization: Bearer …` on health, execute, and skills requests. **Use a strong random value** if Hermes is reachable off loopback (LAN, tunnel, VPS). Configure the **same** secret on the Hermes server. Loopback-only dev may omit it. |
+
+Verify while signed in: `GET /api/delegation/health` should report the Hermes backend **online** and list **skills** when `/api/skills` returns data.
+
+**Local stub (no real Hermes process):** `VIRGIL_HERMES_BRIDGE_STUB_ENABLED=1` with `HERMES_HTTP_URL=http://127.0.0.1:3000` and paths under `/api/hermes/*` — see [.env.example](../.env.example). The stub does **not** edit your repo; it only exercises the bridge.
+
+### 2. Hermes host — permissions for repo work
+
+Configure the **machine where Hermes runs**, not Virgil’s `.env.local` alone:
+
+- **Repo path:** A stable clone of the target repository (e.g. `virgil`) that Hermes skills or shell steps `cd` into before `git` / `pnpm`.
+- **Git:** Credentials for `fetch` / `push` (SSH key or HTTPS + credential helper). Scope keys/PATs to **repo contents** (and **pull requests** if skills open PRs). Prefer automation keys separate from personal passwords.
+- **Toolchain:** `node` / `pnpm` versions compatible with the repo (`AGENTS.md`, `package.json`) so delegated checks (`pnpm check`, `pnpm test:unit`) can succeed.
+- **OS user:** The Hermes process should run as a normal user that **owns** the working tree; avoid root.
+- **GitHub CLI (optional):** If skills use `gh`, run `gh auth login` on that host for the same identity you use for [`submitAgentTask`](../AGENTS.md) / issue workflows.
+
+There is **no** `CURSOR_API_*` (or similar) variable in this repository. Cursor does not ship a supported remote API for Hermes to “drive Composer” headlessly. Typical flows:
+
+- Hermes runs **git/shell/cron** in the repo; you **review in Cursor** on disk or via **GitHub** diff.
+- For tracked product work, use **`submitAgentTask`** (gateway chat) and pick up tasks in Cursor per [AGENTS.md](../AGENTS.md) § Agent Task Pickup Convention.
+- Large refactors stay **human- or Cursor-Agent-led** in the IDE; Virgil can delegate **narrow** automation to Hermes.
+
+### 3. Hermes — skills for `delegateTask`
+
+`GET HERMES_HTTP_URL` + `HERMES_SKILLS_PATH` should return skill metadata Virgil can match (see `lib/integrations/hermes-client.ts`). Expose ids that reflect repo operations you allow, e.g. read-only diagnostics vs branch/commit flows. Unknown skills still fall back to **`generic-task`** (`lib/ai/tools/delegate-to-openclaw.ts`). Keep destructive operations behind **Virgil confirmation** (`requiresConfirmation`) and/or Hermes-side guards.
+
+### 4. Security recap
+
+- Prefer **loopback** + **SSH tunnel** for remote Hermes instead of exposing an HTTP port broadly ([openclaw-ssh-tunnel-hardening.md](openclaw-ssh-tunnel-hardening.md)).
+- Rotate **`HERMES_SHARED_SECRET`** if it leaks; never commit real secrets.
 
 ## Environment
 
@@ -50,6 +97,7 @@ This keeps OpenClaw private on the remote host while Virgil talks only to a loca
 
 ## Features
 
+- **`embedViaDelegation`** (when delegation is configured and `VIRGIL_DELEGATION_EMBED_ENABLED` is not off): synchronous embedding for wiki / hybrid-search experiments. Virgil POSTs to the same execute endpoint as `delegateTask` with skill id `VIRGIL_DELEGATION_EMBED_SKILL` (default **`wiki-embed`**) and `params: { texts: string[] }`. The gateway should run Ollama (or another embedder) on the LAN host and return JSON shaped as `{ "embeddings": number[][], "model"?: string }` — one vector per text, same order. List **`wiki-embed`** (or your override) on `GET …/skills` when the gateway publishes a skill catalog. Vectors are padded or truncated to `EMBEDDING_DIMENSIONS` in Virgil for Postgres/pgvector comparison.
 - **`delegateTask` / `approveOpenClawIntent` tools** (personal assistant, when configured).
 - **`PendingIntent` Postgres queue** with confirmation for sensitive delegations.
 - **`GET/PATCH /api/openclaw/pending`** for UI: list pending approvals, approve/reject.

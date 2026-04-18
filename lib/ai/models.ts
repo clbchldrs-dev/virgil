@@ -4,11 +4,11 @@ export const DEFAULT_CHAT_MODEL = "deepseek/deepseek-v3.2";
 export const VIRGIL_AUTO_MODEL_ID = "virgil/auto";
 
 export const titleModel = {
-  id: "mistral/mistral-small",
-  name: "Mistral Small",
-  provider: "mistral",
-  description: "Fast model for title generation",
-  gatewayOrder: ["mistral"],
+  id: "google/gemini-2.5-flash-lite",
+  name: "Gemini 2.5 Flash Lite",
+  provider: "google",
+  description: "Fast model for title generation via AI Gateway",
+  gatewayOrder: ["google"],
 };
 
 export function isLocalModel(modelId: string): boolean {

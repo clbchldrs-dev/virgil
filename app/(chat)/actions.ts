@@ -4,6 +4,7 @@ import { generateText, type UIMessage } from "ai";
 import { cookies } from "next/headers";
 import { auth } from "@/app/(auth)/auth";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
+import { buildLocalChatTitleFromUserMessage } from "@/lib/ai/local-title";
 import { titleModel } from "@/lib/ai/models";
 import { titlePrompt } from "@/lib/ai/prompts";
 import { getTitleModel } from "@/lib/ai/providers";
@@ -20,23 +21,33 @@ export async function saveChatModelAsCookie(model: string) {
   cookieStore.set("chat-model", model);
 }
 
+function normalizeGeneratedChatTitle(text: string): string {
+  return text
+    .replace(/^[#*"\s]+/, "")
+    .replace(/["]+$/, "")
+    .trim();
+}
+
 export async function generateTitleFromUserMessage({
   message,
 }: {
   message: UIMessage;
 }) {
-  const { text } = await generateText({
-    model: getTitleModel(),
-    system: titlePrompt,
-    prompt: getTextFromMessage(message),
-    providerOptions: {
-      gateway: { order: titleModel.gatewayOrder },
-    },
-  });
-  return text
-    .replace(/^[#*"\s]+/, "")
-    .replace(/["]+$/, "")
-    .trim();
+  const promptText = getTextFromMessage(message);
+  try {
+    const { text } = await generateText({
+      model: getTitleModel(),
+      system: titlePrompt,
+      prompt: promptText,
+      providerOptions: {
+        gateway: { order: titleModel.gatewayOrder },
+      },
+    });
+    return normalizeGeneratedChatTitle(text);
+  } catch {
+    // Gateway outages (e.g. 503 from a provider) must not fail the whole chat stream.
+    return buildLocalChatTitleFromUserMessage(promptText);
+  }
 }
 
 export async function deleteTrailingMessages({ id }: { id: string }) {

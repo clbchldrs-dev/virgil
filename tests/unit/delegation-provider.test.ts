@@ -3,10 +3,12 @@ import test from "node:test";
 import {
   getDelegationProvider,
   isDelegationConfigured,
+  isDelegationFailoverEnabled,
 } from "@/lib/integrations/delegation-provider";
 
 const KEYS = [
   "VIRGIL_DELEGATION_BACKEND",
+  "VIRGIL_DELEGATION_FAILOVER",
   "OPENCLAW_URL",
   "OPENCLAW_HTTP_URL",
   "HERMES_HTTP_URL",
@@ -96,6 +98,51 @@ test("delegation configured follows OpenClaw config on default backend", () => {
     },
     () => {
       assert.equal(isDelegationConfigured(), true);
+    }
+  );
+});
+
+test("delegation failover auto-enables when both bridges configured", () => {
+  withEnv(
+    {
+      VIRGIL_DELEGATION_BACKEND: undefined,
+      VIRGIL_DELEGATION_FAILOVER: undefined,
+      HERMES_HTTP_URL: "http://host:8765",
+      OPENCLAW_URL: "ws://host:13100",
+      OPENCLAW_HTTP_URL: "http://host:13100",
+    },
+    () => {
+      assert.equal(isDelegationFailoverEnabled(), true);
+    }
+  );
+});
+
+test("delegation failover can be disabled explicitly", () => {
+  withEnv(
+    {
+      VIRGIL_DELEGATION_BACKEND: undefined,
+      VIRGIL_DELEGATION_FAILOVER: "0",
+      HERMES_HTTP_URL: "http://host:8765",
+      OPENCLAW_URL: "ws://host:13100",
+      OPENCLAW_HTTP_URL: "http://host:13100",
+    },
+    () => {
+      assert.equal(isDelegationFailoverEnabled(), false);
+    }
+  );
+});
+
+test("delegation failover off when only one bridge configured", () => {
+  withEnv(
+    {
+      VIRGIL_DELEGATION_BACKEND: undefined,
+      VIRGIL_DELEGATION_FAILOVER: undefined,
+      HERMES_HTTP_URL: "http://host:8765",
+      OPENCLAW_URL: undefined,
+      OPENCLAW_HTTP_URL: undefined,
+    },
+    () => {
+      assert.equal(isDelegationFailoverEnabled(), false);
     }
   );
 });

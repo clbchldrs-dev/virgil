@@ -14,6 +14,8 @@ export type ClawResult = {
   error?: string;
   skill: string;
   executedAt: string;
+  /** When set, the intent ran on the complementary gateway (Hermes ↔ OpenClaw failover). */
+  routedVia?: "openclaw" | "hermes";
 };
 
 export type VirgilBridgeEvent = {

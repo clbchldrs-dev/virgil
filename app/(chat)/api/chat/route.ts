@@ -70,6 +70,7 @@ import {
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { createGoal } from "@/lib/ai/tools/create-goal";
 import { delegateTaskToOpenClaw } from "@/lib/ai/tools/delegate-to-openclaw";
+import { embedViaDelegation } from "@/lib/ai/tools/delegation-embed";
 import { editDocument } from "@/lib/ai/tools/edit-document";
 import { fetchUrl } from "@/lib/ai/tools/fetch-url";
 import { getWeather } from "@/lib/ai/tools/get-weather";
@@ -103,6 +104,7 @@ import {
 } from "@/lib/debug/agent-ingest-log";
 import { VirgilError } from "@/lib/errors";
 import { isProductOpportunityConfigured } from "@/lib/github/product-opportunity-issue";
+import { isDelegationEmbedToolEnabled } from "@/lib/integrations/delegation-embeddings";
 import {
   getDelegationProvider,
   isDelegationConfigured,
@@ -319,6 +321,8 @@ export async function POST(request: Request) {
     const delegationHint = {
       enabled: isDelegationConfigured(),
       backend: getDelegationProvider().backend,
+      embedToolEnabled:
+        isDelegationConfigured() && isDelegationEmbedToolEnabled(),
     };
 
     const systemPromptText =
@@ -600,6 +604,8 @@ export async function POST(request: Request) {
         });
 
         const openClawPersonalEnabled = isDelegationConfigured();
+        const embedViaDelegationEnabled =
+          openClawPersonalEnabled && isDelegationEmbedToolEnabled();
 
         const openClawToolsBlock = openClawPersonalEnabled
           ? {
@@ -613,6 +619,9 @@ export async function POST(request: Request) {
               approveOpenClawIntent: approveOpenClawIntent({
                 userId: session.user.id,
               }),
+              ...(embedViaDelegationEnabled
+                ? { embedViaDelegation: embedViaDelegation() }
+                : {}),
             }
           : undefined;
 
@@ -621,6 +630,9 @@ export async function POST(request: Request) {
               "delegateTask",
               "approveDelegationIntent",
               "approveOpenClawIntent",
+              ...(embedViaDelegationEnabled
+                ? (["embedViaDelegation"] as const)
+                : []),
             ] as const)
           : [];
 

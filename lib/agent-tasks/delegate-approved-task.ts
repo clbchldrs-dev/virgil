@@ -15,6 +15,8 @@ import {
   type DelegationOutcome,
 } from "@/lib/integrations/delegation-errors";
 import {
+  delegationListSkillNamesUnion,
+  delegationPing,
   getDelegationProvider,
   isDelegationConfigured,
 } from "@/lib/integrations/delegation-provider";
@@ -93,7 +95,7 @@ export async function delegateApprovedAgentTask({
 
   const delegationProvider = getDelegationProvider();
   const backend = delegationProvider.backend;
-  const skills = await delegationProvider.listSkillNames();
+  const skills = await delegationListSkillNamesUnion();
   const fullDescription = `${task.title}\n\n${task.description}`.trim();
   const resolvedSkill =
     matchSkillFromDescription(fullDescription, skills) ?? "generic-task";
@@ -132,7 +134,7 @@ export async function delegateApprovedAgentTask({
     requiresConfirmation: needsConfirm,
   });
 
-  const online = await delegationProvider.ping();
+  const online = await delegationPing();
 
   let outcome: DelegationOutcome;
 

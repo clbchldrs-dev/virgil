@@ -21,9 +21,9 @@ When writing user-facing copy or release notes, prefer **“Virgil 1.1”** for 
 
 ## Operator reference host: `virgil-manos`
 
-- **Name:** OpenClaw (and recommended co-located **Ollama**) instance **`virgil-manos`** — **Ubuntu PC on the LAN**, intended **always-on**.
+- **Name:** **`virgil-manos`** — **Ubuntu PC on the LAN**, intended **always-on**, typically running **Ollama**, **Hermes** (HTTP bridge, preferred for Virgil 1.1 delegation), and optionally **OpenClaw** (compatibility / breadth). See [docs/virgil-manos-delegation.md](docs/virgil-manos-delegation.md).
 - **Chat savings:** Run **Ollama** on that host; set **`OLLAMA_BASE_URL`** (e.g. `http://<lan-ip>:11434`) wherever the Next.js server runs so **local model chat** does not use the Gateway.
-- **Delegation:** Configure **`OPENCLAW_HTTP_URL`** / **`OPENCLAW_URL`** (and tunnel per [docs/openclaw-ssh-tunnel-hardening.md](docs/openclaw-ssh-tunnel-hardening.md)) so Virgil reaches OpenClaw on **`virgil-manos`** without exposing the gateway broadly on the LAN.
+- **Delegation:** Prefer **`HERMES_HTTP_URL`** + `VIRGIL_DELEGATION_BACKEND=hermes` (or leave backend unset when Hermes is configured — same effect). Add **`OPENCLAW_*`** for OpenClaw; when **both** are set, Virgil **defaults to failover** (`VIRGIL_DELEGATION_FAILOVER`) from Hermes → OpenClaw if Hermes is down. Use SSH tunnel per [docs/openclaw-ssh-tunnel-hardening.md](docs/openclaw-ssh-tunnel-hardening.md) instead of exposing gateways broadly on the LAN.
 - Do **not** commit secrets, LAN IPs, or SSH targets; reference the **instance name** and patterns in docs only.
 
 ## Current stabilization priorities

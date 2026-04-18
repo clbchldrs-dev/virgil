@@ -116,12 +116,14 @@ export function buildDelegationSendOutcome({
   intentId: string;
   result: ClawResult;
 }): DelegationOutcome {
+  const effectiveBackend = result.routedVia ?? backend;
+
   if (result.success) {
     return {
       ok: true,
       status: "sent",
       intentId,
-      backend,
+      backend: effectiveBackend,
       queued: false,
       output: result.output,
       result,
@@ -132,12 +134,12 @@ export function buildDelegationSendOutcome({
     ok: false,
     error: "delegation_execution_failed",
     reason: "execution_failed",
-    backend,
+    backend: effectiveBackend,
     intentId,
     retryable: false,
     message:
       result.error ??
-      `Delegation backend reported a failure (${delegationBackendDisplayName(backend)}).`,
+      `Delegation backend reported a failure (${delegationBackendDisplayName(effectiveBackend)}).`,
     result,
   };
 }

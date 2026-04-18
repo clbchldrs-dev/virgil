@@ -13,7 +13,8 @@ This file is for AI agents working on this codebase. Read it before making chang
 Operator intent: **Ubuntu PC on the LAN**, instance name **`virgil-manos`**, **always on**.
 
 - **Lower AI Gateway spend:** run **Ollama** on that host (or point `OLLAMA_BASE_URL` at it from the machine running the Next.js server) so **local model chat** avoids Gateway tokens for day-to-day use.
-- **OpenClaw:** run the **OpenClaw gateway** there for optional **`delegateTask`** / skills; reach it via SSH tunnel or explicit `OPENCLAW_*` URLs per [docs/openclaw-bridge.md](docs/openclaw-bridge.md) and [docs/openclaw-ssh-tunnel-hardening.md](docs/openclaw-ssh-tunnel-hardening.md). OpenClaw is **execution delegation**, not the primary chat model.
+- **Delegation (Hermes first, OpenClaw second):** On **`virgil-manos`**, prefer the **Hermes** HTTP bridge (`HERMES_*`) for **`delegateTask`** / **`embedViaDelegation`**; add **OpenClaw** (`OPENCLAW_*`) when you want breadth or a compatibility path. When **both** are configured, Virgil defaults to **Hermes** and can **fail over** to OpenClaw if Hermes is unreachable (`VIRGIL_DELEGATION_FAILOVER`; on by default for dual-stack). Operator runbook: [docs/virgil-manos-delegation.md](docs/virgil-manos-delegation.md). Bridge contract and env table: [docs/openclaw-bridge.md](docs/openclaw-bridge.md); tunnels: [docs/openclaw-ssh-tunnel-hardening.md](docs/openclaw-ssh-tunnel-hardening.md). Neither gateway is the primary chat LLM.
+- **Hermes:** HTTP bridge for repo automation (`HERMES_*` in `.env.local`). Section **Hermes and Cursor** in [docs/openclaw-bridge.md](docs/openclaw-bridge.md). Hermes does not remote-control the Cursor IDE.
 
 Do not commit LAN IPs, SSH users, or secrets—document **patterns and env var names** only.
 
@@ -675,7 +676,11 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `GITHUB_PRODUCT_OPPORTUNITY_LABELS` | No | No | Optional comma-separated issue labels |
 | `AGENT_TASK_TRIAGE_ENABLED` | No | No | Set to `1` to enable background triage of submitted agent tasks via local Ollama |
 | `AGENT_TASK_TRIAGE_MODEL` | No | No | Model id for triage worker (default `ollama/qwen2.5:7b-instruct`) |
-| `VIRGIL_DELEGATION_BACKEND` | No | No | Delegation provider selector for the Virgil 1.1 bridge (`openclaw` or `hermes`). When unset, Virgil now prefers `hermes` when configured and falls back to `openclaw`. |
+| `VIRGIL_DELEGATION_BACKEND` | No | No | Delegation provider selector for the Virgil 1.1 bridge (`openclaw` or `hermes`). When unset, Virgil prefers `hermes` when `HERMES_HTTP_URL` is set, else `openclaw` when OpenClaw is configured. |
+| `VIRGIL_DELEGATION_FAILOVER` | No | No | When **both** Hermes and OpenClaw are configured: `1` / `true` / unset = if primary `ping` fails, route sends to the other gateway. Set `0` / `false` / `off` to disable. See [docs/virgil-manos-delegation.md](docs/virgil-manos-delegation.md). |
+| `VIRGIL_DELEGATION_EMBED_SKILL` | No | No | Skill id for **embedViaDelegation** (default `wiki-embed`). LAN gateway should implement it (e.g. Ollama `/api/embeddings`) and list it when `GET …/skills` returns a catalog. |
+| `VIRGIL_DELEGATION_EMBED_TIMEOUT_MS` | No | No | HTTP timeout for synchronous embedding delegation (default `30000`). |
+| `VIRGIL_DELEGATION_EMBED_ENABLED` | No | No | Set `0` / `false` / `off` to hide **embedViaDelegation** while keeping other delegation tools. |
 | `OPENCLAW_URL` | No | No | Optional OpenClaw gateway. Hardened default is a local tunnel (`ws://127.0.0.1:13100`) on the Mac: set `OPENCLAW_SSH_HOST` and run `pnpm openclaw:tunnel` (see [docs/openclaw-ssh-tunnel-hardening.md](docs/openclaw-ssh-tunnel-hardening.md) for SSH target and owner reference host). Bridge behavior: [docs/openclaw-bridge.md](docs/openclaw-bridge.md) |
 | `OPENCLAW_HTTP_URL` | No | No | Explicit HTTP origin for OpenClaw REST (defaults from `OPENCLAW_URL`). Hardened tunnel value: `http://127.0.0.1:13100` |
 | `OPENCLAW_EXECUTE_PATH` | No | No | POST path for intents (default `/api/execute`) |

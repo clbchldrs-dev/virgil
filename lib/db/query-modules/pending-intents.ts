@@ -6,7 +6,10 @@ import {
   getPendingIntentSkipReason,
   isPendingIntentRetryable,
 } from "@/lib/integrations/delegation-idempotency";
-import { getDelegationProvider } from "@/lib/integrations/delegation-provider";
+import {
+  delegationPing,
+  delegationSendIntent,
+} from "@/lib/integrations/delegation-provider";
 import type { ClawIntent } from "@/lib/integrations/openclaw-types";
 import { db } from "../client";
 import { pendingIntent } from "../schema";
@@ -236,8 +239,7 @@ export async function trySendPendingIntentById({
     throw new VirgilError("bad_request:api", "Stored intent is invalid.");
   }
 
-  const delegationProvider = getDelegationProvider();
-  const online = await delegationProvider.ping();
+  const online = await delegationPing();
   if (!online) {
     return { skipped: true as const, reason: "backend_offline" as const };
   }
@@ -247,7 +249,7 @@ export async function trySendPendingIntentById({
     .set({ status: "sent", sentAt: new Date() })
     .where(eq(pendingIntent.id, id));
 
-  const result = await delegationProvider.sendIntent(parsed);
+  const result = await delegationSendIntent(parsed);
 
   await db
     .update(pendingIntent)

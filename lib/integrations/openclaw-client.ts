@@ -16,11 +16,19 @@ function truncateError(msg: string): string {
     : stripped;
 }
 
-function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
+export function fetchOpenClawWithTimeout(
+  url: string,
+  init?: RequestInit,
+  timeoutMs: number = FETCH_TIMEOUT_MS
+): Promise<Response> {
   return fetch(url, {
     ...init,
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
+}
+
+function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
+  return fetchOpenClawWithTimeout(url, init, FETCH_TIMEOUT_MS);
 }
 
 export async function pingOpenClaw(): Promise<boolean> {
@@ -95,7 +103,8 @@ export async function getCachedOpenClawSkillNames(): Promise<string[]> {
 }
 
 export async function sendOpenClawIntent(
-  intent: ClawIntent
+  intent: ClawIntent,
+  options?: { timeoutMs?: number }
 ): Promise<ClawResult> {
   const base = getOpenClawHttpOrigin();
   const executedAt = new Date().toISOString();
@@ -108,15 +117,20 @@ export async function sendOpenClawIntent(
     };
   }
   const path = getOpenClawExecutePath();
+  const timeoutMs = options?.timeoutMs ?? FETCH_TIMEOUT_MS;
   try {
-    const res = await fetchWithTimeout(`${base}${path}`, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
+    const res = await fetchOpenClawWithTimeout(
+      `${base}${path}`,
+      {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(intent),
       },
-      body: JSON.stringify(intent),
-    });
+      timeoutMs
+    );
     const text = await res.text();
     let output: string | undefined;
     if (text) {

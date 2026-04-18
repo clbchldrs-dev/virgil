@@ -10,6 +10,7 @@ import {
 } from "@/lib/db/queries";
 import { buildPendingIntentApproveResponse } from "@/lib/integrations/delegation-pending-route";
 import {
+  delegationPing,
   getDelegationProvider,
   isDelegationConfigured,
 } from "@/lib/integrations/delegation-provider";
@@ -30,7 +31,7 @@ export async function GET() {
   const delegationProvider = getDelegationProvider();
   const configured = isDelegationConfigured();
   const pendingConfirmations = await getPendingConfirmationsForUser(userId);
-  const online = configured ? await delegationProvider.ping() : false;
+  const online = configured ? await delegationPing() : false;
   const queuedBacklog = await countDelegationBacklogForUser(userId);
   const backendLabel =
     delegationProvider.backend === "hermes" ? "Hermes" : "OpenClaw";

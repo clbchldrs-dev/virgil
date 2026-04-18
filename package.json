@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
+    "dev:webpack": "next dev --webpack",
     "dev:check": "tsx scripts/check-local-env.ts",
     "dev:check:strict": "tsx scripts/check-local-env.ts --strict",
     "build": "tsx lib/db/migrate && next build",

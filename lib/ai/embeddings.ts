@@ -1,38 +1,16 @@
 import "server-only";
 
+import { normalizeEmbeddingForStorage } from "@/lib/ai/embedding-normalize";
 import { getOllamaBaseUrl } from "@/lib/ai/providers";
+
+export {
+  getEmbeddingDimensions,
+  MEMORY_VECTOR_DIMENSIONS,
+  normalizeEmbeddingForStorage,
+} from "@/lib/ai/embedding-normalize";
 
 export function getEmbeddingModel(): string {
   return process.env.EMBEDDING_MODEL?.trim() || "nomic-embed-text";
-}
-
-/** Must match `lib/db/migrations/0010_memory_embedding.sql` `vector(N)`. */
-export const MEMORY_VECTOR_DIMENSIONS = 768 as const;
-
-export function getEmbeddingDimensions(): number {
-  const raw = process.env.EMBEDDING_DIMENSIONS?.trim();
-  if (!raw) {
-    return MEMORY_VECTOR_DIMENSIONS;
-  }
-  const n = Number.parseInt(raw, 10);
-  if (!Number.isFinite(n) || n <= 0) {
-    return MEMORY_VECTOR_DIMENSIONS;
-  }
-  return n;
-}
-
-function normalizeEmbedding(embedding: number[], dimensions: number): number[] {
-  if (embedding.length === dimensions) {
-    return embedding;
-  }
-  if (embedding.length > dimensions) {
-    return embedding.slice(0, dimensions);
-  }
-  const padded = [...embedding];
-  while (padded.length < dimensions) {
-    padded.push(0);
-  }
-  return padded;
 }
 
 /**
@@ -61,7 +39,7 @@ export async function embedText(text: string): Promise<number[] | null> {
     if (!data.embedding || data.embedding.length === 0) {
       return null;
     }
-    return normalizeEmbedding(data.embedding, MEMORY_VECTOR_DIMENSIONS);
+    return normalizeEmbeddingForStorage(data.embedding);
   } catch {
     return null;
   }

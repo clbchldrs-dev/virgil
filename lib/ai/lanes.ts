@@ -15,6 +15,8 @@ export const virgilLaneIdSchema = z.enum(VIRGIL_LANE_IDS);
 export type VirgilLaneDelegationHint = {
   enabled: boolean;
   backend: DelegationBackend;
+  /** When true, **embedViaDelegation** is registered (LAN embedding for wiki / hybrid search). */
+  embedToolEnabled?: boolean;
 };
 
 /**

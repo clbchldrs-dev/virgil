@@ -27,6 +27,18 @@ export function buildDelegateTaskToolDescription(): string {
   );
 }
 
+export function buildDelegateEmbeddingToolDescription(): string {
+  const backend = getDelegationProvider().backend;
+  const name = delegationBackendDisplayName(backend);
+  const phrase = delegationBackendShortPhrase(backend);
+  return (
+    `Request text embeddings from ${phrase} (${name}) for wiki retrieval and hybrid search experiments. ` +
+    "Runs synchronously on the delegation host (e.g. Ollama on the LAN GPU box). " +
+    "Returns numeric vectors aligned with Virgil's configured embedding dimensions for comparison with pgvector/FTS. " +
+    "Use for chunking wiki pages or queries — not for routine chat memory (that uses in-process Ollama embeddings)."
+  );
+}
+
 export function buildApproveDelegationIntentToolDescription(): string {
   const backend = getDelegationProvider().backend;
   const name = delegationBackendDisplayName(backend);

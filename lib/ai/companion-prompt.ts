@@ -62,10 +62,14 @@ function buildMemoryVsDelegationGuidance(
 
   const phrase = delegationBackendShortPhrase(delegation.backend);
   const name = delegation.backend === "hermes" ? "Hermes" : "OpenClaw";
+  const embedLine =
+    delegation.embedToolEnabled === true
+      ? `- **embedViaDelegation** calls the same ${phrase} with the configured embedding skill (default \`wiki-embed\`) for synchronous vectors — wiki chunks, hybrid-search experiments, or GPU-hosted Ollama on the LAN. It does not replace **recallMemory** or in-process memory embeddings.\n`
+      : "";
   return (
     core +
     `- When **delegateTask** plus **approveDelegationIntent** (legacy alias: **approveOpenClawIntent**) are in your tool list, they send work to ${phrase} (${name}). Use them for delegated execution — not for loading memories.
-- If the user names "Hermes" or "OpenClaw", align your explanation with this deployment (${name}).`
+${embedLine}- If the user names "Hermes" or "OpenClaw", align your explanation with this deployment (${name}).`
   );
 }
 

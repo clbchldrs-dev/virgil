@@ -8,7 +8,7 @@ Single-owner checklist to verify **calendar, GitHub, email, Slack, and cron** pa
 |---------|--------------|--------|
 | **Vercel production** | Vercel project env | No `OLLAMA_BASE_URL` to LAN Ollama from serverless; use gateway models or self-host app on LAN. |
 | **LAN / Docker app** | `.env.docker` or server env | Set `OLLAMA_BASE_URL` to Manos or bundled `ollama` service. `AUTH_URL` / `NEXT_PUBLIC_APP_URL` = browser origin. |
-| **virgil-manos (Ubuntu)** | Ollama + optional OpenClaw | Holds inference and delegation; **not** where Next.js env usually lives unless you self-host the app there. |
+| **virgil-manos (Ubuntu)** | Ollama + Hermes (preferred) + optional OpenClaw | Holds inference and delegation; routing: [virgil-manos-delegation.md](virgil-manos-delegation.md). **Not** where Next.js env usually lives unless you self-host the app there. |
 | **Developer laptop** | `.env.local` | Local `pnpm dev`; can point `OLLAMA_BASE_URL` at Manos LAN IP. |
 
 Full variable names: [`.env.example`](../.env.example) and [AGENTS.md](../AGENTS.md).

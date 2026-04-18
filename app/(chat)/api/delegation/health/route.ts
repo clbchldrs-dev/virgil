@@ -4,8 +4,10 @@ import {
   getPendingConfirmationsForUser,
 } from "@/lib/db/queries";
 import {
+  delegationPing,
   getDelegationProvider,
   isDelegationConfigured,
+  isDelegationFailoverEnabled,
 } from "@/lib/integrations/delegation-provider";
 import {
   listHermesSkillNames,
@@ -46,7 +48,7 @@ export async function GET() {
   ] = await Promise.all([
     getPendingConfirmationsForUser(userId),
     countDelegationBacklogForUser(userId),
-    configured ? provider.ping() : Promise.resolve(false),
+    configured ? delegationPing() : Promise.resolve(false),
     configured ? provider.listSkillNames() : Promise.resolve([]),
     hermesConfigured ? pingHermes() : Promise.resolve(false),
     openClawConfigured ? pingOpenClaw() : Promise.resolve(false),
@@ -57,6 +59,7 @@ export async function GET() {
   return Response.json({
     timestamp: new Date().toISOString(),
     backend: provider.backend,
+    failoverEnabled: isDelegationFailoverEnabled(),
     configured,
     delegationOnline,
     skillCount: delegationSkillNames.length,
