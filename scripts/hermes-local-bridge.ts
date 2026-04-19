@@ -7,8 +7,9 @@
  * When OPENCLAW_HTTP_URL is set, execute forwards to OpenClaw:
  * - **Legacy** (`OPENCLAW_EXECUTE_PATH` e.g. `/api/execute`): POST the ClawIntent JSON as-is.
  * - **OpenClaw Gateway** (`/tools/invoke`): maps intent → `{ tool, args, sessionKey }` per
- *   https://docs.openclaw.ai/gateway/tools-invoke-http-api — set `OPENCLAW_GATEWAY_TOKEN`
- *   (Bearer) to match the gateway. `/v1/skills` often serves the **Control UI (HTML)**,
+ *   https://docs.openclaw.ai/gateway/tools-invoke-http-api — set `OPENCLAW_GATEWAY_TOKEN` or
+ *   `OPENCLAW_GATEWAY_PASSWORD` (Bearer) to match `gateway.auth` on the gateway host.
+ *   `/v1/skills` often serves the **Control UI (HTML)**,
  *   not JSON; use `OPENCLAW_EXTRA_SKILL_NAMES` for tool names to advertise, or a real JSON
  *   skills URL if your deployment exposes one.
  *
@@ -41,8 +42,14 @@ const OPENCLAW_SKILLS =
   process.env.OPENCLAW_SKILLS_PATH?.trim() || "/api/skills";
 const OPENCLAW_HEALTH = process.env.OPENCLAW_HEALTH_PATH?.trim() || "/health";
 
-/** Bearer for OpenClaw Gateway HTTP (tools/invoke, health); see OPENCLAW_GATEWAY_TOKEN. */
-const OPENCLAW_GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN?.trim() ?? "";
+/** Shared-secret Bearer for Gateway HTTP (token or password auth mode). */
+function openClawBearerSecret(): string {
+  return (
+    process.env.OPENCLAW_GATEWAY_TOKEN?.trim() ||
+    process.env.OPENCLAW_GATEWAY_PASSWORD?.trim() ||
+    ""
+  );
+}
 
 /** Comma-separated tool names to merge when GET skills path returns HTML or empty. */
 const OPENCLAW_EXTRA_SKILL_NAMES = process.env.OPENCLAW_EXTRA_SKILL_NAMES?.trim() ?? "";
@@ -104,8 +111,9 @@ function openClawFetchHeaders(): Record<string, string> {
   const h: Record<string, string> = {
     Accept: "application/json",
   };
-  if (OPENCLAW_GATEWAY_TOKEN) {
-    h.Authorization = `Bearer ${OPENCLAW_GATEWAY_TOKEN}`;
+  const bearer = openClawBearerSecret();
+  if (bearer) {
+    h.Authorization = `Bearer ${bearer}`;
   }
   return h;
 }
@@ -247,9 +255,9 @@ async function forwardToOpenClaw(intent: ClawIntent): Promise<Response> {
     );
   }
   const gateway = usesOpenClawToolsInvoke();
-  if (gateway && !OPENCLAW_GATEWAY_TOKEN) {
+  if (gateway && !openClawBearerSecret()) {
     process.stderr.write(
-      "[hermes-local-bridge] Warning: Gateway tools/invoke usually requires OPENCLAW_GATEWAY_TOKEN (Bearer).\n"
+      "[hermes-local-bridge] Warning: Gateway tools/invoke usually requires OPENCLAW_GATEWAY_TOKEN or OPENCLAW_GATEWAY_PASSWORD (Bearer).\n"
     );
   }
   const bodyJson = gateway
