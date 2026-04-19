@@ -26,7 +26,26 @@ import {
 } from "@/lib/integrations/delegation-provider";
 import type { ClawIntent, ClawResult } from "@/lib/integrations/openclaw-types";
 import { db } from "../client";
-import { pendingIntent, type PendingIntent } from "../schema";
+import { chat, type PendingIntent, pendingIntent } from "../schema";
+
+/** Avoid FK violations: `PendingIntent.chatId` references `Chat` and must be null or a real row owned by the user. */
+async function resolvePersistedChatIdForUser({
+  userId,
+  chatId,
+}: {
+  userId: string;
+  chatId: string | undefined;
+}): Promise<string | null> {
+  if (!chatId) {
+    return null;
+  }
+  const [row] = await db
+    .select({ id: chat.id })
+    .from(chat)
+    .where(and(eq(chat.id, chatId), eq(chat.userId, userId)))
+    .limit(1);
+  return row ? chatId : null;
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -45,7 +64,7 @@ function buildDeferredPollResult(skill: string): ClawResult {
 
 function clawResultFromRowResult(
   raw: Record<string, unknown> | null | undefined,
-  skillFallback: string
+  _skillFallback: string
 ): ClawResult | null {
   if (!raw || typeof raw !== "object") {
     return null;
@@ -69,8 +88,7 @@ function clawResultFromRowResult(
       raw.routedVia === "openclaw" || raw.routedVia === "hermes"
         ? raw.routedVia
         : undefined,
-    deferredToPollWorker:
-      raw.deferredToPollWorker === true ? true : undefined,
+    deferredToPollWorker: raw.deferredToPollWorker === true ? true : undefined,
   };
 }
 
@@ -95,6 +113,56 @@ async function waitForPollWorkerCompletion({
     await sleep(400);
   }
   return { timedOut: true };
+}
+
+function pendingIntentInsertHint(pgMessage: string): string {
+  const m = pgMessage.toLowerCase();
+  if (
+    m.includes("pendingintent_userid_fkey") ||
+    (m.includes("violates foreign key constraint") &&
+      (m.includes("userid") || m.includes('table "pendingintent"')))
+  ) {
+    return "Hint: this user id is not present in the `User` table for this database (auth/DB mismatch), or POSTGRES_URL points at the wrong database.";
+  }
+  if (m.includes("pendingintent_chatid_fkey")) {
+    return "Hint: the chat id is not valid for this database.";
+  }
+  if (m.includes("does not exist") && m.includes("column")) {
+    return "Hint: run `pnpm db:migrate` so `PendingIntent` matches the app schema.";
+  }
+  return "";
+}
+
+/**
+ * Drizzle wraps driver errors in `DrizzleQueryError` with the Postgres message on `.cause`.
+ * Do not use `instanceof DrizzleQueryError`: duplicate `drizzle-orm` copies in the Next.js
+ * bundle break `instanceof`, and the raw "Failed query: …" string leaks to the UI.
+ */
+function unwrapPendingIntentInsertError(err: unknown): Error {
+  if (!(err instanceof Error)) {
+    return new Error(String(err));
+  }
+
+  const rawCause =
+    "cause" in err ? (err as Error & { cause?: unknown }).cause : undefined;
+  const pg =
+    rawCause instanceof Error
+      ? rawCause.message
+      : rawCause == null
+        ? null
+        : String(rawCause);
+
+  const looksLikeDrizzleQuery =
+    err.message.startsWith("Failed query:") ||
+    err.constructor?.name === "DrizzleQueryError";
+
+  if (looksLikeDrizzleQuery && pg) {
+    const hint = pendingIntentInsertHint(pg);
+    const body = hint ? `${pg} ${hint}` : pg;
+    return new Error(`PendingIntent queue failed: ${body}`);
+  }
+
+  return err;
 }
 
 function parseClawIntent(raw: Record<string, unknown>): ClawIntent | null {
@@ -140,18 +208,26 @@ export async function queuePendingIntent({
   skill: string;
   requiresConfirmation: boolean;
 }) {
-  const [row] = await db
-    .insert(pendingIntent)
-    .values({
-      userId,
-      chatId: chatId ?? null,
-      intent: intent as unknown as Record<string, unknown>,
-      skill,
-      requiresConfirmation,
-      status: "pending",
-    })
-    .returning();
-  return row;
+  const persistedChatId = await resolvePersistedChatIdForUser({
+    userId,
+    chatId,
+  });
+  try {
+    const [row] = await db
+      .insert(pendingIntent)
+      .values({
+        userId,
+        chatId: persistedChatId,
+        intent: intent as unknown as Record<string, unknown>,
+        skill,
+        requiresConfirmation,
+        status: "pending",
+      })
+      .returning();
+    return row;
+  } catch (err) {
+    throw unwrapPendingIntentInsertError(err);
+  }
 }
 
 export function getPendingConfirmationsForUser(userId: string) {
@@ -402,9 +478,7 @@ export async function trySendPendingIntentById({
 /**
  * Hermes/Manos poll worker: claim the next intent released to the DB bus (outbound HTTPS only).
  */
-export async function claimNextPendingIntentForPollWorker(): Promise<
-  PendingIntent | null
-> {
+export function claimNextPendingIntentForPollWorker(): Promise<PendingIntent | null> {
   return db.transaction(async (tx) => {
     const picked = await tx
       .select({ id: pendingIntent.id })

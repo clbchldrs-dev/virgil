@@ -30,6 +30,13 @@ import { buildCompanionSystemPrompt } from "@/lib/ai/companion-prompt";
 import { buildLocalChatTitleFromUserMessage } from "@/lib/ai/local-title";
 import { isMem0Configured, mem0Add } from "@/lib/ai/mem0-client";
 import { resolveAutoChatModel } from "@/lib/ai/model-routing";
+import { resolveChatRuntimeDecision } from "@/lib/ai/runtime-decision/resolve-chat-runtime-decision";
+import {
+  appendShadowSeamDivergenceRecord,
+  chatRuntimeDecisionShadowDiffers,
+  isRuntimeDecisionSeamAuthoritativeEnabled,
+  isRuntimeDecisionSeamShadowEnabled,
+} from "@/lib/ai/runtime-decision/shadow";
 import {
   DEFAULT_CHAT_MODEL,
   getChatModelWithLocalFallback,
@@ -202,18 +209,89 @@ export async function POST(request: Request) {
     }
 
     const selectedModelAllowed = await isAllowedChatModelId(selectedChatModel);
-    let chatModel = selectedModelAllowed
-      ? selectedChatModel
-      : DEFAULT_CHAT_MODEL;
-    if (chatModel === VIRGIL_AUTO_MODEL_ID) {
-      const { modelId } = await resolveAutoChatModel(clientRoutingHints);
-      const resolvedAllowed = await isAllowedChatModelId(modelId);
-      chatModel = resolvedAllowed ? modelId : DEFAULT_CHAT_MODEL;
+
+    let chatModel: string;
+    if (isRuntimeDecisionSeamAuthoritativeEnabled()) {
+      const seam = await resolveChatRuntimeDecision({
+        selectedChatModel,
+        isAllowedChatModelId,
+        resolveAutoModel: (hints) => resolveAutoChatModel(hints),
+        clientRoutingHints,
+      });
+      chatModel = seam.effectiveChatModelId;
+      isOllamaRequest = seam.isOllamaLocal;
+    } else {
+      chatModel = selectedModelAllowed
+        ? selectedChatModel
+        : DEFAULT_CHAT_MODEL;
+      if (chatModel === VIRGIL_AUTO_MODEL_ID) {
+        const { modelId } = await resolveAutoChatModel(clientRoutingHints);
+        const resolvedAllowed = await isAllowedChatModelId(modelId);
+        chatModel = resolvedAllowed ? modelId : DEFAULT_CHAT_MODEL;
+      }
+      isOllamaRequest = isLocalModel(chatModel);
     }
-    isOllamaRequest = isLocalModel(chatModel);
 
     const isToolApprovalFlow = Boolean(messages);
     const isOllamaLocal = isOllamaRequest;
+
+    if (isRuntimeDecisionSeamShadowEnabled()) {
+      const legacyPromptVariant =
+        (getChatModelWithLocalFallback(chatModel)?.promptVariant ?? "slim") as
+          | "full"
+          | "slim"
+          | "compact";
+      const legacyChatFallbackEnabled =
+        isOllamaLocal && isChatFallbackEnabled();
+      const legacyPostOllamaFailureTiers = legacyChatFallbackEnabled
+        ? getFallbackTiers()
+        : [];
+      const legacyGatewayMayFallbackToOllamaAfterFailure =
+        !isOllamaLocal && isGatewayFallbackToOllamaEnabled();
+
+      void (async () => {
+        try {
+          const seam = await resolveChatRuntimeDecision({
+            selectedChatModel,
+            isAllowedChatModelId,
+            resolveAutoModel: (hints) => resolveAutoChatModel(hints),
+            clientRoutingHints,
+          });
+          const legacy = {
+            effectiveChatModelId: chatModel,
+            isOllamaLocal,
+            promptVariant: legacyPromptVariant,
+            chatFallbackEnabled: legacyChatFallbackEnabled,
+            postOllamaFailureTiers: legacyPostOllamaFailureTiers,
+            gatewayMayFallbackToOllamaAfterFailure:
+              legacyGatewayMayFallbackToOllamaAfterFailure,
+          };
+          if (chatRuntimeDecisionShadowDiffers({ seam, legacy })) {
+            await appendShadowSeamDivergenceRecord({
+              ts: new Date().toISOString(),
+              chatId: id,
+              selectedChatModelId: selectedChatModel,
+              legacy,
+              seam,
+            });
+            agentIngestLog({
+              location: "app/(chat)/api/chat/route.ts",
+              message: "Runtime decision seam shadow mismatch",
+              hypothesisId: "runtime-decision-seam-iu4",
+              data: {
+                chatId: id,
+                selectedChatModel,
+                legacyEffective: legacy.effectiveChatModelId,
+                seamEffective: seam.effectiveChatModelId,
+                reasonCodes: seam.reasonCodes,
+              },
+            });
+          }
+        } catch {
+          /* shadow compare must never affect chat */
+        }
+      })();
+    }
 
     const chat = await getChatById({ id });
     let messagesFromDb: DBMessage[] = [];
@@ -573,9 +651,19 @@ export async function POST(request: Request) {
           "requestSuggestions",
         ] as const;
 
+        const saveMemoryForUser = saveMemory({
+          userId: session.user.id,
+          chatId: id,
+        });
+        const recallMemoryForUser = recallMemory({
+          userId: session.user.id,
+        });
+
         const companionTools = {
-          saveMemory: saveMemory({ userId: session.user.id, chatId: id }),
-          recallMemory: recallMemory({ userId: session.user.id }),
+          saveMemory: saveMemoryForUser,
+          save_memory: saveMemoryForUser,
+          recallMemory: recallMemoryForUser,
+          recall_memory: recallMemoryForUser,
           setReminder: setReminder({ userId: session.user.id, chatId: id }),
           listGoals: listGoals({ userId: session.user.id }),
           createGoal: createGoal({ userId: session.user.id }),
@@ -585,7 +673,9 @@ export async function POST(request: Request) {
 
         const companionToolNames = [
           "saveMemory",
+          "save_memory",
           "recallMemory",
+          "recall_memory",
           "setReminder",
           "listGoals",
           "createGoal",
@@ -1032,8 +1122,12 @@ export async function POST(request: Request) {
             isOllamaLocal,
             localModelClass: isOllamaLocal ? localModelClass : null,
             recentMemoryRowsInPrompt: recentMemories.length,
-            recallMemoryInvoked: toolsUsed.includes("recallMemory"),
-            saveMemoryInvoked: toolsUsed.includes("saveMemory"),
+            recallMemoryInvoked:
+              toolsUsed.includes("recallMemory") ||
+              toolsUsed.includes("recall_memory"),
+            saveMemoryInvoked:
+              toolsUsed.includes("saveMemory") ||
+              toolsUsed.includes("save_memory"),
             effectiveModelId: v2EvalStreamMetrics.effectiveModelId,
             fallbackTier: v2EvalStreamMetrics.fallbackTier,
           });

@@ -58,86 +58,70 @@ export function delegateTaskToOpenClaw({
       urgent: z.boolean().optional().describe("When true, use high priority"),
     }),
     execute: async ({ description, lane, skill, params, urgent }) => {
-      const delegationProvider = getDelegationProvider();
-      const backend = delegationProvider.backend;
-      const skills = await delegationListSkillNamesUnion();
-      const skillTrimmed = skill?.trim();
-      if (skillTrimmed && skills.length > 0 && !skills.includes(skillTrimmed)) {
-        const sample = skills.slice(0, 24).join(", ");
-        const suffix = skills.length > 24 ? ", …" : "";
-        return {
-          ok: false,
-          queued: false,
-          message: delegationUnknownSkillMessage(
-            backend,
-            skillTrimmed,
-            sample,
-            suffix
-          ),
+      try {
+        const delegationProvider = getDelegationProvider();
+        const backend = delegationProvider.backend;
+        const skills = await delegationListSkillNamesUnion();
+        const skillTrimmed = skill?.trim();
+        if (
+          skillTrimmed &&
+          skills.length > 0 &&
+          !skills.includes(skillTrimmed)
+        ) {
+          const sample = skills.slice(0, 24).join(", ");
+          const suffix = skills.length > 24 ? ", …" : "";
+          return {
+            ok: false,
+            queued: false,
+            message: delegationUnknownSkillMessage(
+              backend,
+              skillTrimmed,
+              sample,
+              suffix
+            ),
+          };
+        }
+        const resolvedSkill =
+          skillTrimmed ||
+          matchSkillFromDescription(description, skills) ||
+          "generic-task";
+        const resolvedLane = lane ?? "home";
+        const mergedParams: Record<string, unknown> = {
+          ...(params ?? {}),
+          description,
+          virgilLane: resolvedLane,
         };
-      }
-      const resolvedSkill =
-        skillTrimmed ||
-        matchSkillFromDescription(description, skills) ||
-        "generic-task";
-      const resolvedLane = lane ?? "home";
-      const mergedParams: Record<string, unknown> = {
-        ...(params ?? {}),
-        description,
-        virgilLane: resolvedLane,
-      };
-      const explicitDestructive =
-        params !== undefined &&
-        typeof params === "object" &&
-        params !== null &&
-        "destructive" in params &&
-        Boolean((params as { destructive?: unknown }).destructive);
-      const needsConfirm =
-        delegationNeedsConfirmation(description, resolvedSkill) ||
-        explicitDestructive;
+        const explicitDestructive =
+          params !== undefined &&
+          typeof params === "object" &&
+          params !== null &&
+          "destructive" in params &&
+          Boolean((params as { destructive?: unknown }).destructive);
+        const needsConfirm =
+          delegationNeedsConfirmation(description, resolvedSkill) ||
+          explicitDestructive;
 
-      const intent: ClawIntent = {
-        skill: resolvedSkill,
-        params: mergedParams,
-        priority: urgent ? "high" : "normal",
-        source: "chat",
-        requiresConfirmation: needsConfirm,
-      };
-
-      const row = await queuePendingIntent({
-        userId,
-        chatId,
-        intent,
-        skill: resolvedSkill,
-        requiresConfirmation: needsConfirm,
-      });
-
-      const online = await delegationPing();
-      if (!online) {
-        const backlog = await countDelegationBacklogForUser(userId);
-        const failure = buildDelegationSkipFailure({
-          reason: "backend_offline",
-          backend,
-          queuedBacklog: backlog,
-        });
-        return {
-          ...failure,
-          intentId: row.id,
+        const intent: ClawIntent = {
+          skill: resolvedSkill,
+          params: mergedParams,
+          priority: urgent ? "high" : "normal",
+          source: "chat",
+          requiresConfirmation: needsConfirm,
         };
-      }
 
-      if (!needsConfirm) {
-        const sendResult = await trySendPendingIntentById({
-          id: row.id,
+        const row = await queuePendingIntent({
           userId,
+          chatId,
+          intent,
+          skill: resolvedSkill,
+          requiresConfirmation: needsConfirm,
         });
-        if (sendResult.skipped) {
-          const backlog =
-            sendResult.reason === "backend_offline"
-              ? await countDelegationBacklogForUser(userId)
-              : 0;
+
+        const online = await delegationPing();
+        if (!online) {
+          const backlog = await countDelegationBacklogForUser(userId);
           const failure = buildDelegationSkipFailure({
-            reason: sendResult.reason,
+            reason: "backend_offline",
             backend,
             queuedBacklog: backlog,
           });
@@ -146,19 +130,51 @@ export function delegateTaskToOpenClaw({
             intentId: row.id,
           };
         }
-        return buildDelegationSendOutcome({
+
+        if (!needsConfirm) {
+          const sendResult = await trySendPendingIntentById({
+            id: row.id,
+            userId,
+          });
+          if (sendResult.skipped) {
+            const backlog =
+              sendResult.reason === "backend_offline"
+                ? await countDelegationBacklogForUser(userId)
+                : 0;
+            const failure = buildDelegationSkipFailure({
+              reason: sendResult.reason,
+              backend,
+              queuedBacklog: backlog,
+            });
+            return {
+              ...failure,
+              intentId: row.id,
+            };
+          }
+          return buildDelegationSendOutcome({
+            backend,
+            intentId: row.id,
+            result: sendResult.result,
+          });
+        }
+
+        return buildDelegationQueuedSuccess({
           backend,
           intentId: row.id,
-          result: sendResult.result,
+          message:
+            "This action requires owner confirmation. Approve from notifications or use approveDelegationIntent (or approveOpenClawIntent).",
         });
+      } catch (err) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Unknown error queuing delegation.";
+        return {
+          ok: false,
+          queued: false,
+          message: msg,
+        };
       }
-
-      return buildDelegationQueuedSuccess({
-        backend,
-        intentId: row.id,
-        message:
-          "This action requires owner confirmation. Approve from notifications or use approveDelegationIntent (or approveOpenClawIntent).",
-      });
     },
   });
 }

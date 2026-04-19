@@ -29,7 +29,11 @@ export type ChatTools = {
   updateDocument: InferUITool<ReturnType<typeof updateDocument>>;
   requestSuggestions: InferUITool<ReturnType<typeof requestSuggestions>>;
   saveMemory: InferUITool<ReturnType<typeof saveMemory>>;
+  /** Same tool as `saveMemory`; some models emit snake_case tool names. */
+  save_memory: InferUITool<ReturnType<typeof saveMemory>>;
   recallMemory: InferUITool<ReturnType<typeof recallMemory>>;
+  /** Same tool as `recallMemory`; some models emit snake_case tool names. */
+  recall_memory: InferUITool<ReturnType<typeof recallMemory>>;
   setReminder: InferUITool<ReturnType<typeof setReminder>>;
   submitProductOpportunity: InferUITool<
     ReturnType<typeof submitProductOpportunity>

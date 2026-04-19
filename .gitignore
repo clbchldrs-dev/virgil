@@ -49,3 +49,4 @@ docs/personality/Virgil_personality_synthesis.docx
 workspace/v2-eval/interactions.jsonl
 workspace/v2-eval/traces.jsonl
 workspace/v2-eval/costs.jsonl
+workspace/v2-eval/shadow-seam-divergence.jsonl

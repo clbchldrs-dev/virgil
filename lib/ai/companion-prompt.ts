@@ -41,7 +41,7 @@ function buildMemoryVsDelegationGuidance(
   delegation?: VirgilLaneDelegationHint
 ): string {
   const core = `Memory vs delegation:
-- **recallMemory** and **saveMemory** read and write the owner's stored memories in this app's database. They are not a separate "Hermes memory service" or "OpenClaw memory" — use them for long-term recall in-process.
+- **recallMemory** / **recall_memory** and **saveMemory** / **save_memory** read and write the owner's stored memories in this app's database (same tools; use whichever names appear in your tool list). They are not a separate "Hermes memory service" or "OpenClaw memory" — use them for long-term recall in-process.
 `;
 
   if (delegation === undefined) {
