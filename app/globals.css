@@ -951,12 +951,12 @@ textarea:focus-visible {
   }
 }
 
-/* Empty-state only: pair of glowing eyes near top (see shell.tsx) */
-.pixel-chat-panel .chat-creepy-eyes {
+/* Empty-state only: eyes + pixel bowtie near top (see shell.tsx) */
+.pixel-chat-panel .chat-creepy-face {
   align-items: center;
   display: flex;
-  gap: clamp(3rem, 14vw, 6.5rem);
-  justify-content: center;
+  flex-direction: column;
+  gap: 0.45rem;
   left: 50%;
   opacity: 0.72;
   pointer-events: none;
@@ -964,6 +964,31 @@ textarea:focus-visible {
   top: clamp(2.5rem, 10vh, 5.5rem);
   translate: -50% 0;
   z-index: 1;
+}
+
+.pixel-chat-panel .chat-creepy-eyes {
+  align-items: center;
+  display: flex;
+  gap: clamp(3rem, 14vw, 6.5rem);
+  justify-content: center;
+}
+
+.pixel-chat-panel .chat-creepy-bowtie {
+  filter: drop-shadow(0 0 5px oklch(0.72 0.18 58 / 0.55));
+}
+
+.pixel-chat-panel .chat-creepy-bowtie__svg {
+  animation: creepy-eyes-glow 5.2s ease-in-out infinite;
+  display: block;
+  height: auto;
+  image-rendering: pixelated;
+  transform-box: fill-box;
+  transform-origin: center;
+  width: clamp(1.85rem, 5vw, 2.5rem);
+}
+
+.pixel-chat-panel .chat-creepy-bowtie__pixel {
+  fill: oklch(0.76 0.17 58);
 }
 
 .pixel-chat-panel .chat-creepy-eye {
@@ -1258,6 +1283,7 @@ textarea:focus-visible {
     opacity: 0.68;
   }
 
+  .pixel-chat-panel .chat-creepy-bowtie__svg,
   .pixel-chat-panel .chat-creepy-eye {
     animation: none;
     filter: brightness(1);
