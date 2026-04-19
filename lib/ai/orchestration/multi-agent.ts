@@ -3,6 +3,7 @@ import { generateText, type ModelMessage } from "ai";
 import { isLocalModel } from "@/lib/ai/models";
 import type { OllamaLanguageModelOptions } from "@/lib/ai/providers";
 import { getLanguageModel } from "@/lib/ai/providers";
+import { VIRGIL_SYSTEM_PERSONA_DIVIDER } from "@/lib/ai/virgil-system-markers";
 import { isProductionEnvironment } from "@/lib/constants";
 import { buildPlannerSystemPrompt } from "./planner-prompt";
 
@@ -30,12 +31,29 @@ export function mergePlannerOutlineIntoSystemPrompt(
   if (!trimmed) {
     return baseSystem;
   }
-  return `${baseSystem}
+  const dividerIdx = baseSystem.indexOf(VIRGIL_SYSTEM_PERSONA_DIVIDER);
+  if (dividerIdx === -1) {
+    return `${baseSystem}
 
 ---
 Executor outline (follow this plan; do not dump it verbatim unless it helps the user):
 ${trimmed}
 ---`;
+  }
+  const head = baseSystem.slice(
+    0,
+    dividerIdx + VIRGIL_SYSTEM_PERSONA_DIVIDER.length
+  );
+  const sessionAndTools = baseSystem.slice(
+    dividerIdx + VIRGIL_SYSTEM_PERSONA_DIVIDER.length
+  );
+  return `${head}
+---
+Executor outline (follow this plan; do not dump it verbatim unless it helps the user):
+${trimmed}
+---
+
+${sessionAndTools}`;
 }
 
 function textFromUserContent(content: ModelMessage["content"]): string {

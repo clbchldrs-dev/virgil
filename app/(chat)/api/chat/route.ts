@@ -30,13 +30,6 @@ import { buildCompanionSystemPrompt } from "@/lib/ai/companion-prompt";
 import { buildLocalChatTitleFromUserMessage } from "@/lib/ai/local-title";
 import { isMem0Configured, mem0Add } from "@/lib/ai/mem0-client";
 import { resolveAutoChatModel } from "@/lib/ai/model-routing";
-import { resolveChatRuntimeDecision } from "@/lib/ai/runtime-decision/resolve-chat-runtime-decision";
-import {
-  appendShadowSeamDivergenceRecord,
-  chatRuntimeDecisionShadowDiffers,
-  isRuntimeDecisionSeamAuthoritativeEnabled,
-  isRuntimeDecisionSeamShadowEnabled,
-} from "@/lib/ai/runtime-decision/shadow";
 import {
   DEFAULT_CHAT_MODEL,
   getChatModelWithLocalFallback,
@@ -64,6 +57,13 @@ import {
   getOllamaErrorStreamMessage,
   getOllamaErrorUserPayload,
 } from "@/lib/ai/providers";
+import { resolveChatRuntimeDecision } from "@/lib/ai/runtime-decision/resolve-chat-runtime-decision";
+import {
+  appendShadowSeamDivergenceRecord,
+  chatRuntimeDecisionShadowDiffers,
+  isRuntimeDecisionSeamAuthoritativeEnabled,
+  isRuntimeDecisionSeamShadowEnabled,
+} from "@/lib/ai/runtime-decision/shadow";
 import {
   buildCompactCompanionPrompt,
   buildSlimCompanionPrompt,
@@ -221,9 +221,7 @@ export async function POST(request: Request) {
       chatModel = seam.effectiveChatModelId;
       isOllamaRequest = seam.isOllamaLocal;
     } else {
-      chatModel = selectedModelAllowed
-        ? selectedChatModel
-        : DEFAULT_CHAT_MODEL;
+      chatModel = selectedModelAllowed ? selectedChatModel : DEFAULT_CHAT_MODEL;
       if (chatModel === VIRGIL_AUTO_MODEL_ID) {
         const { modelId } = await resolveAutoChatModel(clientRoutingHints);
         const resolvedAllowed = await isAllowedChatModelId(modelId);
@@ -236,11 +234,8 @@ export async function POST(request: Request) {
     const isOllamaLocal = isOllamaRequest;
 
     if (isRuntimeDecisionSeamShadowEnabled()) {
-      const legacyPromptVariant =
-        (getChatModelWithLocalFallback(chatModel)?.promptVariant ?? "slim") as
-          | "full"
-          | "slim"
-          | "compact";
+      const legacyPromptVariant = (getChatModelWithLocalFallback(chatModel)
+        ?.promptVariant ?? "slim") as "full" | "slim" | "compact";
       const legacyChatFallbackEnabled =
         isOllamaLocal && isChatFallbackEnabled();
       const legacyPostOllamaFailureTiers = legacyChatFallbackEnabled
@@ -593,6 +588,10 @@ export async function POST(request: Request) {
           }
         }
 
+        // Keep persona in `system` (not embedded in `messages`) so providers send the
+        // frame before the conversation. `buildCompanionSystemPrompt` prefixes
+        // `buildVirgilPersonaFrame` and uses VIRGIL_SYSTEM_PERSONA_DIVIDER so session/tool
+        // text never precedes voice rules inside that string.
         const commonStreamArgsBase = {
           model: getLanguageModel(chatModel, ollamaLanguageOptions),
           system: executorSystemPrompt,

@@ -110,5 +110,6 @@ When configured: **submitProductOpportunity** (GitHub product feedback, only aft
 ## 12. Code sync policy
 
 1. Change **this document** when intentionally altering voice or rules.
-2. Update **`buildCompanionSystemPrompt`**, **`buildSlimCompanionPrompt`**, **`buildCompactCompanionPrompt`**, and **`buildGoalGuidancePromptAppendix`** to match.
-3. Run **`pnpm stable:check`** and extend **`tests/unit/local-context.test.ts`** if prompt invariants change.
+2. Update **`buildCompanionSystemPrompt`** (and **`buildVirgilPersonaFrame`** when splitting identity from the rest), **`buildSlimCompanionPrompt`**, **`buildCompactCompanionPrompt`**, and **`buildGoalGuidancePromptAppendix`** to match.
+3. **System prompt ordering:** The full gateway prompt is one `system` string passed to `streamText` (never appended after `messages`). Inside it, **`buildVirgilPersonaFrame`** is always first, then **`VIRGIL_SYSTEM_PERSONA_DIVIDER`** (`lib/ai/virgil-system-markers.ts`), then operating habits, retrieved memory/health/goals/geo, and tool/integration blocks. Optional multi-agent planner outlines are inserted **immediately after** the persona frame (via **`mergePlannerOutlineIntoSystemPrompt`**), not after tool docs.
+4. Run **`pnpm stable:check`** and extend **`tests/unit/local-context.test.ts`** if prompt invariants change.

@@ -6,6 +6,7 @@ import {
   isVirgilMultiAgentEnabled,
   mergePlannerOutlineIntoSystemPrompt,
 } from "@/lib/ai/orchestration/multi-agent";
+import { VIRGIL_SYSTEM_PERSONA_DIVIDER } from "@/lib/ai/virgil-system-markers";
 
 test("isVirgilMultiAgentEnabled respects env", () => {
   const prev = process.env.VIRGIL_MULTI_AGENT_ENABLED;
@@ -49,7 +50,21 @@ test("getPlannerModelId uses override when set", () => {
   }
 });
 
-test("mergePlannerOutlineIntoSystemPrompt appends outline", () => {
+test("mergePlannerOutlineIntoSystemPrompt inserts outline after persona frame when divider present", () => {
+  const base = `Persona only.${VIRGIL_SYSTEM_PERSONA_DIVIDER}Memory and tool section.`;
+  const merged = mergePlannerOutlineIntoSystemPrompt(base, "1. Do X\n2. Do Y");
+  const outlineAt = merged.indexOf("Executor outline");
+  const sessionAt = merged.indexOf("Memory and tool section.");
+  assert.ok(outlineAt !== -1);
+  assert.ok(sessionAt !== -1);
+  assert.ok(
+    outlineAt < sessionAt,
+    "outline should appear after persona divider and before session/tool body"
+  );
+  assert.match(merged, /Do X/);
+});
+
+test("mergePlannerOutlineIntoSystemPrompt appends outline when divider missing", () => {
   const merged = mergePlannerOutlineIntoSystemPrompt(
     "Base.",
     "1. Do X\n2. Do Y"

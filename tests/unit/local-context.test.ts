@@ -40,6 +40,30 @@ test("Virgil companion prompts emphasize chief-of-staff stance without sycophanc
   assert.match(slimPrompt, /sycophancy/i);
 });
 
+test("full companion system prompt places persona frame before session and tool sections", async () => {
+  const companion = await import("../../lib/ai/companion-prompt").catch(
+    () => null
+  );
+  assert.ok(companion, "expected companion-prompt module");
+
+  const p = companion.buildCompanionSystemPrompt({
+    ownerName: "Caleb",
+    memories: [],
+    requestHints: {
+      latitude: undefined,
+      longitude: undefined,
+      city: undefined,
+      country: undefined,
+    },
+    supportsTools: true,
+  });
+  const personaIdx = p.indexOf("You are Virgil");
+  const dividerIdx = p.indexOf("## Session, memory, and tool context");
+  const opsIdx = p.indexOf("Operating habits:");
+  assert.ok(personaIdx !== -1 && dividerIdx !== -1 && opsIdx !== -1);
+  assert.ok(personaIdx < dividerIdx && dividerIdx < opsIdx);
+});
+
 test("default slim assistant prompt is personal, not front-desk fallback", async () => {
   const slim = await import("../../lib/ai/slim-prompt").catch(() => null);
   assert.ok(slim, "expected slim-prompt module");
