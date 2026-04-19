@@ -1002,6 +1002,7 @@ textarea:focus-visible {
   inset: 0;
   pointer-events: none;
   position: absolute;
+  z-index: 2;
 }
 
 .pixel-chat-panel .chat-creepy-eye-anchor {
@@ -1042,6 +1043,8 @@ textarea:focus-visible {
 .pixel-chat-panel .chat-creepy-eye {
   animation: creepy-eyes-glow 5.2s ease-in-out infinite;
   aspect-ratio: 2.6 / 1;
+  /* Was a flex item before; nested spans need a box for width/background to apply */
+  display: inline-block;
   background:
     radial-gradient(
       ellipse 32% 88% at 50% 50%,
