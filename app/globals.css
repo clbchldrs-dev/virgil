@@ -956,7 +956,7 @@ textarea:focus-visible {
   align-items: center;
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: clamp(1.2rem, 5vmin, 2rem);
   left: 50%;
   opacity: 0.72;
   pointer-events: none;
@@ -984,7 +984,7 @@ textarea:focus-visible {
   opacity: 1;
   transform-box: fill-box;
   transform-origin: center;
-  width: clamp(1.85rem, 5vw, 2.5rem);
+  width: clamp(2.25rem, 7vw, 3.25rem);
 }
 
 .pixel-chat-panel .chat-creepy-bowtie__pixel {
