@@ -261,57 +261,63 @@ export function ChatShell() {
               )}
               {chatPhase === "invitation" && (
                 <div aria-hidden="true" className="chat-creepy-face">
-                  <div className="chat-creepy-skull-wrap">
-                    <svg
-                      aria-hidden="true"
-                      className="chat-creepy-skull__svg"
-                      height="15"
-                      preserveAspectRatio="xMidYMid meet"
-                      shapeRendering="crispEdges"
-                      viewBox="0 0 20 15"
-                      width="20"
-                    >
-                      {CREEPY_SKULL_PIXELS.map(([x, y]) => (
-                        <rect
-                          className={cn(
-                            "chat-creepy-skull__pixel",
-                            y === CREEPY_SKULL_GRIN_ROW &&
-                              "chat-creepy-skull__pixel--tooth"
-                          )}
-                          height="1"
-                          key={`sk-${x}-${y}`}
-                          width="1"
-                          x={x}
-                          y={y}
-                        />
-                      ))}
-                    </svg>
-                    <div className="chat-creepy-eyes">
-                      <span className="chat-creepy-eye" />
-                      <span className="chat-creepy-eye" />
+                  <div className="chat-creepy-mascot">
+                    <div className="chat-creepy-skull-wrap">
+                      <svg
+                        aria-hidden="true"
+                        className="chat-creepy-skull__svg"
+                        height="15"
+                        preserveAspectRatio="xMidYMid meet"
+                        shapeRendering="crispEdges"
+                        viewBox="0 0 20 15"
+                        width="20"
+                      >
+                        {CREEPY_SKULL_PIXELS.map(([x, y]) => (
+                          <rect
+                            className={cn(
+                              "chat-creepy-skull__pixel",
+                              y === CREEPY_SKULL_GRIN_ROW &&
+                                "chat-creepy-skull__pixel--tooth"
+                            )}
+                            height="1"
+                            key={`sk-${x}-${y}`}
+                            width="1"
+                            x={x}
+                            y={y}
+                          />
+                        ))}
+                      </svg>
+                      <div className="chat-creepy-eyes">
+                        <span className="chat-creepy-eye-anchor">
+                          <span className="chat-creepy-eye" />
+                        </span>
+                        <span className="chat-creepy-eye-anchor">
+                          <span className="chat-creepy-eye" />
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="chat-creepy-bowtie">
-                    <svg
-                      aria-hidden="true"
-                      className="chat-creepy-bowtie__svg"
-                      height="5"
-                      preserveAspectRatio="xMidYMid meet"
-                      shapeRendering="crispEdges"
-                      viewBox="0 0 15 5"
-                      width="15"
-                    >
-                      {CREEPY_BOWTIE_PIXELS.map(([x, y]) => (
-                        <rect
-                          className="chat-creepy-bowtie__pixel"
-                          height="1"
-                          key={`${x}-${y}`}
-                          width="1"
-                          x={x}
-                          y={y}
-                        />
-                      ))}
-                    </svg>
+                    <div className="chat-creepy-bowtie">
+                      <svg
+                        aria-hidden="true"
+                        className="chat-creepy-bowtie__svg"
+                        height="5"
+                        preserveAspectRatio="xMidYMid meet"
+                        shapeRendering="crispEdges"
+                        viewBox="0 0 15 5"
+                        width="15"
+                      >
+                        {CREEPY_BOWTIE_PIXELS.map(([x, y]) => (
+                          <rect
+                            className="chat-creepy-bowtie__pixel"
+                            height="1"
+                            key={`${x}-${y}`}
+                            width="1"
+                            x={x}
+                            y={y}
+                          />
+                        ))}
+                      </svg>
+                    </div>
                   </div>
                 </div>
               )}

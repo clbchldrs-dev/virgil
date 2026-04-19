@@ -951,12 +951,11 @@ textarea:focus-visible {
   }
 }
 
-/* Empty-state only: pixel skull + eyes + bowtie below “chin” (see shell.tsx) */
+/* Empty-state mascot: skull + eyes + bowtie share one width (see shell.tsx) */
 .pixel-chat-panel .chat-creepy-face {
   align-items: center;
   display: flex;
   flex-direction: column;
-  gap: clamp(2.75rem, 11vmin, 4.25rem);
   left: 50%;
   opacity: 0.72;
   pointer-events: none;
@@ -966,11 +965,20 @@ textarea:focus-visible {
   z-index: 1;
 }
 
+/* Single column: bowtie width = 15/20 of skull grid; centered with skull. */
+.pixel-chat-panel .chat-creepy-mascot {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  max-width: min(12rem, 92vw);
+  width: clamp(8rem, 22vw, 12rem);
+}
+
 .pixel-chat-panel .chat-creepy-skull-wrap {
   aspect-ratio: 20 / 15;
-  max-width: min(12rem, 92vw);
+  flex-shrink: 0;
   position: relative;
-  width: clamp(8rem, 22vw, 12rem);
+  width: 100%;
 }
 
 .pixel-chat-panel .chat-creepy-skull__svg {
@@ -989,21 +997,31 @@ textarea:focus-visible {
   fill: oklch(0.9 0.025 82);
 }
 
+/* Eye anchors: socket centers from skull grid row `.XX..XXXX..XXXX..XX.` → x≈3.5 & 15.5 / 20; y≈5.5 / 15. Inner .chat-creepy-eye keeps transform for blink animation. */
 .pixel-chat-panel .chat-creepy-eyes {
-  align-items: center;
-  display: flex;
-  gap: clamp(1.1rem, 4vw, 1.85rem);
-  justify-content: center;
-  left: 50%;
+  inset: 0;
   pointer-events: none;
   position: absolute;
-  top: 34%;
-  translate: -50% -50%;
-  width: 76%;
+}
+
+.pixel-chat-panel .chat-creepy-eye-anchor {
+  left: calc(3.5 / 20 * 100%);
+  position: absolute;
+  top: calc(5.5 / 15 * 100%);
+  transform: translate(-50%, -50%);
+}
+
+.pixel-chat-panel .chat-creepy-eye-anchor:nth-child(2) {
+  left: calc(15.5 / 20 * 100%);
 }
 
 .pixel-chat-panel .chat-creepy-bowtie {
+  display: flex;
+  flex-shrink: 0;
   filter: drop-shadow(0 0 5px oklch(0.55 0.22 27 / 0.55));
+  justify-content: center;
+  margin-top: -0.2rem;
+  width: 100%;
 }
 
 .pixel-chat-panel .chat-creepy-bowtie__svg {
@@ -1013,7 +1031,8 @@ textarea:focus-visible {
   opacity: 1;
   transform-box: fill-box;
   transform-origin: center;
-  width: clamp(2.25rem, 7vw, 3.25rem);
+  /* 15/20: same horizontal scale as skull pixel grid */
+  width: 75%;
 }
 
 .pixel-chat-panel .chat-creepy-bowtie__pixel {
@@ -1046,7 +1065,7 @@ textarea:focus-visible {
   width: clamp(1.85rem, 5vw, 2.65rem);
 }
 
-.pixel-chat-panel .chat-creepy-eye:nth-child(2) {
+.pixel-chat-panel .chat-creepy-eye-anchor:nth-child(2) .chat-creepy-eye {
   animation-delay: 0.35s;
 }
 
