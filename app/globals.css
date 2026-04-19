@@ -956,7 +956,7 @@ textarea:focus-visible {
   align-items: center;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.7rem;
   left: 50%;
   opacity: 0.72;
   pointer-events: none;
@@ -974,21 +974,21 @@ textarea:focus-visible {
 }
 
 .pixel-chat-panel .chat-creepy-bowtie {
-  filter: drop-shadow(0 0 5px oklch(0.72 0.18 58 / 0.55));
+  filter: drop-shadow(0 0 5px oklch(0.55 0.22 27 / 0.55));
 }
 
 .pixel-chat-panel .chat-creepy-bowtie__svg {
-  animation: creepy-eyes-glow 5.2s ease-in-out infinite;
   display: block;
   height: auto;
   image-rendering: pixelated;
+  opacity: 1;
   transform-box: fill-box;
   transform-origin: center;
   width: clamp(1.85rem, 5vw, 2.5rem);
 }
 
 .pixel-chat-panel .chat-creepy-bowtie__pixel {
-  fill: oklch(0.76 0.17 58);
+  fill: oklch(0.52 0.22 27);
 }
 
 .pixel-chat-panel .chat-creepy-eye {
@@ -1283,7 +1283,6 @@ textarea:focus-visible {
     opacity: 0.68;
   }
 
-  .pixel-chat-panel .chat-creepy-bowtie__svg,
   .pixel-chat-panel .chat-creepy-eye {
     animation: none;
     filter: brightness(1);
