@@ -522,13 +522,26 @@ Creates or updates the demo user `demo@virgil.local` with a bcrypt password so *
 
 1. Push the repo to GitHub (or use Vercel CLI `vercel link`).
 2. **Import** the repo in Vercel → set the same env vars in **Project → Settings → Environment Variables** (except you often **omit** `AI_GATEWAY_API_KEY` in production if OIDC is used—see [Deployment (production)](#deployment-production)). For a **copy order** and phone/HTTPS origins (`AUTH_URL` + `NEXT_PUBLIC_APP_URL`), see [docs/vercel-env-setup.md](docs/vercel-env-setup.md).
-3. Deploy, then run `pnpm db:migrate` against production **or** run migrations from CI / local with `POSTGRES_URL` pointing at production (careful).
+3. **This repo:** the Vercel project has **Git integration enabled** (GitHub connected). **Each push to `main` triggers a Production deployment** automatically—see [Git integration (automatic deploys)](#git-integration-automatic-deploys). You do not need `vercel --prod` for that path unless you intentionally deploy outside Git.
+4. After a deploy, run `pnpm db:migrate` against production **when migrations changed** — Git push does **not** run migrations. Use CI / local with `POSTGRES_URL` pointing at production (careful).
 
 More detail: [Deployment (production)](#deployment-production), [docs/vercel-env-setup.md](docs/vercel-env-setup.md).
 
 ## Deployment (production)
 
 Vercel and production env: provisioning, deploy commands, **environment variable summary**, quotas, and cost posture. **Vercel dashboard checklist** (including `AUTH_URL` / `NEXT_PUBLIC_APP_URL`): [docs/vercel-env-setup.md](docs/vercel-env-setup.md).
+
+### Git integration (automatic deploys)
+
+**This repository’s Vercel project uses the normal Git integration:** the GitHub repo is linked, and deployments are driven from Git—not only from manual CLI uploads.
+
+| Fact | Implication |
+|------|-------------|
+| **Pushes to `main`** | Trigger **Production** deployments on Vercel automatically (after build). |
+| **Pull requests** | Typically get **Preview** deployments (default Vercel behavior). |
+| **Database migrations** | Are **not** run by Vercel’s Git deploy. After merging schema changes, someone must run **`pnpm db:migrate`** against the production database (or an automated job you add). |
+
+**Agents:** Assume fixes merged to **`main`** ship to production once the Vercel deployment succeeds—check **Project → Deployments** if something “works locally but not on Vercel.” Do not instruct users as if deploys were exclusively manual unless their project has disconnected Git. When validating behavior on the hosted app, prefer confirming the latest **`main`** commit appears on the deployment.
 
 ### Prerequisites
 
@@ -586,6 +599,8 @@ Set the output as `AUTH_SECRET` in both `.env.local` and Vercel env vars.
 
 ### 4. Deploy to Vercel
 
+**Git-first (this repo):** With [Git integration](#git-integration-automatic-deploys) enabled, **`git push origin main`** is enough to ship Production—no CLI deploy required for that workflow.
+
 ```bash
 # Install Vercel CLI
 npm i -g vercel
@@ -596,7 +611,7 @@ vercel link
 # Pull Development env vars from Vercel into .env.local (see docs/vercel-env-setup.md)
 pnpm env:vercel:pull
 
-# Deploy
+# Deploy (optional if you use Git integration + main)
 vercel --prod
 ```
 
