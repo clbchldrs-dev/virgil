@@ -17,6 +17,9 @@ const KEYS = [
   "HERMES_SKILLS_PATH",
   "HERMES_HEALTH_PATH",
   "HERMES_SHARED_SECRET",
+  "NEXT_PUBLIC_APP_URL",
+  "VERCEL_URL",
+  "PORT",
 ] as const;
 
 function withEnv(
@@ -47,14 +50,57 @@ function withEnv(
   }
 }
 
-test("Hermes config returns null and false when HTTP URL missing", () => {
-  withEnv({ HERMES_HTTP_URL: undefined }, () => {
-    assert.equal(getHermesHttpOrigin(), null);
-    assert.equal(isHermesConfigured(), false);
-  });
+test("Hermes defaults to the in-app bridge when HTTP URL is missing", () => {
+  withEnv(
+    { HERMES_HTTP_URL: undefined, VERCEL_URL: undefined, PORT: undefined },
+    () => {
+      assert.equal(getHermesHttpOrigin(), "http://127.0.0.1:3000");
+      assert.equal(isHermesConfigured(), true);
+    }
+  );
 });
 
-test("Hermes config normalizes URL to origin", () => {
+test("Hermes in-app default honors PORT", () => {
+  withEnv(
+    {
+      HERMES_HTTP_URL: undefined,
+      VERCEL_URL: undefined,
+      NEXT_PUBLIC_APP_URL: undefined,
+      PORT: "4000",
+    },
+    () => {
+      assert.equal(getHermesHttpOrigin(), "http://127.0.0.1:4000");
+    }
+  );
+});
+
+test("Hermes in-app default honors NEXT_PUBLIC_APP_URL", () => {
+  withEnv(
+    {
+      HERMES_HTTP_URL: undefined,
+      VERCEL_URL: undefined,
+      NEXT_PUBLIC_APP_URL: "https://app.example.com/",
+    },
+    () => {
+      assert.equal(getHermesHttpOrigin(), "https://app.example.com");
+    }
+  );
+});
+
+test("Hermes in-app default uses VERCEL_URL over NEXT_PUBLIC_APP_URL", () => {
+  withEnv(
+    {
+      HERMES_HTTP_URL: undefined,
+      VERCEL_URL: "myapp-abc123.vercel.app",
+      NEXT_PUBLIC_APP_URL: "https://other.example.com",
+    },
+    () => {
+      assert.equal(getHermesHttpOrigin(), "https://myapp-abc123.vercel.app");
+    }
+  );
+});
+
+test("Hermes config normalizes explicit URL to origin", () => {
   withEnv(
     { HERMES_HTTP_URL: "https://example.internal:8765/api/health?x=1" },
     () => {
@@ -64,14 +110,25 @@ test("Hermes config normalizes URL to origin", () => {
   );
 });
 
-test("Hermes config rejects unsupported protocols", () => {
-  withEnv({ HERMES_HTTP_URL: "ftp://example.internal" }, () => {
-    assert.equal(getHermesHttpOrigin(), null);
-    assert.equal(isHermesConfigured(), false);
-  });
+test("Hermes config falls back to in-app when explicit URL has unsupported protocol", () => {
+  withEnv(
+    {
+      HERMES_HTTP_URL: "ftp://example.internal",
+      VERCEL_URL: undefined,
+      PORT: undefined,
+      NEXT_PUBLIC_APP_URL: undefined,
+    },
+    () => {
+      // Unsupported protocol => explicit value rejected => origin is null
+      // (we do NOT silently fall back to in-app when the user intentionally
+      // set a malformed value).
+      assert.equal(getHermesHttpOrigin(), null);
+      assert.equal(isHermesConfigured(), false);
+    }
+  );
 });
 
-test("Hermes path helpers return defaults", () => {
+test("Hermes path helpers default to in-app bridge paths", () => {
   withEnv(
     {
       HERMES_EXECUTE_PATH: undefined,
@@ -80,10 +137,10 @@ test("Hermes path helpers return defaults", () => {
       HERMES_HEALTH_PATH: undefined,
     },
     () => {
-      assert.equal(getHermesExecutePath(), "/api/execute");
-      assert.equal(getHermesPendingPath(), "/api/pending");
-      assert.equal(getHermesSkillsPath(), "/api/skills");
-      assert.equal(getHermesHealthPath(), "/health");
+      assert.equal(getHermesExecutePath(), "/api/hermes-bridge/execute");
+      assert.equal(getHermesPendingPath(), "/api/hermes-bridge/pending");
+      assert.equal(getHermesSkillsPath(), "/api/hermes-bridge/skills");
+      assert.equal(getHermesHealthPath(), "/api/hermes-bridge/health");
     }
   );
 });

@@ -175,11 +175,13 @@ export function AppSidebar({ user }: { user: User | undefined }) {
     }
 
     clearChatHistorySwrPageCaches(cache);
-    await mutate(unstable_serialize(getChatHistoryPaginationKey), [
-      EMPTY_CHAT_HISTORY_PAGE,
-    ], {
-      revalidate: false,
-    });
+    await mutate(
+      unstable_serialize(getChatHistoryPaginationKey),
+      [EMPTY_CHAT_HISTORY_PAGE],
+      {
+        revalidate: false,
+      }
+    );
 
     router.replace(`${BASE_PATH}/`);
     toast.success("All chats deleted");

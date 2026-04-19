@@ -11,6 +11,7 @@ import {
   firstSuggestion,
   MIDDLE_CONTINUE_SUGGESTION,
   pickRandom,
+  VIRGIL_CONTINUE_SEARCH_PARAM,
 } from "@/lib/empty-suggestion-pools";
 import type { ChatMessage } from "@/lib/types";
 import { cn, fetcher, generateUUID } from "@/lib/utils";
@@ -131,7 +132,10 @@ function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
     setOpenMobile(false);
     // `router.push("/")` is a no-op when already at `/`, so the chat id never rotates.
     // A fresh `/chat/:id` always navigates and matches "new thread" intent.
-    router.push(`${basePath}/chat/${generateUUID()}`);
+    // Query flag triggers auto-send of VIRGIL_CONTINUE_DEFAULT_MESSAGE in ActiveChatProvider.
+    router.push(
+      `${basePath}/chat/${generateUUID()}?${VIRGIL_CONTINUE_SEARCH_PARAM}=1`
+    );
   };
 
   return (

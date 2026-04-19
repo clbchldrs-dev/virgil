@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, test } from "node:test";
+import type { ChatRuntimePreflightDecision } from "@/lib/ai/runtime-decision/schema";
+import { DECISION_SCHEMA_VERSION } from "@/lib/ai/runtime-decision/schema";
 import {
   chatRuntimeDecisionShadowDiffers,
   isRuntimeDecisionSeamAuthoritativeEnabled,
   isRuntimeDecisionSeamShadowEnabled,
 } from "@/lib/ai/runtime-decision/shadow";
-import { DECISION_SCHEMA_VERSION } from "@/lib/ai/runtime-decision/schema";
-import type { ChatRuntimePreflightDecision } from "@/lib/ai/runtime-decision/schema";
 
 function baseSeam(
   overrides: Partial<ChatRuntimePreflightDecision> = {}
@@ -78,7 +78,9 @@ describe("runtime decision seam shadow", () => {
   });
 
   test("chatRuntimeDecisionShadowDiffers when effective model differs", () => {
-    const seam = baseSeam({ effectiveChatModelId: "google/gemini-2.5-flash-lite" });
+    const seam = baseSeam({
+      effectiveChatModelId: "google/gemini-2.5-flash-lite",
+    });
     assert.equal(
       chatRuntimeDecisionShadowDiffers({
         seam,

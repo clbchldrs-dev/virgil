@@ -44,7 +44,7 @@ const CREEPY_SKULL_GRIN_ROW = 9;
  *   ..XXXXXXXXXXXXXXXX..
  *   .XXXXXXXXXXXXXXXXXX.
  *   .XXXXXXXXXXXXXXXXXX.
- *   .XX..XXXX..XXXX..XX.   ← three gaps (..); orange eyes in outer two only (not middle)
+ *   .XX..XXXX..XXXX..XX.   ← outer socket centers at x=4 & 16 / 20 (CSS); middle gap unused
  *   .XX..XXXX..XXXX..XX.
  *   .XX..XXXX..XXXX..XX.
  *   XX..XX..XXXX..XX..XX   ← cheek flare

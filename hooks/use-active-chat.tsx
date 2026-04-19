@@ -27,6 +27,10 @@ import type { ClientRoutingHints } from "@/lib/ai/model-routing";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { describeChatError } from "@/lib/chat-error-display";
 import type { Vote } from "@/lib/db/schema";
+import {
+  VIRGIL_CONTINUE_DEFAULT_MESSAGE,
+  VIRGIL_CONTINUE_SEARCH_PARAM,
+} from "@/lib/empty-suggestion-pools";
 import { extractChatIdFromPathname } from "@/lib/path-without-base";
 import type { ChatMessage } from "@/lib/types";
 import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
@@ -258,6 +262,35 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       });
     }
   }, [sendMessage, chatId]);
+
+  const virgilContinueHandledForChatIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    virgilContinueHandledForChatIdRef.current = null;
+  }, [chatId]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get(VIRGIL_CONTINUE_SEARCH_PARAM) !== "1") {
+      return;
+    }
+    if (messages.length > 0) {
+      return;
+    }
+    if (virgilContinueHandledForChatIdRef.current === chatId) {
+      return;
+    }
+    virgilContinueHandledForChatIdRef.current = chatId;
+
+    window.history.replaceState(
+      {},
+      "",
+      `${basePath}/chat/${chatId}${window.location.hash}`
+    );
+    sendMessage({
+      role: "user" as const,
+      parts: [{ type: "text", text: VIRGIL_CONTINUE_DEFAULT_MESSAGE }],
+    });
+  }, [sendMessage, chatId, messages.length, basePath]);
 
   useAutoResume({
     autoResume: !isNewChat && !!chatData,

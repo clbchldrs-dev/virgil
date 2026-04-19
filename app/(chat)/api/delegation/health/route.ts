@@ -4,6 +4,10 @@ import {
   getPendingConfirmationsForUser,
 } from "@/lib/db/queries";
 import {
+  isDelegationPollPrimaryActive,
+  isDelegationPollPrimaryEnabled,
+} from "@/lib/integrations/delegation-poll-config";
+import {
   delegationPing,
   getDelegationProvider,
   isDelegationConfigured,
@@ -19,12 +23,27 @@ import {
   pingOpenClaw,
 } from "@/lib/integrations/openclaw-client";
 import { isOpenClawConfigured } from "@/lib/integrations/openclaw-config";
-import {
-  isDelegationPollPrimaryActive,
-  isDelegationPollPrimaryEnabled,
-} from "@/lib/integrations/delegation-poll-config";
 
 export const maxDuration = 10;
+
+function buildOfflineMessage(args: {
+  delegationOnline: boolean;
+  queuedBacklog: number;
+  pollPrimaryActive: boolean;
+  backendLabel: string;
+}): string | null {
+  if (args.delegationOnline) {
+    return null;
+  }
+  if (args.queuedBacklog === 0) {
+    return null;
+  }
+  const backlog = `${String(args.queuedBacklog)} task(s) queued`;
+  if (args.pollPrimaryActive) {
+    return `Delegation offline — ${backlog}. Start the local poll worker (pnpm virgil:start on the Mac) to drain.`;
+  }
+  return `Delegation offline — ${backlog}. Run \`pnpm virgil:start\` locally and make sure the OpenClaw tunnel is up (pnpm virgil:status for details).`;
+}
 
 export async function GET() {
   const session = await auth();
@@ -76,10 +95,12 @@ export async function GET() {
     skillsPreview: delegationSkillNames.slice(0, 25),
     queuedBacklog,
     pendingConfirmations: pendingConfirmations.length,
-    offlineMessage:
-      !delegationOnline && queuedBacklog > 0
-        ? `${backendLabel} is offline - ${String(queuedBacklog)} task(s) queued.`
-        : null,
+    offlineMessage: buildOfflineMessage({
+      delegationOnline,
+      queuedBacklog,
+      pollPrimaryActive: isDelegationPollPrimaryActive(),
+      backendLabel,
+    }),
     probes: {
       hermes: {
         configured: hermesConfigured,

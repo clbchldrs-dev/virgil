@@ -20,6 +20,7 @@ import {
   delegationPing,
   getDelegationProvider,
 } from "@/lib/integrations/delegation-provider";
+import { isDelegationStrictSkillAllowlist } from "@/lib/integrations/delegation-skill-policy";
 import {
   delegationNeedsConfirmation,
   matchSkillFromDescription,
@@ -61,9 +62,20 @@ export function delegateTaskToOpenClaw({
       try {
         const delegationProvider = getDelegationProvider();
         const backend = delegationProvider.backend;
-        const skills = await delegationListSkillNamesUnion();
         const skillTrimmed = skill?.trim();
+        const strict = isDelegationStrictSkillAllowlist();
+
+        // Only enumerate skills when we actually need to (strict allowlist, or
+        // the caller didn't provide a skill and we need to infer one). In the
+        // default (non-strict) path with a provided skill, we skip the extra
+        // HTTP round-trip entirely — the gateway decides what's valid.
+        const shouldListSkills = strict || !skillTrimmed;
+        const skills = shouldListSkills
+          ? await delegationListSkillNamesUnion()
+          : [];
+
         if (
+          strict &&
           skillTrimmed &&
           skills.length > 0 &&
           !skills.includes(skillTrimmed)

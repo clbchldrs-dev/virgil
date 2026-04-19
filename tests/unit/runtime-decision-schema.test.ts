@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import type { FallbackTier } from "@/lib/ai/chat-fallback";
 import {
+  type ChatRuntimePreflightDecision,
   chatRuntimePreflightDecisionToJson,
   DECISION_SCHEMA_VERSION,
-  type ChatRuntimePreflightDecision,
   parseChatRuntimePreflightDecisionJson,
 } from "@/lib/ai/runtime-decision/schema";
 

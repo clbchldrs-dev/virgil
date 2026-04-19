@@ -9,7 +9,8 @@ import type {
 
 /** When true, the chat route uses `resolveChatRuntimeDecision` for effective model + local flag (IU5). */
 export function isRuntimeDecisionSeamAuthoritativeEnabled(): boolean {
-  const v = process.env.VIRGIL_RUNTIME_DECISION_SEAM_AUTHORITATIVE?.trim().toLowerCase();
+  const v =
+    process.env.VIRGIL_RUNTIME_DECISION_SEAM_AUTHORITATIVE?.trim().toLowerCase();
   return v === "1" || v === "true" || v === "yes";
 }
 
@@ -18,7 +19,8 @@ export function isRuntimeDecisionSeamShadowEnabled(): boolean {
   if (isRuntimeDecisionSeamAuthoritativeEnabled()) {
     return false;
   }
-  const v = process.env.VIRGIL_RUNTIME_DECISION_SEAM_SHADOW?.trim().toLowerCase();
+  const v =
+    process.env.VIRGIL_RUNTIME_DECISION_SEAM_SHADOW?.trim().toLowerCase();
   return v === "1" || v === "true" || v === "yes";
 }
 

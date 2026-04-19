@@ -1,6 +1,4 @@
-import {
-  isDelegationPollPrimaryActive,
-} from "@/lib/integrations/delegation-poll-config";
+import { isDelegationPollPrimaryActive } from "@/lib/integrations/delegation-poll-config";
 import {
   listHermesSkillNames,
   pingHermes,

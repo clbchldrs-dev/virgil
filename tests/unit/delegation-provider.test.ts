@@ -16,10 +16,10 @@ const KEYS = [
   "HERMES_HTTP_URL",
 ] as const;
 
-function withEnv(
+async function withEnv(
   overrides: Partial<Record<(typeof KEYS)[number], string | undefined>>,
   fn: () => Promise<void> | void
-) {
+): Promise<void> {
   const saved: Record<string, string | undefined> = {};
   for (const key of KEYS) {
     saved[key] = process.env[key];
@@ -32,7 +32,7 @@ function withEnv(
     }
   }
   try {
-    return fn();
+    await fn();
   } finally {
     for (const key of KEYS) {
       const value = saved[key];
@@ -60,11 +60,15 @@ test("delegation provider defaults to hermes", () => {
   );
 });
 
-test("delegation provider falls back to openclaw when hermes missing", () => {
+test("delegation provider falls back to openclaw when hermes is unresolvable", () => {
+  // Since the in-app Hermes bridge is the default (`HERMES_HTTP_URL` unset
+  // resolves to `http://127.0.0.1:PORT`), the only way to represent a
+  // "missing hermes" scenario is an explicitly invalid `HERMES_HTTP_URL`
+  // (normalizeHttpOrigin returns null for non-http(s) values).
   withEnv(
     {
       VIRGIL_DELEGATION_BACKEND: undefined,
-      HERMES_HTTP_URL: undefined,
+      HERMES_HTTP_URL: "ftp://invalid.example",
       OPENCLAW_URL: "ws://host:13100",
       OPENCLAW_HTTP_URL: undefined,
     },
@@ -171,7 +175,10 @@ test("hermes backend routes through provider contract", async () => {
       VIRGIL_DELEGATION_BACKEND: "hermes",
       OPENCLAW_URL: "ws://host:13100",
       OPENCLAW_HTTP_URL: "http://host:13100",
-      HERMES_HTTP_URL: undefined,
+      // Force the "hermes not configured" code path even though the in-app
+      // bridge would otherwise be the default. normalizeHttpOrigin rejects
+      // non-http(s) protocols.
+      HERMES_HTTP_URL: "ftp://invalid.example",
     },
     async () => {
       const provider = getDelegationProvider();

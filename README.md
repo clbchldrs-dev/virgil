@@ -29,11 +29,20 @@ The repository is conventionally cloned as **`virgil`** (folder name). Paths in 
 ```bash
 cd ~/Documents/virgil   # example only — use your actual clone path
 pnpm install
+pnpm virgil:env:init    # copies .env.example → .env.local (or fills missing keys)
 pnpm db:migrate
-pnpm dev
+pnpm virgil:start       # Next.js + optional OpenClaw tunnel + optional poll worker, one terminal
 ```
 
-Then open [http://localhost:3000](http://localhost:3000).
+Then open [http://localhost:3000](http://localhost:3000). `pnpm dev` still works if you only want the Next.js server.
+
+Run `pnpm virgil:status` at any time to see which features are configured, missing, or offline — with concrete fix hints for each row. `virgil:start` picks up the same env vars and:
+
+- Always spawns **Next.js** (in-app Hermes bridge lives at `/api/hermes-bridge/*`; no separate process needed).
+- Spawns the **OpenClaw SSH tunnel** when `OPENCLAW_SSH_HOST` is set.
+- Spawns the **delegation poll worker** when `VIRGIL_DELEGATION_WORKER_BASE_URL` points at a remote origin (production drain mode).
+
+Ctrl+C shuts everything down cleanly.
 
 ### Docker Compose
 
@@ -84,7 +93,7 @@ Local inference uses **Ollama**, but the **Next.js server** opens that HTTP conn
 - **Docker:** Default Compose uses the bundled `ollama` service. If Ollama runs on the host instead (e.g. GPU), use [`docker-compose.host-ollama.yml`](docker-compose.host-ollama.yml) and set `OLLAMA_BASE_URL` (often `http://host.docker.internal:11434` on Docker Desktop).
 - **Quick probe** (from the same machine or container as the app): `curl -sS "${OLLAMA_BASE_URL:-http://127.0.0.1:11434}/api/tags"` should return JSON listing models.
 - **Smoke test:** `pnpm ollama:smoke` (optionally with a preset id) exercises the same path as chat.
-- **Preflight:** `pnpm dev:check` reminds you that `OLLAMA_BASE_URL` must be reachable from the server process, not only from the browser.
+- **Preflight:** `pnpm virgil:status` reminds you that `OLLAMA_BASE_URL` must be reachable from the server process, not only from the browser (look under `Ollama (local models)`).
 
 ## V2 Python backend (planned)
 

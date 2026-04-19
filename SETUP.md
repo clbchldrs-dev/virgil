@@ -8,7 +8,7 @@ Authoritative procedures and the **full env var catalog** live in **[AGENTS.md](
 
 ## 1. Local development (minimum)
 
-1. Copy env: start from [`.env.example`](.env.example) → `.env.local`.
+1. Env scaffold: `pnpm virgil:env:init` copies [`.env.example`](.env.example) → `.env.local` (or appends missing keys if you already have one, as commented lines).
 2. Set core services (order matches [AGENTS.md — Step 1](AGENTS.md#step-1--fill-credentials-in-envlocal)):
    - `AUTH_SECRET` — `openssl rand -base64 32`
    - `POSTGRES_URL` — Neon or Supabase
@@ -18,10 +18,10 @@ Authoritative procedures and the **full env var catalog** live in **[AGENTS.md](
    - `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY` (+ `QSTASH_URL` if US region — see AGENTS)
    - `RESEND_API_KEY`
    - `CRON_SECRET` — protects cron routes locally if you hit them
-3. `pnpm install` → `pnpm db:migrate` → `pnpm dev` ([README.md](README.md)).
+3. `pnpm install` → `pnpm db:migrate` → `pnpm virgil:start` ([README.md](README.md)). The Next.js server, optional OpenClaw SSH tunnel, and optional delegation poll worker all run in the same terminal.
 4. Optional: `OLLAMA_BASE_URL` if Ollama is not on localhost; pull model tags you use ([README.md](README.md) — Models).
 
-**Preflight:** `pnpm dev:check` / `pnpm dev:check:strict` (see [AGENTS.md — Graceful local start](AGENTS.md#graceful-local-start-before-envlocal-is-complete)).
+**Preflight:** `pnpm virgil:status` (or `--strict` for CI). One command shows every feature block with fix hints; also exposed at `GET /api/virgil/status` in dev. See [AGENTS.md — Graceful local start](AGENTS.md#graceful-local-start-before-envlocal-is-complete).
 
 ---
 

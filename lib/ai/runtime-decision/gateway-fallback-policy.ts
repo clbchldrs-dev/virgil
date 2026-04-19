@@ -58,18 +58,17 @@ export function runStableChatGatewayPolicyChecks(args: {
     args.gatewayFallbackToOllamaEnabled,
     args.sampleError
   );
-  const expected =
-    args.gatewayFallbackToOllamaEnabled && eligible && !auth;
-  if (may !== expected) {
+  const expected = args.gatewayFallbackToOllamaEnabled && eligible && !auth;
+  if (may === expected) {
+    results.push({
+      ok: true,
+      ruleId: "gateway-fallback-eligibility",
+    });
+  } else {
     results.push({
       ok: false,
       ruleId: "gateway-fallback-eligibility",
       detail: `expected mayTryOllama=${expected}, got ${may}`,
-    });
-  } else {
-    results.push({
-      ok: true,
-      ruleId: "gateway-fallback-eligibility",
     });
   }
 

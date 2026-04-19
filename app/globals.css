@@ -970,8 +970,8 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  max-width: min(12rem, 92vw);
-  width: clamp(8rem, 22vw, 12rem);
+  max-width: min(9.5rem, 86vw);
+  width: clamp(6.25rem, 17vw, 9rem);
 }
 
 .pixel-chat-panel .chat-creepy-skull-wrap {
@@ -1000,8 +1000,8 @@ textarea:focus-visible {
 }
 
 /*
- * Three socket gaps in `.XX..XXXX..XXXX..XX.` (rows y=4–6): cols 3–4 (left), 9–10 (middle, unused), 15–16 (right).
- * Eyes sit in the outer two only — centers x=3.5 & 15.5 / 20. Vertical center of the 3-row band: y=5.5 / 15.
+ * Three gaps in `.XX..XXXX..XXXX..XX.` — outer sockets occupy cols 3–4 and 15–16 (viewBox units).
+ * Geometric centers: x=4 and x=16 (midpoint of [3,5) and [15,17)), not 3.5/15.5. Band y∈[4,7) → center 5.5/15.
  */
 .pixel-chat-panel .chat-creepy-eyes {
   inset: 0;
@@ -1011,14 +1011,14 @@ textarea:focus-visible {
 }
 
 .pixel-chat-panel .chat-creepy-eye-anchor {
-  left: calc(3.5 / 20 * 100%);
+  left: calc(4 / 20 * 100%);
   position: absolute;
   top: calc(5.5 / 15 * 100%);
   transform: translate(-50%, -50%);
 }
 
 .pixel-chat-panel .chat-creepy-eye-anchor:nth-child(2) {
-  left: calc(15.5 / 20 * 100%);
+  left: calc(16 / 20 * 100%);
 }
 
 .pixel-chat-panel .chat-creepy-bowtie {
@@ -1047,10 +1047,10 @@ textarea:focus-visible {
 
 .pixel-chat-panel .chat-creepy-eye {
   animation: creepy-eyes-glow 5.2s ease-in-out infinite;
-  aspect-ratio: 2.4 / 1;
+  aspect-ratio: 2.85 / 1;
   /* Was a flex item before; nested spans need a box for width/background to apply */
   display: inline-block;
-  /* ~2/20 of skull width — cqw is vs .chat-creepy-skull-wrap (container) */
+  /* Slightly under 2 grid columns wide — cqw vs .chat-creepy-skull-wrap */
   background:
     radial-gradient(
       ellipse 32% 88% at 50% 50%,
@@ -1066,12 +1066,12 @@ textarea:focus-visible {
     );
   border-radius: 50%;
   box-shadow:
-    0 0 6px oklch(0.78 0.22 58 / 0.75),
-    0 0 14px oklch(0.68 0.2 55 / 0.45),
-    0 0 28px oklch(0.52 0.14 50 / 0.18);
+    0 0 4px oklch(0.78 0.22 58 / 0.65),
+    0 0 10px oklch(0.68 0.2 55 / 0.38),
+    0 0 20px oklch(0.52 0.14 50 / 0.14);
   height: auto;
   transform-origin: center;
-  width: clamp(0.58rem, min(1rem, 10cqw), 1.08rem);
+  width: clamp(0.42rem, min(0.72rem, 7cqw), 0.82rem);
 }
 
 .pixel-chat-panel .chat-creepy-eye-anchor:nth-child(2) .chat-creepy-eye {

@@ -5,6 +5,7 @@ import {
   delegationSendIntent,
   getDelegationProvider,
 } from "@/lib/integrations/delegation-provider";
+import { isDelegationStrictSkillAllowlist } from "@/lib/integrations/delegation-skill-policy";
 import type { ClawIntent } from "@/lib/integrations/openclaw-types";
 
 const DEFAULT_EMBED_SKILL = "wiki-embed";
@@ -154,13 +155,15 @@ export async function fetchDelegationEmbeddings(
   }
 
   const skill = getDelegationEmbedSkillName();
-  const skills = await delegationListSkillNamesUnion();
-  if (skills.length > 0 && !skills.includes(skill)) {
-    return {
-      ok: false,
-      error: `Delegation backend does not advertise skill "${skill}". Add it on the gateway or set VIRGIL_DELEGATION_EMBED_SKILL to a listed id.`,
-      backend,
-    };
+  if (isDelegationStrictSkillAllowlist()) {
+    const skills = await delegationListSkillNamesUnion();
+    if (skills.length > 0 && !skills.includes(skill)) {
+      return {
+        ok: false,
+        error: `Delegation backend does not advertise skill "${skill}". Add it on the gateway or set VIRGIL_DELEGATION_EMBED_SKILL to a listed id.`,
+        backend,
+      };
+    }
   }
 
   const intent: ClawIntent = {

@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, test } from "node:test";
-import {
-  DEFAULT_CHAT_MODEL,
-  VIRGIL_AUTO_MODEL_ID,
-} from "@/lib/ai/models";
+import { DEFAULT_CHAT_MODEL, VIRGIL_AUTO_MODEL_ID } from "@/lib/ai/models";
 import { resolveChatRuntimeDecision } from "@/lib/ai/runtime-decision/resolve-chat-runtime-decision";
 
 describe("resolveChatRuntimeDecision", () => {

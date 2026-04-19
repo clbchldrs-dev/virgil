@@ -25,9 +25,16 @@ export function firstSuggestion<T>(items: readonly T[]): T {
   return item;
 }
 
-/** Middle pill: starts a fresh thread via `/chat/:id` (prompt unused). */
+/** Sent automatically when opening a new chat from the Continue pill (see `use-active-chat`). */
+export const VIRGIL_CONTINUE_DEFAULT_MESSAGE =
+  "No filler, just continue where we last were.";
+
+/** Query flag on `/chat/:id?…=1` so the client auto-sends `VIRGIL_CONTINUE_DEFAULT_MESSAGE`. */
+export const VIRGIL_CONTINUE_SEARCH_PARAM = "virgilContinue";
+
+/** Middle pill: starts a fresh thread via `/chat/:id` + `virgilContinue=1`. */
 export const MIDDLE_CONTINUE_SUGGESTION: ChatEmptySuggestion = {
-  prompt: "",
+  prompt: VIRGIL_CONTINUE_DEFAULT_MESSAGE,
   lines: ["Continue", ""],
 };
 

@@ -126,10 +126,12 @@ test("pingHermes includes bearer auth when shared secret set", async () => {
   );
 });
 
-test("sendHermesIntent returns configured error when base URL missing", async () => {
+test("sendHermesIntent returns configured error when base URL is invalid", async () => {
+  // `HERMES_HTTP_URL` unset now resolves to the in-app bridge, so the
+  // "not configured" path only fires for an explicitly invalid value.
   await withEnv(
     {
-      HERMES_HTTP_URL: undefined,
+      HERMES_HTTP_URL: "ftp://invalid.example",
       HERMES_EXECUTE_PATH: undefined,
       HERMES_SHARED_SECRET: undefined,
     },

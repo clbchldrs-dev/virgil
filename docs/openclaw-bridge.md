@@ -16,14 +16,12 @@ This doc is **execution delegation** (optional LAN gateway). It is separate from
 
 Use this when you want Hermes to be the default delegation backend and keep OpenClaw as compatibility fallback.
 
-1. In `.env.local`, set:
-   - `VIRGIL_DELEGATION_BACKEND=hermes` (explicit override)
-   - `HERMES_HTTP_URL=http://<host>:8765`
-   - `HERMES_EXECUTE_PATH=/api/execute`
-   - `HERMES_HEALTH_PATH=/health`
-   - `HERMES_SKILLS_PATH=/api/skills`
+1. Virgil's **in-app Hermes bridge** is the default — no separate process, no env wiring. The routes live at `app/api/hermes-bridge/{health,skills,execute,pending}` and the Next.js server talks to itself over loopback. To point delegation at a REMOTE Hermes instead, set in `.env.local`:
+   - `VIRGIL_DELEGATION_BACKEND=hermes` (explicit override; default already prefers Hermes when reachable)
+   - `HERMES_HTTP_URL=https://hermes.<your-domain>`
    - `HERMES_SHARED_SECRET=<secret>` (required off-loopback)
-2. Restart the app (`pnpm dev`) so the server reads updated env vars.
+   Path overrides (`HERMES_*_PATH`) are only needed if the remote Hermes uses non-default routes.
+2. Restart the app (`pnpm virgil:start` or `pnpm dev`) so the server reads updated env vars.
 3. Keep `OPENCLAW_*` vars for OpenClaw compatibility; when **both** Hermes and OpenClaw are configured, Virgil **failovers** from Hermes to OpenClaw if Hermes is unreachable unless `VIRGIL_DELEGATION_FAILOVER=0`. See [virgil-manos-delegation.md](virgil-manos-delegation.md).
 4. Sign in, then verify end-to-end:
    - `GET /api/delegation/health` confirms selected backend, online state, discovered skills, and queue depth.
@@ -36,21 +34,19 @@ Virgil does **not** call the Cursor IDE over HTTP. `delegateTask` sends **ClawIn
 
 ### 1. Virgil (this app) — required env
 
-In `.env.local` (restart `pnpm dev` after edits):
+In `.env.local` (restart `pnpm virgil:start` after edits):
 
 | Variable | Purpose |
 |----------|---------|
-| `VIRGIL_DELEGATION_BACKEND` | Set `hermes` to force Hermes even when OpenClaw is also configured (optional; default already prefers Hermes when `HERMES_HTTP_URL` is set). |
-| `HERMES_HTTP_URL` | HTTP **origin** only, e.g. `http://127.0.0.1:8765` — must match the process that serves Hermes. |
-| `HERMES_EXECUTE_PATH` | Default `/api/execute` — must match Hermes. |
-| `HERMES_PENDING_PATH` | Default `/api/pending` — pending-intent parity for approval UIs. |
-| `HERMES_SKILLS_PATH` | Default `/api/skills` — used for `delegateTask` skill discovery (`listHermesSkillNames`). |
-| `HERMES_HEALTH_PATH` | Default `/health` — used for online/offline banner + health route. |
-| `HERMES_SHARED_SECRET` | Shared bearer for `Authorization: Bearer …` on health, execute, and skills requests. **Use a strong random value** if Hermes is reachable off loopback (LAN, tunnel, VPS). Configure the **same** secret on the Hermes server. Loopback-only dev may omit it. |
+| `VIRGIL_DELEGATION_BACKEND` | Set `hermes` to force Hermes even when OpenClaw is also configured (optional; default already prefers Hermes when `HERMES_HTTP_URL` is set or the in-app bridge is resolvable). |
+| `HERMES_HTTP_URL` | Optional explicit HTTP **origin** for a REMOTE Hermes, e.g. `https://hermes.example.internal`. Unset = use the in-app bridge (`/api/hermes-bridge/*`) in the same Next.js process. |
+| `HERMES_EXECUTE_PATH` | Override when routing to a remote Hermes with non-default routes (default `/api/hermes-bridge/execute`). |
+| `HERMES_PENDING_PATH` | Override (default `/api/hermes-bridge/pending`). |
+| `HERMES_SKILLS_PATH` | Override (default `/api/hermes-bridge/skills`). |
+| `HERMES_HEALTH_PATH` | Override (default `/api/hermes-bridge/health`). |
+| `HERMES_SHARED_SECRET` | Shared bearer for `Authorization: Bearer …`. **Required** when Hermes is reachable off loopback (LAN, tunnel, VPS). Configure the **same** secret on the Hermes server. Loopback-only dev may omit it. |
 
-Verify while signed in: `GET /api/delegation/health` should report the Hermes backend **online** and list **skills** when `/api/skills` returns data.
-
-**Local stub (no real Hermes process):** `VIRGIL_HERMES_BRIDGE_STUB_ENABLED=1` with `HERMES_HTTP_URL=http://127.0.0.1:3000` and paths under `/api/hermes/*` — see [.env.example](../.env.example). The stub does **not** edit your repo; it only exercises the bridge.
+Verify while signed in: `GET /api/delegation/health` should report the Hermes backend **online** and list **skills**. For a fuller feature-grouped snapshot run `pnpm virgil:status` or open `/api/virgil/status` in dev.
 
 ### 2. Hermes host — permissions for repo work
 

@@ -180,7 +180,8 @@ Project root: this repository is typically cloned as **`virgil`** (the folder th
 
 - **`pnpm dev`** can start with **no `AUTH_SECRET`**: the app uses a **dev-only insecure JWT secret** and prints a one-time warning (`lib/auth-secret.ts`). Set `AUTH_SECRET` as soon as you care about session security or before sharing your machine.
 - **Database and Redis** are still required for real login, chat persistence, and rate limits. Without `POSTGRES_URL` / `REDIS_URL`, pages that hit the DB will error — that is expected until Step 1–3 are done.
-- **Preflight (optional):** `pnpm dev:check` lists what is missing; `pnpm dev:check:strict` exits with an error if `POSTGRES_URL` or `REDIS_URL` is absent (useful in scripts).
+- **Preflight (optional):** `pnpm virgil:status` prints a feature-grouped snapshot with fix hints for anything "missing" or "offline"; `pnpm virgil:status --strict` exits non-zero when critical items are missing (useful in scripts). The same data is available at `GET /api/virgil/status` in dev.
+- **One-command dev loop:** `pnpm virgil:start` spawns `next dev` plus (conditionally) the OpenClaw SSH tunnel and the delegation poll worker in one terminal — see `scripts/virgil-start.ts`. The Hermes bridge now lives in-app at `/api/hermes-bridge/*`, so no separate `hermes:local-bridge` process is needed.
 - **`next build` / production** always require a real **`AUTH_SECRET`** (or `NEXTAUTH_SECRET`); there is no fallback when `NODE_ENV=production`.
 
 ---
@@ -726,13 +727,12 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `OPENCLAW_EXECUTE_PATH` | No | No | POST path for intents (default `/api/execute`) |
 | `OPENCLAW_SKILLS_PATH` | No | No | GET path for skills (default `/api/skills`) |
 | `OPENCLAW_HEALTH_PATH` | No | No | GET path for health ping (default `/health`) |
-| `HERMES_HTTP_URL` | No | No | Optional Hermes bridge HTTP origin for Virgil 1.1 delegation (local default `http://127.0.0.1:8765`). **Vercel Production:** public `https://…` origin (e.g. Cloudflare Tunnel to `manos:8765`). See [docs/virgil-manos-delegation.md](docs/virgil-manos-delegation.md). |
-| `HERMES_EXECUTE_PATH` | No | No | Hermes execute path for delegated actions (default `/api/execute`) in the 1.1 bridge contract. |
-| `HERMES_PENDING_PATH` | No | No | Hermes pending-intent listing path (default `/api/pending`) for approval UX parity with existing pending queues. |
-| `HERMES_SKILLS_PATH` | No | No | Hermes skills-list path (default `/api/skills`) used for backend skill discovery and matching in `delegateTask`. |
-| `HERMES_HEALTH_PATH` | No | No | Hermes health probe path (default `/health`) used for backend availability checks. |
+| `HERMES_HTTP_URL` | No | No | Optional external Hermes bridge origin. **Unset by default** — Virgil uses the in-app bridge at `/api/hermes-bridge/*`, derived from `VERCEL_URL` / `NEXT_PUBLIC_APP_URL` / `PORT`. Set only when routing delegations to a remote Hermes (e.g. Cloudflare Tunnel to `manos:8765`). See [docs/virgil-manos-delegation.md](docs/virgil-manos-delegation.md). |
+| `HERMES_EXECUTE_PATH` | No | No | Hermes execute path override (default `/api/hermes-bridge/execute`). |
+| `HERMES_PENDING_PATH` | No | No | Hermes pending-intent listing path override (default `/api/hermes-bridge/pending`). |
+| `HERMES_SKILLS_PATH` | No | No | Hermes skills-list path override (default `/api/hermes-bridge/skills`). |
+| `HERMES_HEALTH_PATH` | No | No | Hermes health probe path override (default `/api/hermes-bridge/health`). |
 | `HERMES_SHARED_SECRET` | No | No | Optional shared bearer for non-local Hermes bridge calls. Required when Hermes is reachable beyond loopback/tunnel boundaries. |
-| `VIRGIL_HERMES_BRIDGE_STUB_ENABLED` | No | No | Set to `1` to expose local stub routes (`/api/hermes/health`, `/api/hermes/execute`, `/api/hermes/pending`) when testing the Virgil 1.1 Hermes path without an external Hermes HTTP bridge. |
 | `DIGITAL_SELF_BASE_URL` | No | No | Optional **Digital Self** orchestrator origin (`digital-self/` package); `GET /api/digital-self/bridge-health` pings `/health`; see [docs/digital-self-bridge.md](docs/digital-self-bridge.md) |
 | `DIGITAL_SELF_SERVICE_TOKEN` | No | No | Optional; same token as orchestrator for future server-to-server `/v1/*` calls from Virgil |
 | `VIRGIL_BRIDGE_WEBHOOK_SECRET` | No | No | Optional shared bearer for `POST /api/digital-self/webhook` when the orchestrator notifies Virgil (`VIRGIL_BRIDGE_WEBHOOK_URL` + secret on the **digital-self** side); see [docs/digital-self-bridge.md](docs/digital-self-bridge.md) |
