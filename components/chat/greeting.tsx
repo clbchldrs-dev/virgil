@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { guestRegex } from "@/lib/constants";
 import { getUserDisplayFirstName } from "@/lib/user-display";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,14 @@ type GreetingProps = {
   chatId: string;
 };
 
+function flavorForChatId(id: string): string {
+  if (id.length === 0) {
+    return FLAVOR_LINES[0];
+  }
+  const h = hashChatId(id);
+  return FLAVOR_LINES[(h >> 5) % FLAVOR_LINES.length];
+}
+
 export function Greeting({ chatId }: GreetingProps) {
   const { data: session, status } = useSession();
   /** Session-dependent chrome is deferred until mount so next-auth state matches the browser. */
@@ -39,13 +47,15 @@ export function Greeting({ chatId }: GreetingProps) {
     setMounted(true);
   }, []);
 
-  /** Deterministic from chatId only so server render and first client paint match (no random branch on mounted). */
-  const flavor = useMemo(() => {
-    if (chatId.length === 0) {
-      return FLAVOR_LINES[0];
-    }
-    const h = hashChatId(chatId);
-    return FLAVOR_LINES[(h >> 5) % FLAVOR_LINES.length];
+  /**
+   * SSR and the first client render must match. For `/` new chats, `chatId` comes from
+   * `useRef(generateUUID())` which differs between server and client, so hashing would
+   * diverge. Start at FLAVOR_LINES[0] everywhere, then sync from the real chatId before
+   * paint (useLayoutEffect).
+   */
+  const [flavor, setFlavor] = useState<string>(FLAVOR_LINES[0]);
+  useLayoutEffect(() => {
+    setFlavor(flavorForChatId(chatId));
   }, [chatId]);
 
   const email = session?.user?.email ?? "";

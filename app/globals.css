@@ -976,6 +976,8 @@ textarea:focus-visible {
 
 .pixel-chat-panel .chat-creepy-skull-wrap {
   aspect-ratio: 20 / 15;
+  container-name: creepy-skull;
+  container-type: inline-size;
   flex-shrink: 0;
   position: relative;
   width: 100%;
@@ -997,7 +999,10 @@ textarea:focus-visible {
   fill: oklch(0.9 0.025 82);
 }
 
-/* Eye anchors: socket centers from skull grid row `.XX..XXXX..XXXX..XX.` → x≈3.5 & 15.5 / 20; y≈5.5 / 15. Inner .chat-creepy-eye keeps transform for blink animation. */
+/*
+ * Three socket gaps in `.XX..XXXX..XXXX..XX.` (rows y=4–6): cols 3–4 (left), 9–10 (middle, unused), 15–16 (right).
+ * Eyes sit in the outer two only — centers x=3.5 & 15.5 / 20. Vertical center of the 3-row band: y=5.5 / 15.
+ */
 .pixel-chat-panel .chat-creepy-eyes {
   inset: 0;
   pointer-events: none;
@@ -1042,9 +1047,10 @@ textarea:focus-visible {
 
 .pixel-chat-panel .chat-creepy-eye {
   animation: creepy-eyes-glow 5.2s ease-in-out infinite;
-  aspect-ratio: 2.6 / 1;
+  aspect-ratio: 2.4 / 1;
   /* Was a flex item before; nested spans need a box for width/background to apply */
   display: inline-block;
+  /* ~2/20 of skull width — cqw is vs .chat-creepy-skull-wrap (container) */
   background:
     radial-gradient(
       ellipse 32% 88% at 50% 50%,
@@ -1060,12 +1066,12 @@ textarea:focus-visible {
     );
   border-radius: 50%;
   box-shadow:
-    0 0 10px oklch(0.78 0.22 58 / 0.85),
-    0 0 26px oklch(0.68 0.2 55 / 0.5),
-    0 0 48px oklch(0.52 0.14 50 / 0.22);
+    0 0 6px oklch(0.78 0.22 58 / 0.75),
+    0 0 14px oklch(0.68 0.2 55 / 0.45),
+    0 0 28px oklch(0.52 0.14 50 / 0.18);
   height: auto;
   transform-origin: center;
-  width: clamp(1.85rem, 5vw, 2.65rem);
+  width: clamp(0.58rem, min(1rem, 10cqw), 1.08rem);
 }
 
 .pixel-chat-panel .chat-creepy-eye-anchor:nth-child(2) .chat-creepy-eye {
