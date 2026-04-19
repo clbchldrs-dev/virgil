@@ -104,7 +104,7 @@ flowchart TD
 
 ## Implementation Units
 
-- [ ] **Unit 1: Define flight deck data contracts and durable telemetry foundation**
+- [x] **Unit 1: Define flight deck data contracts and durable telemetry foundation**
 
 **Goal:** Establish stable summary-card contracts and persistent fallback telemetry needed for current/trend windows.
 
@@ -140,7 +140,7 @@ flowchart TD
 **Verification:**
 - Flight deck signal module returns deterministic, typed outputs for all required card states.
 
-- [ ] **Unit 2: Instrument chat runtime to emit durable fallback/error telemetry**
+- [x] **Unit 2: Instrument chat runtime to emit durable fallback/error telemetry**
 
 **Goal:** Ensure flight deck primary signal has reliable producers from real chat execution paths.
 
@@ -174,7 +174,7 @@ flowchart TD
 **Verification:**
 - Fallback card data can be derived from durable events emitted by real chat traffic paths.
 
-- [ ] **Unit 3: Build summary API aggregator and deterministic prioritization**
+- [x] **Unit 3: Build summary API aggregator and deterministic prioritization**
 
 **Goal:** Provide a single API endpoint powering the top-level flight deck summary.
 
@@ -208,7 +208,7 @@ flowchart TD
 **Verification:**
 - Summary API produces a complete, stable contract for the UI without depending on file-based logs.
 
-- [ ] **Unit 4: Implement top-level flight deck UI + deep-link workflow**
+- [x] **Unit 4: Implement top-level flight deck UI + deep-link workflow**
 
 **Goal:** Ship the minimal operator surface and navigation integration for triage-first behavior.
 
@@ -242,7 +242,7 @@ flowchart TD
 **Verification:**
 - Operator can go from summary to detailed diagnosis in one navigation step.
 
-- [ ] **Unit 5: Add role-based authorization and guarded one-click digest action**
+- [x] **Unit 5: Add role-based authorization and guarded one-click digest action**
 
 **Goal:** Deliver exactly one safe one-click action with strict access, integrity, and audit controls.
 
@@ -286,7 +286,7 @@ flowchart TD
 **Verification:**
 - One-click action is safe-by-default, auditable, and unavailable to unauthorized users.
 
-- [ ] **Unit 6: Documentation, runbook mapping, and measurement readiness**
+- [x] **Unit 6: Documentation, runbook mapping, and measurement readiness**
 
 **Goal:** Ensure operators understand signals/actions and that success can be measured.
 

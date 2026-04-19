@@ -16,6 +16,11 @@ export function isVirgilIngestEnabled(): boolean {
   return process.env.VIRGIL_INGEST_ENABLED === "1";
 }
 
+/** Bearer memory search/save for `POST /api/memory/bridge` (scripts, terminal agents). */
+export function isVirgilMemoryBridgeEnabled(): boolean {
+  return process.env.VIRGIL_MEMORY_BRIDGE_ENABLED === "1";
+}
+
 /** Resend inbound `email.received` → Memory (`POST /api/ingest/email`). */
 export function isVirgilEmailIngestEnabled(): boolean {
   return process.env.VIRGIL_EMAIL_INGEST_ENABLED === "1";

@@ -192,6 +192,10 @@ Check **Triage** under [Phase C](#phase-c--security-and-abuse-ongoing) when you 
 
 Check **Verified** under [Phase D](#phase-d--background-and-schedules) after one successful cron or manual curl to digest/enqueue (or documented equivalent on your host).
 
+### 5. Operator flight deck (optional)
+
+When triaging chat or background issues, open **`/command-center`** (triage section) for a deterministic summary (`GET /api/flight-deck`). Cards deep-link to the **Background** section (`?section=background`); mapping from each card type to runbook steps is in [operator-integrations-runbook.md](operator-integrations-runbook.md#operator-flight-deck). For chat-specific investigations, enable **`V2_TRACE_LOGGING=true`** temporarily and use the trace fields described in [§ Commands](#commands-copy-order) above. To record improvement over time, use the measurement field list in `lib/reliability/flight-deck-metrics.ts` (`FLIGHT_DECK_MEASUREMENT_FIELDS`) alongside your incident notes.
+
 ---
 
 ## What not to do on the stability track

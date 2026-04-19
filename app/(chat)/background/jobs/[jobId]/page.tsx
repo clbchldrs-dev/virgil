@@ -61,9 +61,9 @@ export default async function BackgroundJobDetailPage({
             <p className="text-muted-foreground text-sm">
               <Link
                 className="text-foreground underline-offset-4 hover:underline"
-                href="/background"
+                href="/command-center?section=background"
               >
-                Background activity
+                Command center
               </Link>
               <span aria-hidden="true"> / </span>
               <span className="text-foreground">Job</span>

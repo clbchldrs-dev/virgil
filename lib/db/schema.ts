@@ -21,6 +21,7 @@ export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   email: varchar("email", { length: 64 }).notNull(),
   password: varchar("password", { length: 64 }),
+  role: varchar("role", { length: 16 }).notNull().default("user"),
   name: text("name"),
   emailVerified: boolean("emailVerified").notNull().default(false),
   image: text("image"),
@@ -420,6 +421,42 @@ export const backgroundJobAudit = pgTable(
 );
 
 export type BackgroundJobAudit = InferSelectModel<typeof backgroundJobAudit>;
+
+export const flightDeckOperatorAudit = pgTable(
+  "FlightDeckOperatorAudit",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    action: varchar("action", { length: 32 }).notNull(),
+    requestId: varchar("requestId", { length: 128 }).notNull(),
+    actionToken: varchar("actionToken", { length: 128 }).notNull(),
+    status: varchar("status", { length: 16 }).notNull(),
+    reason: text("reason"),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    completedAt: timestamp("completedAt"),
+  },
+  (table) => ({
+    userActionCreatedIdx: index(
+      "FlightDeckOperatorAudit_userId_action_createdAt_idx"
+    ).on(table.userId, table.action, table.createdAt),
+    userActionRequestUnique: uniqueIndex(
+      "FlightDeckOperatorAudit_userId_action_requestId_unique"
+    ).on(table.userId, table.action, table.requestId),
+    userActionTokenUnique: uniqueIndex(
+      "FlightDeckOperatorAudit_userId_action_actionToken_unique"
+    ).on(table.userId, table.action, table.actionToken),
+  })
+);
+
+export type FlightDeckOperatorAudit = InferSelectModel<
+  typeof flightDeckOperatorAudit
+>;
 
 /** Queued execution handoff to OpenClaw (optional LAN integration). */
 export const pendingIntent = pgTable("PendingIntent", {

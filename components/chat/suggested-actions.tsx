@@ -124,7 +124,7 @@ function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
 
   const navigateBackground = () => {
     setOpenMobile(false);
-    router.push(`${basePath}/background`);
+    router.push(`${basePath}/command-center?section=background`);
   };
 
   const navigateHome = () => {

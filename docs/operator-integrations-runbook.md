@@ -215,6 +215,75 @@ Use this when queued jobs remain pending/retrying or worker execution fails.
 
 ---
 
+## Operator flight deck
+
+The **flight deck** triage block lives on **[`/command-center`](../app/(chat)/command-center/page.tsx)** (`?section=triage`; legacy `/flight-deck` redirects there). It is backed by `GET /api/flight-deck` and composes **chat path telemetry** (fallback/error rates over rolling windows) and **background queue health** (pending/running/failed job counts). It is meant to shorten “what is on fire?” time before you scroll to the **Background** section on the same page.
+
+### Permissions and routes
+
+| Surface | Who | Notes |
+|---------|-----|--------|
+| UI `/command-center` | Signed-in (non-guest) | Combines triage, background activity, and daily Sophon; guests are redirected to login. |
+| `GET /api/flight-deck` | Signed-in **regular** (`user.type === "regular"`) | Returns `summary`, `cards[]`, optional `sourceErrors` when a data source fails. |
+| `POST /api/flight-deck/actions/digest` | **`operator` or `admin` role** (`User.role`) | One-click **manual digest**; requires `CRON_SECRET` on the server, same-origin browser request, idempotency + action-token headers, cooldown, and single-flight protection. Writes audit rows to `FlightDeckOperatorAudit`. |
+
+Promote a user to operator in Postgres (one-off; adjust email):
+
+```sql
+update "User" set role = 'operator' where email = 'you@example.com';
+```
+
+Valid roles in app code: `user` (default), `operator`, `admin`.
+
+### One-click manual digest
+
+Use when the daily digest path is healthy but you want an **immediate** run (for example after fixing `RESEND_API_KEY` or Slack mirror config). The action invokes the same digest logic as `GET /api/digest` internally (Bearer `CRON_SECRET`); it does **not** expose the cron secret to the browser.
+
+On failure, the JSON body may include a `recoveryHint` and `requestId`. Cross-check:
+
+- [Failure drill: digest delivery degradation](#failure-drill-digest-delivery-degradation) — email/Slack/summary counters.
+- `GET /api/digest` with `Authorization: Bearer $CRON_SECRET` for raw diagnostics (operator shell / trusted host only).
+
+### Card → runbook mapping
+
+Use this table when a card is **degraded**, **high/critical** severity, or **stale**. Deterministic ordering and fields are implemented in `lib/reliability/flight-deck-handler.ts` and `lib/reliability/flight-deck-signals.ts`.
+
+<a id="flight-deck-chat-fallback-card"></a>
+
+#### Chat fallback card (`chat_fallback`)
+
+- **Meaning:** Elevated errors or fallback usage on chat paths (hosted gateway vs local Ollama vs fallbacks) inside the current/trend windows.
+- **Deep link in UI:** `/command-center?section=background` (queue and job context on the same page).
+- **What to do next:**
+  1. Confirm recent chat traffic: send a short hosted-model message and a local-model message if you use Ollama.
+  2. Turn on structured traces for one repro: `V2_TRACE_LOGGING=true` (see [STABILITY_TRACK.md](STABILITY_TRACK.md) § Commands).
+  3. Re-read gateway vs local posture in [README.md](../README.md) (Troubleshooting local models) and [AGENTS.md](../AGENTS.md) (chat fallback envs).
+  4. If errors cluster on one path, narrow to provider vs Ollama reachability vs rate limits—do **not** treat the card as a digest failure.
+
+<a id="flight-deck-queue-health-card"></a>
+
+#### Queue and job health card (`queue_health`)
+
+- **Meaning:** Pending/running/failed background jobs visible in the snapshot window.
+- **Deep link in UI:** `/command-center?section=background`.
+- **What to do next:** Follow [Failure drill: background job worker run failures](#failure-drill-background-job-worker-run-failures) (QStash verification, signing keys, job id retries).
+
+#### Stale data or `confidence: unknown`
+
+- **Meaning:** Telemetry or queue snapshot is missing or older than the freshness window—**investigate data path before** blaming models.
+- **What to do next:** Verify Postgres connectivity, migrations applied (`pnpm db:migrate`), and that chat traffic exists to populate `ChatPathTelemetry`. Then re-open the flight deck.
+
+### Measurement (incident triage)
+
+To track **time-to-first-correct-action** and **time-to-stable-state**, log a short row per incident (spreadsheet or ops doc). Suggested column names match `FLIGHT_DECK_MEASUREMENT_FIELDS` in `lib/reliability/flight-deck-metrics.ts`:
+
+- `incident_id`, `flight_deck_opened_at`, `highest_severity_card_type`, `highest_severity_level`, `summary_confidence_at_open`
+- `first_runbook_section_opened_at`, `minutes_to_first_correct_action`, `stable_state_observed_at`
+- `digest_manual_run_request_id` (from the one-click action response when used)
+- `notes`
+
+---
+
 ## Related docs
 
 - [integration-test-matrix.md](integration-test-matrix.md) — regression-style matrix.

@@ -162,6 +162,13 @@ Online deployment should stay lightweight:
   - **This file** — [Setup checklist](#setup-checklist) and [Deployment (production)](#deployment-production)
   - Thin link hubs [SETUP.md](SETUP.md) and [DEPLOY.md](DEPLOY.md) (discoverability only; no duplicate tables)
 
+## Command center (operator surface)
+
+- **UI:** `/command-center` — combined **triage** (flight deck), **background** activity (jobs, night review, proposals), and **daily** Sophon view. Legacy paths `/background`, `/flight-deck`, and `/sophon` redirect here with `?section=background|triage|daily`.
+- **API:** `GET /api/flight-deck` (signed-in **regular** users); `POST /api/flight-deck/actions/digest` (**`operator` or `admin`** `User.role` only; audit rows in `FlightDeckOperatorAudit`).
+- **Roles:** `User.role` defaults to `user`; promote operators with SQL (see [docs/operator-integrations-runbook.md](docs/operator-integrations-runbook.md#operator-flight-deck)).
+- **Measurement:** suggested incident log field names in `lib/reliability/flight-deck-metrics.ts` (`FLIGHT_DECK_MEASUREMENT_FIELDS`).
+
 ## Setup checklist
 
 Project root: this repository is typically cloned as **`virgil`** (the folder that contains `package.json`). Fill [`.env.local`](.env.local) first, then run migrations and the dev server.
@@ -321,6 +328,13 @@ pnpm db:migrate
 ```
 
 This applies `lib/db/migrations/`.
+
+### Memory store parity (local dev ↔ Vercel)
+
+Chat history and **`Memory`** live in **Postgres** (`POSTGRES_URL`). For **one shared store** across phone, browser, and terminal-driven workflows:
+
+1. **Same database URL** — Point **local** `.env.local` at the **same** Neon/Supabase database Vercel uses (pooler URI for `pnpm dev`). Use a **Neon branch** if you want isolation while testing. Run **`pnpm db:migrate`** against that database when new migrations land (direct `5432` URL if the pooler rejects DDL).
+2. **Optional HTTP bridge** — When you do **not** want raw `POSTGRES_URL` on a script host, set **`VIRGIL_MEMORY_BRIDGE_ENABLED=1`**, **`VIRGIL_MEMORY_BRIDGE_SECRET`**, **`VIRGIL_MEMORY_BRIDGE_USER_ID`** (your Postgres `User.id`), then call **`POST /api/memory/bridge`** with `Authorization: Bearer …` (see [docs/memory-store-parity.md](docs/memory-store-parity.md)). **`pnpm memory:bridge`** wraps this for terminal use.
 
 ### Optional — GitHub product opportunities (gateway models)
 
@@ -659,6 +673,10 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `VIRGIL_INGEST_ENABLED` | No | No | Set to `1` for `POST /api/ingest` (Bearer `VIRGIL_INGEST_SECRET` → `VIRGIL_INGEST_USER_ID`). |
 | `VIRGIL_INGEST_SECRET` | When general ingest on | Same | High-privilege bearer for scripted context capture. |
 | `VIRGIL_INGEST_USER_ID` | When general ingest on | Same | Postgres `User.id` UUID for bearer ingest + email ingest + optional journal cron. |
+| `VIRGIL_MEMORY_BRIDGE_ENABLED` | No | No | Set to `1` for `POST /api/memory/bridge` (Bearer `VIRGIL_MEMORY_BRIDGE_SECRET` → `VIRGIL_MEMORY_BRIDGE_USER_ID`). Search + save Memory without session cookies; see [docs/memory-store-parity.md](docs/memory-store-parity.md). |
+| `VIRGIL_MEMORY_BRIDGE_SECRET` | When memory bridge on | Same | High-privilege bearer for scripted memory search/save (rotate like `CRON_SECRET`). |
+| `VIRGIL_MEMORY_BRIDGE_USER_ID` | When memory bridge on | Same | Postgres `User.id` UUID for bridge reads/writes (single-owner). |
+| `VIRGIL_MEMORY_BRIDGE_BASE_URL` | No | No | Optional origin for `pnpm memory:bridge` when not targeting local dev (e.g. `https://your-app.vercel.app`). Defaults to `NEXT_PUBLIC_APP_URL` or `http://localhost:3000`. |
 | `VIRGIL_ALEXA_ENABLED` | No | No | Set to `1` for `POST /api/channels/alexa` (single-owner voice ingress). |
 | `VIRGIL_ALEXA_SECRET` | When Alexa on | Same | Bearer shared secret required by `/api/channels/alexa`. |
 | `VIRGIL_ALEXA_USER_ID` | When Alexa on | Same | Postgres `User.id` UUID that Alexa channel requests are mapped to. |

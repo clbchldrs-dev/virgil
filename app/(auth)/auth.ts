@@ -13,12 +13,14 @@ import {
 import { authConfig } from "./auth.config";
 
 export type UserType = "guest" | "regular";
+export type UserRole = "user" | "operator" | "admin";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
       type: UserType;
+      role: UserRole;
     } & DefaultSession["user"];
   }
 
@@ -26,6 +28,7 @@ declare module "next-auth" {
     id?: string;
     email?: string | null;
     type: UserType;
+    role?: UserRole;
   }
 }
 
@@ -33,6 +36,7 @@ declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     id: string;
     type: UserType;
+    role: UserRole;
   }
 }
 
@@ -72,6 +76,7 @@ export const {
                 name: found.name,
                 image: found.image,
                 type: "regular" as const,
+                role: (found.role ?? "user") as UserRole,
               };
             },
           }),
@@ -105,7 +110,11 @@ export const {
                 return null;
               }
 
-              return { ...user, type: "regular" };
+              return {
+                ...user,
+                type: "regular",
+                role: (user.role ?? "user") as UserRole,
+              };
             },
           }),
         ]),
@@ -114,7 +123,11 @@ export const {
       credentials: {},
       async authorize() {
         const [guestUser] = await createGuestUser();
-        return { ...guestUser, type: "guest" };
+        return {
+          ...guestUser,
+          type: "guest",
+          role: "user" as const,
+        };
       },
     }),
   ],
@@ -139,6 +152,10 @@ export const {
         if (user) {
           token.id = user.id as string;
           token.type = user.type;
+          token.role = (user.role ?? "user") as UserRole;
+        }
+        if (!token.role) {
+          token.role = "user";
         }
 
         return token;
@@ -185,6 +202,7 @@ export const {
         if (session.user) {
           session.user.id = token.id;
           session.user.type = token.type;
+          session.user.role = token.role ?? "user";
         }
 
         return session;

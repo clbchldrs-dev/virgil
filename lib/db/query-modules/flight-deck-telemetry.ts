@@ -3,7 +3,7 @@ import "server-only";
 import { and, asc, eq, gte } from "drizzle-orm";
 import { VirgilError } from "@/lib/errors";
 import { db } from "../client";
-import { chatPathTelemetry } from "../schema";
+import { backgroundJob, chatPathTelemetry } from "../schema";
 
 export type ChatPath = "gateway" | "ollama";
 export type TelemetryOutcome = "completed" | "error";
@@ -32,6 +32,13 @@ export type ChatPathWindowCounts = {
 export type ChatPathTelemetryRollup = {
   current: ChatPathWindowCounts;
   previous: ChatPathWindowCounts;
+  latestEventAt: Date | null;
+};
+
+export type BackgroundQueueSnapshot = {
+  pending: number;
+  running: number;
+  failedRecent: number;
   latestEventAt: Date | null;
 };
 
@@ -145,6 +152,55 @@ export async function getChatPathTelemetryRollupForUser({
     throw new VirgilError(
       "bad_request:database",
       "Failed to read chat path telemetry rollup"
+    );
+  }
+}
+
+export async function getBackgroundQueueSnapshotForUser({
+  userId,
+  since,
+}: {
+  userId: string;
+  since: Date;
+}): Promise<BackgroundQueueSnapshot> {
+  try {
+    const rows = await db
+      .select({
+        status: backgroundJob.status,
+        updatedAt: backgroundJob.updatedAt,
+      })
+      .from(backgroundJob)
+      .where(
+        and(
+          eq(backgroundJob.userId, userId),
+          gte(backgroundJob.updatedAt, since)
+        )
+      )
+      .orderBy(asc(backgroundJob.updatedAt));
+
+    let pending = 0;
+    let running = 0;
+    let failedRecent = 0;
+    for (const row of rows) {
+      if (row.status === "pending") {
+        pending += 1;
+      } else if (row.status === "running") {
+        running += 1;
+      } else if (row.status === "failed") {
+        failedRecent += 1;
+      }
+    }
+
+    return {
+      pending,
+      running,
+      failedRecent,
+      latestEventAt: rows.length > 0 ? (rows.at(-1)?.updatedAt ?? null) : null,
+    };
+  } catch (_error) {
+    throw new VirgilError(
+      "bad_request:database",
+      "Failed to read background queue snapshot"
     );
   }
 }

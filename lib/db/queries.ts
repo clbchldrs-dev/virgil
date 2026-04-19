@@ -11,6 +11,7 @@ export * from "./query-modules/health-snapshot";
 export * from "./query-modules/memory";
 export * from "./query-modules/messages-and-votes";
 export * from "./query-modules/night-review";
+export * from "./query-modules/operator-audit";
 export * from "./query-modules/pending-intents";
 export * from "./query-modules/sophon";
 export * from "./query-modules/users";

@@ -29,6 +29,7 @@ describe("isChatSurfacePath", () => {
     assert.equal(isChatSurfacePath("/chat/uuid"), true);
     assert.equal(isChatSurfacePath("/night-insights"), false);
     assert.equal(isChatSurfacePath("/sophon"), false);
+    assert.equal(isChatSurfacePath("/command-center"), false);
   });
 });
 

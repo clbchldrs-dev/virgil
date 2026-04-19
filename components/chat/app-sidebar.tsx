@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ActivityIcon,
   LayoutDashboardIcon,
   ListChecksIcon,
   MessageSquareIcon,
@@ -90,22 +89,9 @@ function SidebarPrimaryNav({
                   className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                   onClick={() => {
                     setOpenMobile(false);
-                    router.push(`${BASE_PATH}/background`);
+                    router.push(`${BASE_PATH}/command-center`);
                   }}
-                  tooltip="Background activity"
-                >
-                  <ActivityIcon className="size-4" />
-                  <span>Background</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  className="rounded-lg text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                  onClick={() => {
-                    setOpenMobile(false);
-                    router.push(`${BASE_PATH}/sophon`);
-                  }}
-                  tooltip="Daily command center"
+                  tooltip="Triage, background jobs, and daily Sophon"
                 >
                   <LayoutDashboardIcon className="size-4" />
                   <span>Command center</span>
