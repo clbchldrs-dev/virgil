@@ -4,8 +4,13 @@
  * Implements the contract Virgil expects: GET /health, GET /api/skills, POST /api/execute,
  * GET /api/pending (empty list). Optional Bearer auth via HERMES_SHARED_SECRET.
  *
- * When OPENCLAW_HTTP_URL is set, execute forwards the ClawIntent JSON to OpenClaw’s
- * execute path; skills merges OpenClaw’s catalog with a local `generic-task` entry.
+ * When OPENCLAW_HTTP_URL is set, execute forwards to OpenClaw:
+ * - **Legacy** (`OPENCLAW_EXECUTE_PATH` e.g. `/api/execute`): POST the ClawIntent JSON as-is.
+ * - **OpenClaw Gateway** (`/tools/invoke`): maps intent → `{ tool, args, sessionKey }` per
+ *   https://docs.openclaw.ai/gateway/tools-invoke-http-api — set `OPENCLAW_GATEWAY_TOKEN`
+ *   (Bearer) to match the gateway. `/v1/skills` often serves the **Control UI (HTML)**,
+ *   not JSON; use `OPENCLAW_EXTRA_SKILL_NAMES` for tool names to advertise, or a real JSON
+ *   skills URL if your deployment exposes one.
  *
  * Run (separate terminal from `pnpm dev`):
  *   pnpm hermes:local-bridge
@@ -35,6 +40,12 @@ const OPENCLAW_EXECUTE =
 const OPENCLAW_SKILLS =
   process.env.OPENCLAW_SKILLS_PATH?.trim() || "/api/skills";
 const OPENCLAW_HEALTH = process.env.OPENCLAW_HEALTH_PATH?.trim() || "/health";
+
+/** Bearer for OpenClaw Gateway HTTP (tools/invoke, health); see OPENCLAW_GATEWAY_TOKEN. */
+const OPENCLAW_GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN?.trim() ?? "";
+
+/** Comma-separated tool names to merge when GET skills path returns HTML or empty. */
+const OPENCLAW_EXTRA_SKILL_NAMES = process.env.OPENCLAW_EXTRA_SKILL_NAMES?.trim() ?? "";
 
 function normalizeOrigin(raw: string): string | null {
   if (!raw) {
@@ -89,6 +100,32 @@ function parseSkillNames(payload: unknown): string[] {
   return [...out];
 }
 
+function openClawFetchHeaders(): Record<string, string> {
+  const h: Record<string, string> = {
+    Accept: "application/json",
+  };
+  if (OPENCLAW_GATEWAY_TOKEN) {
+    h.Authorization = `Bearer ${OPENCLAW_GATEWAY_TOKEN}`;
+  }
+  return h;
+}
+
+function extraSkillNamesFromEnv(): string[] {
+  if (!OPENCLAW_EXTRA_SKILL_NAMES) {
+    return [];
+  }
+  return OPENCLAW_EXTRA_SKILL_NAMES.split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function usesOpenClawToolsInvoke(): boolean {
+  if (process.env.OPENCLAW_GATEWAY_TOOLS_INVOKE === "1") {
+    return true;
+  }
+  return OPENCLAW_EXECUTE.toLowerCase().includes("tools/invoke");
+}
+
 async function fetchOpenClawSkills(): Promise<string[]> {
   if (!OPENCLAW_ORIGIN) {
     return [];
@@ -96,13 +133,23 @@ async function fetchOpenClawSkills(): Promise<string[]> {
   try {
     const res = await fetch(`${OPENCLAW_ORIGIN}${OPENCLAW_SKILLS}`, {
       method: "GET",
-      headers: { Accept: "application/json" },
+      headers: openClawFetchHeaders(),
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) {
       return [];
     }
-    const data: unknown = await res.json();
+    const ct = res.headers.get("content-type") ?? "";
+    if (ct.includes("text/html")) {
+      return [];
+    }
+    const text = await res.text();
+    let data: unknown;
+    try {
+      data = JSON.parse(text) as unknown;
+    } catch {
+      return [];
+    }
     return parseSkillNames(data);
   } catch {
     return [];
@@ -151,6 +198,42 @@ function parseIntent(body: unknown): ClawIntent | null {
   };
 }
 
+function formatGatewayResultPayload(raw: string): string {
+  try {
+    const j: unknown = JSON.parse(raw);
+    if (
+      j &&
+      typeof j === "object" &&
+      "ok" in j &&
+      (j as { ok?: unknown }).ok === true &&
+      "result" in j
+    ) {
+      const r = (j as { result: unknown }).result;
+      if (typeof r === "string") {
+        return r;
+      }
+      return JSON.stringify(r, null, 2);
+    }
+    if (
+      j &&
+      typeof j === "object" &&
+      "ok" in j &&
+      (j as { ok?: unknown }).ok === false &&
+      "error" in j
+    ) {
+      const err = (j as { error: unknown }).error;
+      const msg =
+        err && typeof err === "object" && err !== null && "message" in err
+          ? String((err as { message: unknown }).message)
+          : JSON.stringify(err);
+      return msg;
+    }
+  } catch {
+    /* fall through */
+  }
+  return raw;
+}
+
 async function forwardToOpenClaw(intent: ClawIntent): Promise<Response> {
   if (!OPENCLAW_ORIGIN) {
     return Response.json(
@@ -163,18 +246,53 @@ async function forwardToOpenClaw(intent: ClawIntent): Promise<Response> {
       { status: 503 }
     );
   }
+  const gateway = usesOpenClawToolsInvoke();
+  if (gateway && !OPENCLAW_GATEWAY_TOKEN) {
+    process.stderr.write(
+      "[hermes-local-bridge] Warning: Gateway tools/invoke usually requires OPENCLAW_GATEWAY_TOKEN (Bearer).\n"
+    );
+  }
+  const bodyJson = gateway
+    ? JSON.stringify({
+        tool: intent.skill,
+        args: intent.params,
+        sessionKey: "main",
+      })
+    : JSON.stringify(intent);
   try {
     const res = await fetch(`${OPENCLAW_ORIGIN}${OPENCLAW_EXECUTE}`, {
       method: "POST",
       headers: {
-        Accept: "application/json",
+        ...openClawFetchHeaders(),
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(intent),
+      body: bodyJson,
       signal: AbortSignal.timeout(120_000),
     });
     const text = await res.text();
     const headers = new Headers({ "Content-Type": "application/json" });
+    if (gateway && res.ok) {
+      const output = formatGatewayResultPayload(text);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          output,
+          skill: intent.skill,
+        }),
+        { status: 200, headers }
+      );
+    }
+    if (gateway && !res.ok) {
+      const errText = formatGatewayResultPayload(text);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: errText || `HTTP ${String(res.status)}`,
+          skill: intent.skill,
+        }),
+        { status: res.status, headers }
+      );
+    }
     return new Response(text, { status: res.status, headers });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "forward failed";
@@ -205,6 +323,7 @@ const server = createServer(async (req, res) => {
           ? await (async () => {
               try {
                 const r = await fetch(`${OPENCLAW_ORIGIN}${OPENCLAW_HEALTH}`, {
+                  headers: openClawFetchHeaders(),
                   signal: AbortSignal.timeout(5000),
                 });
                 return r.ok;
@@ -229,7 +348,11 @@ const server = createServer(async (req, res) => {
 
     if (req.method === "GET" && url.pathname === "/api/skills") {
       const fromOc = await fetchOpenClawSkills();
-      const merged = new Set<string>(["generic-task", ...fromOc]);
+      const merged = new Set<string>([
+        "generic-task",
+        ...fromOc,
+        ...extraSkillNamesFromEnv(),
+      ]);
       const skills = [...merged].sort().map((id) => ({ id, name: id }));
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ skills }));
@@ -284,8 +407,13 @@ server.listen(PORT, "127.0.0.1", () => {
   );
   if (OPENCLAW_ORIGIN) {
     process.stderr.write(
-      `[hermes-local-bridge] OpenClaw: ${OPENCLAW_ORIGIN}${OPENCLAW_EXECUTE}\n`
+      `[hermes-local-bridge] OpenClaw: ${OPENCLAW_ORIGIN}${OPENCLAW_EXECUTE} (${usesOpenClawToolsInvoke() ? "gateway tools/invoke" : "legacy body"})\n`
     );
+    if (OPENCLAW_EXTRA_SKILL_NAMES) {
+      process.stderr.write(
+        `[hermes-local-bridge] Extra skill names: ${OPENCLAW_EXTRA_SKILL_NAMES}\n`
+      );
+    }
   } else {
     process.stderr.write(
       "[hermes-local-bridge] OPENCLAW_HTTP_URL unset — execute returns 503 until set.\n"

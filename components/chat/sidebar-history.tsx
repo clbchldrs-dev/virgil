@@ -46,7 +46,33 @@ export type ChatHistory = {
   hasMore: boolean;
 };
 
+/** One page matching GET /api/history when there are no chats — use when resetting useSWRInfinite cache. */
+export const EMPTY_CHAT_HISTORY_PAGE: ChatHistory = {
+  chats: [],
+  hasMore: false,
+};
+
 const PAGE_SIZE = 20;
+
+/**
+ * useSWRInfinite stores each paginated `/api/history` response under its own SWR cache key.
+ * Mutating only the `$inf$` aggregate leaves those entries stale, so the sidebar can
+ * still show deleted chats until each page revalidates.
+ */
+export function clearChatHistorySwrPageCaches(cache: {
+  keys: () => IterableIterator<string>;
+  get: (key: string) => unknown;
+  delete: (key: string) => void;
+}) {
+  const prefix = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history`;
+  for (const key of cache.keys()) {
+    const entry = cache.get(key) as { _k?: unknown } | undefined;
+    const k = entry?._k;
+    if (typeof k === "string" && k.startsWith(prefix)) {
+      cache.delete(key);
+    }
+  }
+}
 
 const groupChatsByDate = (chats: Chat[]): GroupedChats => {
   const now = new Date();

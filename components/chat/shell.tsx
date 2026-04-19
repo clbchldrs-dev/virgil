@@ -33,7 +33,7 @@ import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
 import { OpenClawPendingBanner } from "./openclaw-pending-banner";
 
-/** Pixel unit squares for invitation bowtie SVG (viewBox 0 0 15 5) — wide wings, shallow height, avoids oval/nose read. */
+/** Pixel unit squares for invitation bowtie SVG (viewBox 0 0 15 5) — wings + center knot so the gap does not read as lips. */
 const CREEPY_BOWTIE_PIXELS: readonly [number, number][] = [
   [2, 0],
   [3, 0],
@@ -46,6 +46,7 @@ const CREEPY_BOWTIE_PIXELS: readonly [number, number][] = [
   [3, 1],
   [4, 1],
   [5, 1],
+  [7, 1],
   [9, 1],
   [10, 1],
   [11, 1],
@@ -55,6 +56,9 @@ const CREEPY_BOWTIE_PIXELS: readonly [number, number][] = [
   [1, 2],
   [2, 2],
   [3, 2],
+  [6, 2],
+  [7, 2],
+  [8, 2],
   [11, 2],
   [12, 2],
   [13, 2],
@@ -64,6 +68,7 @@ const CREEPY_BOWTIE_PIXELS: readonly [number, number][] = [
   [3, 3],
   [4, 3],
   [5, 3],
+  [7, 3],
   [9, 3],
   [10, 3],
   [11, 3],

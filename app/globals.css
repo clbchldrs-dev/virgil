@@ -956,7 +956,7 @@ textarea:focus-visible {
   align-items: center;
   display: flex;
   flex-direction: column;
-  gap: clamp(1.2rem, 5vmin, 2rem);
+  gap: clamp(1.85rem, 8vmin, 3rem);
   left: 50%;
   opacity: 0.72;
   pointer-events: none;

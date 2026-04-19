@@ -75,7 +75,11 @@ import {
 } from "../ui/dropdown-menu";
 import { PaperclipIcon, StopIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
-import { getChatHistoryPaginationKey } from "./sidebar-history";
+import {
+  clearChatHistorySwrPageCaches,
+  EMPTY_CHAT_HISTORY_PAGE,
+  getChatHistoryPaginationKey,
+} from "./sidebar-history";
 import {
   type SlashCommand,
   SlashCommandMenu,
@@ -138,7 +142,7 @@ function PureMultimodalInput({
   setShowThinking: Dispatch<SetStateAction<boolean>>;
 }) {
   const router = useRouter();
-  const { mutate } = useSWRConfig();
+  const { mutate, cache } = useSWRConfig();
   const { setTheme, resolvedTheme } = useTheme();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputLiveRef = useRef(input);
@@ -262,11 +266,24 @@ function PureMultimodalInput({
           action: {
             label: "Delete all",
             onClick: () => {
-              fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history`, {
-                method: "DELETE",
-              });
-              router.push("/");
-              toast.success("All chats deleted");
+              void (async () => {
+                const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+                const res = await fetch(`${base}/api/history`, {
+                  method: "DELETE",
+                });
+                if (!res.ok) {
+                  toast.error("Could not delete chats. Try again.");
+                  return;
+                }
+                clearChatHistorySwrPageCaches(cache);
+                await mutate(unstable_serialize(getChatHistoryPaginationKey), [
+                  EMPTY_CHAT_HISTORY_PAGE,
+                ], {
+                  revalidate: false,
+                });
+                router.push("/");
+                toast.success("All chats deleted");
+              })();
             },
           },
         });

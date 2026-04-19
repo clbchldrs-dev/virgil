@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import {
+  clearChatHistorySwrPageCaches,
+  EMPTY_CHAT_HISTORY_PAGE,
   getChatHistoryPaginationKey,
   SidebarHistory,
 } from "@/components/chat/sidebar-history";
@@ -157,20 +159,29 @@ function SidebarPrimaryNav({
 export function AppSidebar({ user }: { user: User | undefined }) {
   const router = useRouter();
   const { isMobile, setOpenMobile, toggleSidebar } = useSidebar();
-  const { mutate } = useSWRConfig();
+  const { mutate, cache } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
 
-  const handleDeleteAll = () => {
+  const handleDeleteAll = async () => {
     setShowDeleteAllDialog(false);
-    router.replace(`${BASE_PATH}/`);
-    mutate(unstable_serialize(getChatHistoryPaginationKey), [], {
-      revalidate: false,
-    });
 
-    fetch(`${BASE_PATH}/api/history`, {
+    const res = await fetch(`${BASE_PATH}/api/history`, {
       method: "DELETE",
     });
 
+    if (!res.ok) {
+      toast.error("Could not delete chats. Try again.");
+      return;
+    }
+
+    clearChatHistorySwrPageCaches(cache);
+    await mutate(unstable_serialize(getChatHistoryPaginationKey), [
+      EMPTY_CHAT_HISTORY_PAGE,
+    ], {
+      revalidate: false,
+    });
+
+    router.replace(`${BASE_PATH}/`);
     toast.success("All chats deleted");
   };
 
