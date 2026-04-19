@@ -22,10 +22,16 @@
 
 ### Run the poll worker on manos (or Mac)
 
-The repo ships a loop that talks **outbound** to hosted Virgil and **inbound** only to loopback Hermes:
+The repo ships a loop that talks **outbound** to hosted Virgil and **inbound** only to loopback Hermes. The recommended way to run it is **`pnpm virgil:start`** — the orchestrator (`scripts/virgil-start.ts`) auto-spawns `scripts/delegation-poll-worker.ts` whenever `VIRGIL_DELEGATION_WORKER_BASE_URL` points at a **non-localhost** origin (plus a worker secret):
 
 ```bash
-# From a checkout that has the same .env.local patterns (see below)
+# Starts next dev + OpenClaw SSH tunnel (if OPENCLAW_SSH_HOST is set) + poll worker.
+pnpm virgil:start
+```
+
+If you prefer to run only the poll loop (e.g. on a headless manos box where you don't need `next dev`), use the standalone script:
+
+```bash
 pnpm delegation:poll-worker
 ```
 

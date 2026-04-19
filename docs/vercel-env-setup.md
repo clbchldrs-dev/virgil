@@ -59,6 +59,13 @@ After adding or changing **`NEXT_PUBLIC_APP_URL`**, trigger a **new deployment**
 
 Copy from [.env.example](../.env.example) only if you use the feature:
 
+- **Delegation (Shape A — recommended for Vercel)** — let Vercel enqueue `delegateTask` intents to Postgres and have a local poll worker on the Mac/manos drain them. Set on **Production**:
+  - `VIRGIL_DELEGATION_POLL_PRIMARY=1`
+  - `VIRGIL_DELEGATION_WORKER_SECRET=<openssl rand -base64 32>` (or reuse `HERMES_SHARED_SECRET`)
+  - Leave **all** `OPENCLAW_*` **unset** on Vercel (LAN only).
+  - Leave `HERMES_HTTP_URL` **unset** unless you have a public Hermes tunnel.
+  
+  On the local Mac (`.env.local`), set `VIRGIL_DELEGATION_WORKER_BASE_URL=https://<your-app>.vercel.app` and the **same** `VIRGIL_DELEGATION_WORKER_SECRET`, then run `pnpm virgil:start` — it auto-spawns the poll worker alongside `next dev` and the OpenClaw SSH tunnel. Full operator runbook: [docs/virgil-manos-delegation.md](virgil-manos-delegation.md). Verify after deploy via the signed-in `GET /api/delegation/health` endpoint.
 - **Night review** — `NIGHT_REVIEW_ENABLED`, `NIGHT_REVIEW_MODEL` (**`ollama/…` only**; worker must reach `OLLAMA_BASE_URL`), `NIGHT_REVIEW_TIMEZONE`, `NIGHT_REVIEW_EMAIL_ON_FINDINGS`, `AGENT_FETCH_ALLOWLIST_HOSTS`
 - **GitHub product opportunities** — `GITHUB_REPOSITORY`, `GITHUB_PRODUCT_OPPORTUNITY_TOKEN` (or `GITHUB_TOKEN`)
 - **Mem0** — `MEM0_API_KEY`, `MEM0_MONTHLY_SEARCH_LIMIT` (default `1000`; caps retrieval API calls per month, falls back to Postgres FTS)

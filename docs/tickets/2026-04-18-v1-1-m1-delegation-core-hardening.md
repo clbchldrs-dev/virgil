@@ -21,10 +21,13 @@ Make delegation predictable and safe across Hermes/OpenClaw backends, including 
 - `lib/integrations/delegation-provider.ts`
 - `lib/integrations/hermes-client.ts`
 - `lib/integrations/hermes-config.ts`
+- `lib/integrations/hermes-bridge.ts` (in-app Hermes bridge — 2026-04-19)
 - `lib/ai/tools/delegate-to-openclaw.ts`
 - `lib/ai/tools/approve-openclaw-intent.ts`
-- `app/api/hermes/execute/route.ts`
-- `app/api/hermes/pending/route.ts`
+- `app/api/hermes-bridge/execute/route.ts` (replaces `app/api/hermes/execute/route.ts`)
+- `app/api/hermes-bridge/pending/route.ts` (replaces `app/api/hermes/pending/route.ts`)
+- `app/api/hermes-bridge/skills/route.ts`
+- `app/api/hermes-bridge/health/route.ts`
 - `app/(chat)/api/openclaw/pending/route.ts`
 
 ## Acceptance criteria
