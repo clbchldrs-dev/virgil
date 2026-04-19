@@ -14,4 +14,4 @@ This file used to hold a **January 2024 Phase 1** Cursor sprint. That work is **
 
 ## Everything in one map
 
-**[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** — short index + link to historical Phase 1 files only if you need them.
+**[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** — short index. **Historical Phase 1 (Jan 2024):** [docs/archive/phase1/README.md](docs/archive/phase1/README.md).

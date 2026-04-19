@@ -1,0 +1,9 @@
+MOVED — January 2024 Phase 1 archive (historical)
+
+New location:
+  docs/archive/phase1/QUICK_START.txt
+
+Current onboarding:
+  README.md → SETUP.md → docs/PROJECT.md → AGENTS.md
+
+See also: docs/archive/phase1/README.md

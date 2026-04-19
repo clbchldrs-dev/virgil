@@ -121,7 +121,7 @@ Postgres and Redis via Docker (OrbStack or Docker Desktop) if v2 needs them. Ful
 - [docs/github-product-opportunity.md](docs/github-product-opportunity.md): optional GitHub Issues inbox (gateway models)
 - [docs/digital-self-bridge.md](docs/digital-self-bridge.md): optional Digital Self orchestrator (`digital-self/`)
 
-**Historical (January 2024 Phase 1 sprint):** [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) lists archived prompts and checklists ([QUICK_START.txt](QUICK_START.txt), [VIRGIL_PHASE1_SETUP.md](VIRGIL_PHASE1_SETUP.md), etc.) — not the live onboarding path.
+**Historical (January 2024 Phase 1 sprint):** [docs/archive/phase1/README.md](docs/archive/phase1/README.md) — ADR-002, prompts, timelines (stubs remain at old paths; see [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)).
 
 ## Project management and agents
 

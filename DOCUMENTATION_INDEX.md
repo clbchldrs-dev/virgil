@@ -33,16 +33,8 @@
 
 ## Historical — Phase 1 implementation package (January 2024)
 
-The Cursor sprint artifacts below are **archived context** (session prompts, week-by-week checklists). They are **not** the live onboarding path; commands may say `npm` where the repo uses `pnpm`.
+All artifacts live under **[docs/archive/phase1/](docs/archive/phase1/README.md)** (ADR-002, Cursor prompts, timelines, checklists). They are **not** the live onboarding path; examples may say `npm` where the repo uses `pnpm`.
 
-| File | Note |
-|------|------|
-| [QUICK_START.txt](QUICK_START.txt) | Plain-text quick ref |
-| [PHASE1_CHECKLISTS.md](PHASE1_CHECKLISTS.md) | Session checklists |
-| [VIRGIL_PHASE1_SETUP.md](VIRGIL_PHASE1_SETUP.md) | Week-by-week guide |
-| [VIRGIL_READY_TO_BUILD.md](VIRGIL_READY_TO_BUILD.md) | Executive summary |
-| [SESSION_SUMMARY_RECONCILIATION.md](SESSION_SUMMARY_RECONCILIATION.md) | Reconciliation narrative |
-| [docs/CURSOR_PROMPTS_TYPESCRIPT.md](docs/CURSOR_PROMPTS_TYPESCRIPT.md) | Copy-paste Cursor prompts |
-| [docs/ADR-002-three-paths-virgil.md](docs/ADR-002-three-paths-virgil.md) | ADR (design still useful; implementation status varies) |
+**Compatibility:** Short **stub** files remain at the old root and `docs/` paths (e.g. [QUICK_START.txt](QUICK_START.txt), [docs/ADR-002-three-paths-virgil.md](docs/ADR-002-three-paths-virgil.md)) and point to the archive.
 
-Pre-ship sketches: [docs/archive/README.md](docs/archive/README.md).
+Pre-ship sketches (separate): [docs/archive/README.md](docs/archive/README.md).

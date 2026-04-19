@@ -1,6 +1,6 @@
 # Phase 1 archive (January 2024)
 
-Cursor implementation sprint artifacts for **ADR-002** (Three Paths × Three Tiers): prompts, week-by-week setup, checklists, and reconciliation notes. **Superseded** for onboarding by [README.md](../../README.md) → [SETUP.md](../../SETUP.md) → [docs/PROJECT.md](../../PROJECT.md) → [AGENTS.md](../../AGENTS.md).
+Cursor implementation sprint artifacts for **ADR-002** (Three Paths × Three Tiers): prompts, week-by-week setup, checklists, and reconciliation notes. **Superseded** for onboarding by [README.md](../../../README.md) → [SETUP.md](../../../SETUP.md) → [docs/PROJECT.md](../../PROJECT.md) → [AGENTS.md](../../../AGENTS.md).
 
 | File | Description |
 |------|-------------|
