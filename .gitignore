@@ -39,6 +39,9 @@ tsconfig.tsbuildinfo
 # Cursor IDE debug logs (local)
 .cursor/debug*.log
 
+# Compound Engineering — machine-local prefs (example file is committed)
+.compound-engineering/*.local.yaml
+
 # Generated from Markdown (see scripts/README-personality-docx.md)
 docs/personality/Virgil_personality_synthesis.docx
 
