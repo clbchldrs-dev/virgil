@@ -52,8 +52,8 @@ Unified three separate async approaches into one coherent system:
 
 | File | Size | Purpose |
 |------|------|---------|
-| `docs/ADR-002-three-paths-virgil.md` | 13 KB | Architecture Decision Record + technical design |
-| `docs/CURSOR_PROMPTS_TYPESCRIPT.md` | 28 KB | 8 copy-paste prompts for Cursor (Session 1-8) |
+| `ADR-002-three-paths-virgil.md` | 13 KB | Architecture Decision Record + technical design |
+| `CURSOR_PROMPTS_TYPESCRIPT.md` | 28 KB | 8 copy-paste prompts for Cursor (Session 1-8) |
 | `VIRGIL_PHASE1_SETUP.md` | 11 KB | 4-week timeline with weekly checkpoints |
 | `VIRGIL_READY_TO_BUILD.md` | 7 KB | Executive summary & getting started |
 | `QUICK_START.txt` | 4 KB | 5-minute reference guide |
@@ -183,13 +183,13 @@ Total: ~8 hours over 4 weeks
 ## How to Start (Next Actions)
 
 ### Today (15 min)
-1. Read `docs/ADR-002-three-paths-virgil.md` - Understand the design
+1. Read `ADR-002-three-paths-virgil.md` - Understand the design
 2. Skim `VIRGIL_PHASE1_SETUP.md` - Understand the timeline
-3. Review `docs/CURSOR_PROMPTS_TYPESCRIPT.md` - See what's coming
+3. Review `CURSOR_PROMPTS_TYPESCRIPT.md` - See what's coming
 
 ### Tomorrow (30 min - Session 1)
 1. Open Cursor
-2. Copy **PROMPT 1** from `docs/CURSOR_PROMPTS_TYPESCRIPT.md`
+2. Copy **PROMPT 1** from `CURSOR_PROMPTS_TYPESCRIPT.md`
 3. Paste into Cursor
 4. Let it generate schema changes to `lib/db/schema.ts`
 5. Test: `npx drizzle-kit push && npm run type-check`
@@ -292,12 +292,12 @@ A system that has:
 ### In `/Users/caleb/Documents/virgil/`
 
 **Core Design (Read First):**
-- `docs/ADR-002-three-paths-virgil.md` - Full design doc (read this)
+- `ADR-002-three-paths-virgil.md` - Full design doc (read this)
 - `VIRGIL_READY_TO_BUILD.md` - Executive summary
 - `QUICK_START.txt` - 5-minute cheat sheet
 
 **Implementation (Use During Build):**
-- `docs/CURSOR_PROMPTS_TYPESCRIPT.md` - All 8 prompts (copy-paste these)
+- `CURSOR_PROMPTS_TYPESCRIPT.md` - All 8 prompts (copy-paste these)
 - `VIRGIL_PHASE1_SETUP.md` - Week-by-week timeline + testing
 
 **This File:**
@@ -407,10 +407,10 @@ You will:
 ## Questions?
 
 **Design questions?**
-→ Read `docs/ADR-002-three-paths-virgil.md`
+→ Read `ADR-002-three-paths-virgil.md`
 
 **Implementation questions?**
-→ Read `docs/CURSOR_PROMPTS_TYPESCRIPT.md` + look at existing Virgil code
+→ Read `CURSOR_PROMPTS_TYPESCRIPT.md` + look at existing Virgil code
 
 **Timeline questions?**
 → See `VIRGIL_PHASE1_SETUP.md` weekly checklist
@@ -426,10 +426,10 @@ You will:
 cd /Users/caleb/Documents/virgil
 
 # Step 1: Read the design (15 min)
-cat docs/ADR-002-three-paths-virgil.md | head -150
+cat ADR-002-three-paths-virgil.md | head -150
 
 # Step 2: Open Cursor and copy PROMPT 1
-cat docs/CURSOR_PROMPTS_TYPESCRIPT.md | grep -A 60 "PROMPT 1"
+cat CURSOR_PROMPTS_TYPESCRIPT.md | grep -A 60 "PROMPT 1"
 
 # Step 3: Let Cursor generate, then test
 npx drizzle-kit push

@@ -42,7 +42,7 @@
 
 **File:** `lib/db/schema.ts`
 
-**Cursor Prompt:** Copy entire **PROMPT 1** from `docs/CURSOR_PROMPTS_TYPESCRIPT.md`
+**Cursor Prompt:** Copy entire **PROMPT 1** from `CURSOR_PROMPTS_TYPESCRIPT.md`
 
 **Steps:**
 1. Open Cursor
@@ -70,7 +70,7 @@ npx drizzle-kit introspect
 
 **File:** Create `lib/db/query-modules/backgroundJobs.ts`
 
-**Cursor Prompt:** Copy **PROMPT 2** from `docs/CURSOR_PROMPTS_TYPESCRIPT.md`
+**Cursor Prompt:** Copy **PROMPT 2** from `CURSOR_PROMPTS_TYPESCRIPT.md`
 
 **Steps:**
 1. Paste PROMPT 2
@@ -95,7 +95,7 @@ npx drizzle-kit introspect
 
 **Files:** Create `app/api/jobs/`
 
-**Cursor Prompt:** Copy **PROMPT 3** from `docs/CURSOR_PROMPTS_TYPESCRIPT.md`
+**Cursor Prompt:** Copy **PROMPT 3** from `CURSOR_PROMPTS_TYPESCRIPT.md`
 
 **Steps:**
 1. Paste PROMPT 3
@@ -124,7 +124,7 @@ npx drizzle-kit introspect
 
 **File:** Create `lib/background-jobs/processor.ts`
 
-**Cursor Prompt:** Copy **PROMPT 4** from `docs/CURSOR_PROMPTS_TYPESCRIPT.md`
+**Cursor Prompt:** Copy **PROMPT 4** from `CURSOR_PROMPTS_TYPESCRIPT.md`
 
 **Steps:**
 1. Paste PROMPT 4
@@ -149,7 +149,7 @@ npx drizzle-kit introspect
 
 **File:** Create `lib/background-jobs/handlers.ts`
 
-**Cursor Prompt:** Copy **PROMPT 5** from `docs/CURSOR_PROMPTS_TYPESCRIPT.md`
+**Cursor Prompt:** Copy **PROMPT 5** from `CURSOR_PROMPTS_TYPESCRIPT.md`
 
 **Steps:**
 1. Paste PROMPT 5
@@ -172,7 +172,7 @@ npx drizzle-kit introspect
 
 **File:** Create `tests/api/jobs.test.ts`
 
-**Cursor Prompt:** Copy **PROMPT 6** from `docs/CURSOR_PROMPTS_TYPESCRIPT.md`
+**Cursor Prompt:** Copy **PROMPT 6** from `CURSOR_PROMPTS_TYPESCRIPT.md`
 
 **Steps:**
 1. Paste PROMPT 6
@@ -193,7 +193,7 @@ npx drizzle-kit introspect
 
 **File:** Modify `lib/night-review/index.ts`
 
-**Cursor Prompt:** Copy **PROMPT 7** from `docs/CURSOR_PROMPTS_TYPESCRIPT.md`
+**Cursor Prompt:** Copy **PROMPT 7** from `CURSOR_PROMPTS_TYPESCRIPT.md`
 
 **Steps:**
 1. Paste PROMPT 7
@@ -217,7 +217,7 @@ npx drizzle-kit introspect
 
 **File:** Create `app/api/metrics/job-slas/route.ts`
 
-**Cursor Prompt:** Copy **PROMPT 8** from `docs/CURSOR_PROMPTS_TYPESCRIPT.md`
+**Cursor Prompt:** Copy **PROMPT 8** from `CURSOR_PROMPTS_TYPESCRIPT.md`
 
 **Steps:**
 1. Paste PROMPT 8
@@ -418,8 +418,8 @@ You: [Test with npx drizzle-kit push]
 
 ## Questions?
 
-- **Design questions:** See `docs/ADR-002-three-paths-virgil.md`
-- **Cursor prompt issues:** See `docs/CURSOR_PROMPTS_TYPESCRIPT.md`
+- **Design questions:** See `ADR-002-three-paths-virgil.md`
+- **Cursor prompt issues:** See `CURSOR_PROMPTS_TYPESCRIPT.md`
 - **Implementation issues:** Check existing code patterns in `lib/db/`, `app/api/`
 - **TypeScript errors:** Run `npm run type-check` for details
 
@@ -433,6 +433,6 @@ You: [Test with npx drizzle-kit push]
 4. **Next Week:** Complete Sessions 5-7
 5. **Final Week:** Session 8 + integration testing + cleanup
 
-**Start now: Open Cursor, paste PROMPT 1 from docs/CURSOR_PROMPTS_TYPESCRIPT.md**
+**Start now: Open Cursor, paste PROMPT 1 from CURSOR_PROMPTS_TYPESCRIPT.md**
 
 Good luck! 🚀

@@ -11,7 +11,7 @@ Authoritative detail (env table, Vercel, quotas, self-hosted cron) lives in **[A
 - **[docs/free-tier-feature-map.md](docs/free-tier-feature-map.md)** — which **features** hit **Vercel / QStash / Resend / Gateway** quotas
 - **[AGENTS.md — Scheduled jobs / self-hosted schedules](AGENTS.md#scheduled-jobs-on-the-host-no-vercel-cron)** — cron parity with [`vercel.json`](vercel.json)
 - **[docs/PROJECT.md](docs/PROJECT.md)** — project map and handoff
-- **[SETUP.md](SETUP.md)** — setup link hub
+- **[SETUP.md](SETUP.md)** — condensed setup + env pointers (full catalog in AGENTS)
 - **[docs/memory-store-parity.md](docs/memory-store-parity.md)** — **one Postgres** for local + Vercel; optional **`POST /api/memory/bridge`** for terminal/scripts
 - **[docs/google-calendar-integration.md](docs/google-calendar-integration.md)** — optional Google Calendar env + chat/REST behavior (production: set the same `GOOGLE_CALENDAR_*` and `VIRGIL_CALENDAR_INTEGRATION` on the host)
 - **[docs/security/tool-inventory.md](docs/security/tool-inventory.md)** — cron / QStash auth matrix

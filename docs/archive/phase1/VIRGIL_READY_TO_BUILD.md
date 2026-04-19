@@ -18,13 +18,13 @@ I've created a complete Phase 1 implementation package for Virgil, based on the 
 ## Files Created in Virgil Repo
 
 ### Design Documents
-- **`docs/ADR-002-three-paths-virgil.md`** (13 KB)
+- **`ADR-002-three-paths-virgil.md`** (13 KB)
   - Design decision record adapted to Virgil
   - Problem, solution, technical architecture
   - Three paths (fast/slow/nightly) + three tiers (observe/propose/act)
   - Phases 1-5 roadmap
 
-- **`docs/CURSOR_PROMPTS_TYPESCRIPT.md`** (28 KB)
+- **`CURSOR_PROMPTS_TYPESCRIPT.md`** (28 KB)
   - 8 copy-paste prompts for Cursor
   - Each prompt is self-contained and detailed
   - TypeScript/Drizzle/Next.js specific
@@ -82,7 +82,7 @@ I've created a complete Phase 1 implementation package for Virgil, based on the 
 ### Step 1: Read the Design (Today, 15 min)
 ```bash
 cd /Users/caleb/Documents/virgil
-cat docs/ADR-002-three-paths-virgil.md | head -100
+cat ADR-002-three-paths-virgil.md | head -100
 ```
 
 ### Step 2: Understand the Timeline (Today, 10 min)
@@ -92,7 +92,7 @@ cat VIRGIL_PHASE1_SETUP.md | grep "Session\|Week"
 
 ### Step 3: Start Session 1 (Tomorrow or Now)
 1. Open Cursor
-2. Go to `docs/CURSOR_PROMPTS_TYPESCRIPT.md`
+2. Go to `CURSOR_PROMPTS_TYPESCRIPT.md`
 3. Copy entire **PROMPT 1** (Database Schema)
 4. Paste into Cursor chat
 5. Let it generate schema changes
@@ -217,7 +217,7 @@ You will:
    - Understand weekly checkpoints
 
 3. **Open Cursor**
-   - Go to `docs/CURSOR_PROMPTS_TYPESCRIPT.md`
+   - Go to `CURSOR_PROMPTS_TYPESCRIPT.md`
    - Copy PROMPT 1
    - Paste and let it generate
 
@@ -236,8 +236,8 @@ You will:
 
 ## Questions Before Starting?
 
-**About the design:** See `docs/ADR-002-three-paths-virgil.md`  
-**About a prompt:** See `docs/CURSOR_PROMPTS_TYPESCRIPT.md`  
+**About the design:** See `ADR-002-three-paths-virgil.md`  
+**About a prompt:** See `CURSOR_PROMPTS_TYPESCRIPT.md`  
 **About the timeline:** See `VIRGIL_PHASE1_SETUP.md`  
 **About implementation:** Check existing Virgil code patterns (`lib/db/`, `app/api/`)
 
@@ -246,8 +246,8 @@ You will:
 ## You're Ready
 
 All three documents are in your Virgil repo:
-- `docs/ADR-002-three-paths-virgil.md` ← Design
-- `docs/CURSOR_PROMPTS_TYPESCRIPT.md` ← Implementation
+- `ADR-002-three-paths-virgil.md` ← Design
+- `CURSOR_PROMPTS_TYPESCRIPT.md` ← Implementation
 - `VIRGIL_PHASE1_SETUP.md` ← Timeline + checklist
 
 Copy PROMPT 1 into Cursor. It'll generate the first database changes.

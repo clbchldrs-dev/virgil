@@ -61,7 +61,7 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 | Security hardening backlog (Phases A–D) | [docs/superpowers/plans/2026-03-29-security-hardening-agents.md](superpowers/plans/2026-03-29-security-hardening-agents.md) |
 | Exploratory long-form plans and specs | [docs/superpowers/](superpowers/) — drafts; not SSOT for shipped app behavior unless promoted elsewhere |
 | Voice / persona SSOT (v1) | [docs/VIRGIL_PERSONA.md](VIRGIL_PERSONA.md); worksheet [personality/Virgil_personality_synthesis.md](personality/Virgil_personality_synthesis.md); regenerate DOCX from Markdown via [scripts/README-personality-docx.md](../scripts/README-personality-docx.md) (output is gitignored) |
-| January 2024 Phase 1 archive (historical; superseded for onboarding by README + AGENTS) | [DOCUMENTATION_INDEX.md](../DOCUMENTATION_INDEX.md), [START_HERE.md](../START_HERE.md), [QUICK_START.txt](../QUICK_START.txt), [PHASE1_CHECKLISTS.md](../PHASE1_CHECKLISTS.md), [VIRGIL_PHASE1_SETUP.md](../VIRGIL_PHASE1_SETUP.md), [SESSION_SUMMARY_RECONCILIATION.md](../SESSION_SUMMARY_RECONCILIATION.md), [VIRGIL_READY_TO_BUILD.md](../VIRGIL_READY_TO_BUILD.md) |
+| January 2024 Phase 1 archive (historical; superseded for onboarding by README → SETUP → this file + AGENTS) | Short index: [DOCUMENTATION_INDEX.md](../DOCUMENTATION_INDEX.md); redirect: [START_HERE.md](../START_HERE.md); artifacts: [QUICK_START.txt](../QUICK_START.txt), [PHASE1_CHECKLISTS.md](../PHASE1_CHECKLISTS.md), [VIRGIL_PHASE1_SETUP.md](../VIRGIL_PHASE1_SETUP.md), [SESSION_SUMMARY_RECONCILIATION.md](../SESSION_SUMMARY_RECONCILIATION.md), [VIRGIL_READY_TO_BUILD.md](../VIRGIL_READY_TO_BUILD.md) |
 | Optional OpenClaw LAN execution | [openclaw-bridge.md](openclaw-bridge.md) |
 | Optional **Digital Self** messaging orchestrator (sibling package) | [digital-self-bridge.md](digital-self-bridge.md), [`digital-self/`](../digital-self/) |
 | Archived Cursor prompts / pre-ship sketches | [archive/README.md](archive/README.md) |
@@ -85,7 +85,7 @@ Longer-term direction is scoped in **[docs/TARGET_ARCHITECTURE.md](TARGET_ARCHIT
 | Read-only Google Calendar (env OAuth, primary calendar, chat + REST) | [docs/google-calendar-integration.md](google-calendar-integration.md) |
 | Free-tier quotas vs features | [docs/free-tier-feature-map.md](free-tier-feature-map.md) |
 | Local setup / Docker / Ollama / LAN (procedures, env table) | [AGENTS.md](../AGENTS.md) — [Setup checklist](../AGENTS.md#setup-checklist), [Deployment (production)](../AGENTS.md#deployment-production) |
-| Setup / deploy link hubs (thin; discoverability only) | [SETUP.md](../SETUP.md), [DEPLOY.md](../DEPLOY.md) |
+| Setup (condensed) + deploy link hub | [SETUP.md](../SETUP.md), [DEPLOY.md](../DEPLOY.md) |
 | Beta on a LAN home server (Ubuntu-first Docker stack, bundled Ollama, systemd, cold start / warmup) | [docs/beta-lan-gaming-pc.md](beta-lan-gaming-pc.md) |
 | Linux 24/7 roadmap (native Ubuntu, phases 1–4: cold start → intelligence → synthesis → hardening) | [docs/VIRGIL_ROADMAP_LINUX_24_7.md](VIRGIL_ROADMAP_LINUX_24_7.md) |
 | Human-friendly overview | [README.md](../README.md) |

@@ -8,9 +8,9 @@ Use these to track progress through all 8 sessions and 4 weeks.
 
 ## Pre-Implementation (This Week)
 
-- [ ] Read `docs/ADR-002-three-paths-virgil.md` (15 min)
+- [ ] Read `ADR-002-three-paths-virgil.md` (15 min)
 - [ ] Skim `VIRGIL_PHASE1_SETUP.md` (10 min)
-- [ ] Review `docs/CURSOR_PROMPTS_TYPESCRIPT.md` sections 1-2 (5 min)
+- [ ] Review `CURSOR_PROMPTS_TYPESCRIPT.md` sections 1-2 (5 min)
 - [ ] Verify repo state: `npm run type-check` (should pass)
 - [ ] Verify database: `echo $DATABASE_URL` (should be set)
 - [ ] Open Cursor and test it works
@@ -472,7 +472,7 @@ Use this checklist for:
 
 ## Questions During Implementation?
 
-**Design:** Read `docs/ADR-002-three-paths-virgil.md`  
+**Design:** Read `ADR-002-three-paths-virgil.md`  
 **Timeline:** Read `VIRGIL_PHASE1_SETUP.md`  
 **Troubleshooting:** See `SESSION_SUMMARY_RECONCILIATION.md`  
 **Quick reference:** See `QUICK_START.txt`  

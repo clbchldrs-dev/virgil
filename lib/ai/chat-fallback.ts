@@ -1,3 +1,4 @@
+import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { VirgilError } from "@/lib/errors";
 
 export type FallbackTier = "ollama" | "gemini" | "gateway";
@@ -22,8 +23,7 @@ export function getFallbackGeminiModel(): string {
 
 export function getFallbackGatewayModel(): string {
   return (
-    process.env.VIRGIL_FALLBACK_GATEWAY_MODEL?.trim() ||
-    "deepseek/deepseek-v3.2"
+    process.env.VIRGIL_FALLBACK_GATEWAY_MODEL?.trim() || DEFAULT_CHAT_MODEL
   );
 }
 

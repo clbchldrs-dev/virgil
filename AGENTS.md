@@ -160,7 +160,7 @@ Online deployment should stay lightweight:
 - New env vars must be documented in:
   - `.env.example`
   - **This file** — [Setup checklist](#setup-checklist) and [Deployment (production)](#deployment-production)
-  - Thin link hubs [SETUP.md](SETUP.md) and [DEPLOY.md](DEPLOY.md) (discoverability only; no duplicate tables)
+  - [SETUP.md](SETUP.md) (condensed setup + env pointers) and [DEPLOY.md](DEPLOY.md) (discoverability); full tables stay in this file
 
 ## Command center (operator surface)
 

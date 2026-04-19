@@ -10,8 +10,8 @@ You are here: /Users/caleb/Documents/virgil
 What's ready: Complete Phase 1 implementation plan for Cursor
 
 Files created:
-  ✓ docs/ADR-002-three-paths-virgil.md         (Design)
-  ✓ docs/CURSOR_PROMPTS_TYPESCRIPT.md          (8 Prompts)
+  ✓ ADR-002-three-paths-virgil.md         (Design)
+  ✓ CURSOR_PROMPTS_TYPESCRIPT.md          (8 Prompts)
   ✓ VIRGIL_PHASE1_SETUP.md                     (Timeline)
   ✓ VIRGIL_READY_TO_BUILD.md                   (Overview)
 
@@ -20,13 +20,13 @@ START HERE (DO THIS NOW)
 ================================================================================
 
 1. Read ADR-002 (15 min):
-   cat docs/ADR-002-three-paths-virgil.md | head -150
+   cat ADR-002-three-paths-virgil.md | head -150
 
 2. Review Session 1:
    cat VIRGIL_PHASE1_SETUP.md | grep -A 20 "Session 1"
 
 3. Open Cursor, copy PROMPT 1:
-   cat docs/CURSOR_PROMPTS_TYPESCRIPT.md | grep -A 100 "PROMPT 1"
+   cat CURSOR_PROMPTS_TYPESCRIPT.md | grep -A 100 "PROMPT 1"
 
 4. Paste PROMPT 1 into Cursor
 
@@ -121,9 +121,9 @@ FILES TO READ (IN ORDER)
 ================================================================================
 
 1. QUICK_START.txt (this file) — 5 min
-2. docs/ADR-002-three-paths-virgil.md — 15 min (design)
+2. ADR-002-three-paths-virgil.md — 15 min (design)
 3. VIRGIL_PHASE1_SETUP.md — 10 min (timeline)
-4. docs/CURSOR_PROMPTS_TYPESCRIPT.md — reference (8 prompts)
+4. CURSOR_PROMPTS_TYPESCRIPT.md — reference (8 prompts)
 
 ================================================================================
 CURSOR WORKFLOW
@@ -131,7 +131,7 @@ CURSOR WORKFLOW
 
 For each PROMPT (1-8):
 
-1. cat docs/CURSOR_PROMPTS_TYPESCRIPT.md | grep -A 100 "PROMPT X"
+1. cat CURSOR_PROMPTS_TYPESCRIPT.md | grep -A 100 "PROMPT X"
    (Copy the entire prompt section)
 
 2. Open Cursor
@@ -152,8 +152,8 @@ For each PROMPT (1-8):
 QUICK LINKS (In Repo)
 ================================================================================
 
-Design:           docs/ADR-002-three-paths-virgil.md
-Prompts:          docs/CURSOR_PROMPTS_TYPESCRIPT.md
+Design:           ADR-002-three-paths-virgil.md
+Prompts:          CURSOR_PROMPTS_TYPESCRIPT.md
 Timeline:         VIRGIL_PHASE1_SETUP.md
 Overview:         VIRGIL_READY_TO_BUILD.md
 This file:        QUICK_START.txt
@@ -183,7 +183,7 @@ SUCCESS CRITERIA (END OF PHASE 1)
 QUESTIONS?
 ================================================================================
 
-Design questions?       → Read docs/ADR-002-three-paths-virgil.md
+Design questions?       → Read ADR-002-three-paths-virgil.md
 Implementation questions? → Look at existing code in lib/db/, app/api/
 Stuck on a prompt?      → Ask Cursor for clarification
 Timeline questions?     → See VIRGIL_PHASE1_SETUP.md weekly checklist
@@ -194,9 +194,9 @@ READY TO START?
 
 Next action:
 
-1. Read docs/ADR-002-three-paths-virgil.md (15 min)
+1. Read ADR-002-three-paths-virgil.md (15 min)
 2. Open Cursor
-3. Copy PROMPT 1 from docs/CURSOR_PROMPTS_TYPESCRIPT.md
+3. Copy PROMPT 1 from CURSOR_PROMPTS_TYPESCRIPT.md
 4. Paste into Cursor
 5. Let it generate schema changes
 6. Test with: npx drizzle-kit push

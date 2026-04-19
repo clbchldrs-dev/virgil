@@ -1,4 +1,28 @@
-export const DEFAULT_CHAT_MODEL = "deepseek/deepseek-v3.2";
+/** Built-in default when no env override is set (see {@link DEFAULT_CHAT_MODEL}). */
+const BUILTIN_DEFAULT_CHAT_MODEL = "google/gemini-2.5-flash-lite";
+
+function resolveDefaultChatModelFromEnv(): string | undefined {
+  if (typeof process === "undefined") {
+    return undefined;
+  }
+  const fromPublic = process.env.NEXT_PUBLIC_DEFAULT_CHAT_MODEL?.trim();
+  if (fromPublic) {
+    return fromPublic;
+  }
+  const fromEnv = process.env.DEFAULT_CHAT_MODEL?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+  return undefined;
+}
+
+/**
+ * Default chat model id (picker, new chats, server fallbacks that import this symbol).
+ * Override with `NEXT_PUBLIC_DEFAULT_CHAT_MODEL` (recommended: same value on client + server)
+ * or `DEFAULT_CHAT_MODEL` (server / Node scripts only — client bundle will not see it).
+ */
+export const DEFAULT_CHAT_MODEL =
+  resolveDefaultChatModelFromEnv() ?? BUILTIN_DEFAULT_CHAT_MODEL;
 
 /** Picker id: server resolves to a concrete gateway or Ollama model per {@link resolveAutoChatModel}. */
 export const VIRGIL_AUTO_MODEL_ID = "virgil/auto";

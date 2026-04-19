@@ -104,20 +104,24 @@ Postgres and Redis via Docker (OrbStack or Docker Desktop) if v2 needs them. Ful
 
 ## Docs
 
-**SSOT map:** [docs/PROJECT.md](docs/PROJECT.md) lists where each topic lives (same structure as this section—read PROJECT first for intent and links).
+**Read first:** [docs/PROJECT.md](docs/PROJECT.md) (intent + full documentation map). **Setup and env (condensed):** [SETUP.md](SETUP.md). **Every env var and procedure:** [AGENTS.md](AGENTS.md).
 
-- [docs/PROJECT.md](docs/PROJECT.md): **start here** — intent, documentation map, architecture overview, agent handoff (new Cursor chat); **v1 vs v2 deployment tracks** (hosted vs Mac mini)
-- [docs/V1_V2_RISK_AUDIT.md](docs/V1_V2_RISK_AUDIT.md): v1 patterns that complicate v2 (and E10 mitigations)
-- [docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md): **target stack** — Virgil vs Agent Zero, Mac mini hardware profile, bridge (planned), self-improvement gates
-- [AGENTS.md](AGENTS.md): **setup and deployment detail** (env, Docker, LAN, cron, Vercel, env var table) plus coding rules and checklists
-- [SETUP.md](SETUP.md), [DEPLOY.md](DEPLOY.md): thin link hubs → AGENTS.md (no duplicate tables)
-- [docs/beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md): LAN / Ubuntu home server — bundled Ollama in Compose, systemd, warmup, local vs remote access
-- [docs/HARDWARE.md](docs/HARDWARE.md): hardware decisions (v2 host, inference tiers, retired gear)
+**Short index:** [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) · **Start file:** [START_HERE.md](START_HERE.md) (redirects to the same path)
+
+**Common references**
+
+- [docs/vercel-env-setup.md](docs/vercel-env-setup.md): Vercel ↔ `.env.local` (`pnpm env:vercel:pull`)
+- [docs/V1_V2_RISK_AUDIT.md](docs/V1_V2_RISK_AUDIT.md): v1 patterns that complicate v2
+- [docs/TARGET_ARCHITECTURE.md](docs/TARGET_ARCHITECTURE.md): target stack (Virgil vs Agent Zero, hardware, planned bridge)
+- [DEPLOY.md](DEPLOY.md): link hub → [AGENTS.md — Deployment](AGENTS.md#deployment-production)
+- [docs/beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md): LAN / Ubuntu home server
+- [docs/HARDWARE.md](docs/HARDWARE.md): hardware decisions (v2 host, inference tiers)
 - [docs/DECISIONS.md](docs/DECISIONS.md): architecture decision records
-- [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md): enhancement backlog and review process
-- [docs/github-product-opportunity.md](docs/github-product-opportunity.md): optional GitHub Issues inbox for product feedback (gateway models)
-- [docs/digital-self-bridge.md](docs/digital-self-bridge.md): optional **Digital Self** orchestrator (`digital-self/` — Slack/WhatsApp/SMS policy, approvals); `pnpm digital-self:dev` from repo root
-- Optional **phase-1 onboarding** (timeline and quick start, cross-linked with each other): [QUICK_START.txt](QUICK_START.txt), [VIRGIL_PHASE1_SETUP.md](VIRGIL_PHASE1_SETUP.md), [VIRGIL_READY_TO_BUILD.md](VIRGIL_READY_TO_BUILD.md)
+- [docs/ENHANCEMENTS.md](docs/ENHANCEMENTS.md): enhancement backlog
+- [docs/github-product-opportunity.md](docs/github-product-opportunity.md): optional GitHub Issues inbox (gateway models)
+- [docs/digital-self-bridge.md](docs/digital-self-bridge.md): optional Digital Self orchestrator (`digital-self/`)
+
+**Historical (January 2024 Phase 1 sprint):** [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) lists archived prompts and checklists ([QUICK_START.txt](QUICK_START.txt), [VIRGIL_PHASE1_SETUP.md](VIRGIL_PHASE1_SETUP.md), etc.) — not the live onboarding path.
 
 ## Project management and agents
 

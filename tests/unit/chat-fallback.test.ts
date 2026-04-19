@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, test } from "node:test";
+import { DEFAULT_CHAT_MODEL } from "../../lib/ai/models";
 import { VirgilError } from "../../lib/errors";
 
 const ENV_KEYS = [
@@ -80,7 +81,7 @@ describe("getFallbackGeminiModel / getFallbackGatewayModel", () => {
     const { getFallbackGeminiModel, getFallbackGatewayModel } =
       await loadModule();
     assert.equal(getFallbackGeminiModel(), "gemini-2.5-flash");
-    assert.equal(getFallbackGatewayModel(), "deepseek/deepseek-v3.2");
+    assert.equal(getFallbackGatewayModel(), DEFAULT_CHAT_MODEL);
   });
 
   test("respects env overrides", async () => {
