@@ -5,7 +5,7 @@ Virgil project principles (from AGENTS.md):
 1. Local-model usefulness — prefer changes that improve quality on local 3B/7B models
 2. Cost minimization — reduce or stabilize prompt/context size, avoid extra inference calls
 3. Responsiveness and reliability — keep the system fast and dependable
-4. Honest, proactive assistance — no sycophancy, no flattery
+4. Honest, anti-sycophantic delivery (chief-of-staff voice) — no flattery
 5. Optional online deployment without changing the local-first default
 
 Key rules:

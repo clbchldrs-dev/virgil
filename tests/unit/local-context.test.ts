@@ -7,7 +7,7 @@ import {
   resolveRuntimeModelId,
 } from "../../lib/ai/models";
 
-test("Virgil companion prompts emphasize advisor stance without sycophancy", async () => {
+test("Virgil companion prompts emphasize chief-of-staff stance without sycophancy", async () => {
   const companion = await import("../../lib/ai/companion-prompt").catch(
     () => null
   );
@@ -32,11 +32,11 @@ test("Virgil companion prompts emphasize advisor stance without sycophancy", asy
   });
 
   assert.match(fullPrompt, /You are Virgil/i);
-  assert.match(fullPrompt, /advisor/i);
+  assert.match(fullPrompt, /chief of staff/i);
   assert.match(fullPrompt, /sycophancy/i);
   assert.doesNotMatch(fullPrompt, /About the user's request location/);
   assert.match(slimPrompt, /You are Virgil/i);
-  assert.match(slimPrompt, /advisor/i);
+  assert.match(slimPrompt, /chief of staff/i);
   assert.match(slimPrompt, /sycophancy/i);
 });
 
@@ -157,7 +157,7 @@ test("local preset ids are allowed and resolve to the pulled Ollama tag", () => 
   assert.equal(allowedModelIds.has("ollama/qwen2.5:7b-lean"), true);
 });
 
-test("slim companion prompt stays advisor-direct and is honest about limited memory", async () => {
+test("slim companion prompt stays chief-of-staff direct and is honest about limited memory", async () => {
   const mod = await import("../../lib/ai/slim-prompt").catch(() => null);
   assert.ok(mod, "expected slim-prompt module");
 
@@ -176,7 +176,7 @@ test("slim companion prompt stays advisor-direct and is honest about limited mem
     ],
   });
 
-  assert.match(prompt, /advisor/i);
+  assert.match(prompt, /chief of staff/i);
   assert.match(prompt, /limited memory/i);
   assert.match(prompt, /Don't claim to remember things you can't see/i);
   // Slim/local prompt may mention the tool names to clarify they are unavailable.
