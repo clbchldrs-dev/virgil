@@ -1,6 +1,8 @@
 # Work tickets (tracked tasks)
 
-Tickets itemize **future work** from the [Linux 24/7 roadmap](../VIRGIL_ROADMAP_LINUX_24_7.md) and [ENHANCEMENTS.md](../ENHANCEMENTS.md). Each file has acceptance criteria, file pointers, and delegation notes.
+**Prioritized product backlog:** [docs/ENHANCEMENTS.md](../ENHANCEMENTS.md) (E1–E11 themes and acceptance criteria). The files below are **itemized tickets** and epics—use ENHANCEMENTS for “what ships next”; use `/docs/tickets/` for deep specs and delegation handoffs.
+
+Tickets itemize **future work** from the [Linux 24/7 roadmap](../VIRGIL_ROADMAP_LINUX_24_7.md) and cross-link [ENHANCEMENTS.md](../ENHANCEMENTS.md). Each file has acceptance criteria, file pointers, and delegation notes.
 
 **Archived pre-implementation prompts:** [docs/archive/](../archive/) (not SSOT).
 

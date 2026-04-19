@@ -1,5 +1,7 @@
 # START HERE: Virgil Phase 1 Immediate Next Steps
 
+> **Historical — January 2024.** This file was the kickoff for a Phase 1 implementation plan. **Current start:** [`README.md`](README.md) → [`AGENTS.md`](AGENTS.md) → [`docs/PROJECT.md`](docs/PROJECT.md). Do not treat Session timelines or shell examples below as the live workflow.
+
 **Status:** Phase 1 package complete and ready to build  
 **Location:** `/Users/caleb/Documents/virgil/`  
 **Time to read this:** 2 min  

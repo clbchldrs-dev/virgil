@@ -1,0 +1,16 @@
+# Example Cloudflare Tunnel config for virgil-manos (Hermes on loopback).
+# Copy to ~/.cloudflared/config.yml on the Ubuntu host, replace placeholders, then:
+#   sudo cloudflared service install
+#   sudo systemctl enable --now cloudflared
+#
+# Prerequisites: `cloudflared tunnel login`, `cloudflared tunnel create virgil-manos`,
+# `cloudflared tunnel route dns virgil-manos hermes.<your-domain>` (or manual CNAME).
+#
+# Docs: docs/virgil-manos-delegation.md
+
+tunnel: <TUNNEL_UUID>
+credentials-file: /home/<LINUX_USER>/.cloudflared/<TUNNEL_UUID>.json
+ingress:
+  - hostname: hermes.<your-domain>
+    service: http://127.0.0.1:8765
+  - service: http_status:404

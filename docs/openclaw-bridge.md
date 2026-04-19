@@ -4,7 +4,11 @@ Virgil keeps **goals, memory, and proactive logic** in this repo. [OpenClaw](htt
 
 **Operator reference:** the always-on LAN host for this deployment is named **`virgil-manos`** (Ubuntu). Co-locate **Ollama** there and set **`OLLAMA_BASE_URL`** on the Virgil server for **local chat inference**. For **delegation**, prefer **`HERMES_*`** (Hermes first) and add **`OPENCLAW_*`** for OpenClaw as second-line / breadth; runtime routing and failover are documented in **[virgil-manos-delegation.md](virgil-manos-delegation.md)**. Delegation is not the primary chat LLM.
 
-The bridge is **optional**. If `OPENCLAW_URL` / `OPENCLAW_HTTP_URL` is unset, delegation tools are not registered.
+The bridge is **optional**. Delegation tools register when **`HERMES_HTTP_URL`** and/or **`OPENCLAW_URL`** / **`OPENCLAW_HTTP_URL`** is set ([lib/integrations/delegation-provider.ts](../lib/integrations/delegation-provider.ts)). Hermes alone is enough for `delegateTask` on Vercel when OpenClaw is proxied on `manos` (see below).
+
+### Vercel production: do not expose OpenClaw to the internet
+
+When Virgil is deployed on **Vercel**, leave **`OPENCLAW_*` unset** in project env. Expose **Hermes** only (e.g. **Cloudflare Tunnel** from `manos` to a public `https://hermes.<your-domain>`). On `manos`, register a **Hermes skill** that forwards to OpenClaw at `http://127.0.0.1:13100` so shell/files skills stay off the public internet. Virgil talks only to Hermes with **`HERMES_SHARED_SECRET`**. Gemini (or other cloud keys) can live in Hermes on `manos`; OpenClaw can use local-only inference. Full checklist: **[virgil-manos-delegation.md](virgil-manos-delegation.md)** — *Vercel production: Cloudflare Tunnel to Hermes only*.
 
 This doc is **execution delegation** (optional LAN gateway). It is separate from **E6** in [ENHANCEMENTS.md](ENHANCEMENTS.md): E6 uses OpenClaw (and similar) **communities as a source of product ideas** for Virgil scope via `submitProductOpportunity` — not runtime execution through this bridge.
 
@@ -142,6 +146,7 @@ Success outcomes:
 - Intents are scoped by **`userId`**; API routes require session auth.
 - Destructive or outbound phrasing sets **`requiresConfirmation`** until the owner approves.
 - Prefer an **SSH local tunnel** from the Virgil host to the OpenClaw host so OpenClaw can stay bound to loopback on the remote machine (`127.0.0.1`) instead of being exposed broadly on your LAN.
+- **Vercel:** do not set public `OPENCLAW_*` URLs; use **Hermes-only** tunneling per [virgil-manos-delegation.md](virgil-manos-delegation.md).
 - For a concrete operator runbook (Mac → Ubuntu LAN host, tunnel commands, hardening, verification), see [openclaw-ssh-tunnel-hardening.md](openclaw-ssh-tunnel-hardening.md) — includes owner reference for **`caleb-virgil1`** / **`caleb@192.168.1.81`**.
 
 ## Known limitations and operator notes
@@ -166,5 +171,6 @@ Success outcomes:
 ## Related
 
 - ADR: [docs/DECISIONS.md](DECISIONS.md) (OpenClaw execution layer).
+- Vercel + `virgil-manos`: [docs/virgil-manos-delegation.md](virgil-manos-delegation.md) (Cloudflare Tunnel to Hermes only).
 - Event mapping: [lib/integrations/openclaw-actions.ts](../lib/integrations/openclaw-actions.ts).
 - Tunnel hardening runbook: [docs/openclaw-ssh-tunnel-hardening.md](openclaw-ssh-tunnel-hardening.md).

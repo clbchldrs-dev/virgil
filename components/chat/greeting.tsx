@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { guestRegex } from "@/lib/constants";
 import { getUserDisplayFirstName } from "@/lib/user-display";
 import { cn } from "@/lib/utils";
@@ -33,7 +33,17 @@ type GreetingProps = {
 
 export function Greeting({ chatId }: GreetingProps) {
   const { data: session, status } = useSession();
+  /** Session-dependent chrome is deferred until mount so next-auth state matches the browser. */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  /** Deterministic from chatId only so server render and first client paint match (no random branch on mounted). */
   const flavor = useMemo(() => {
+    if (chatId.length === 0) {
+      return FLAVOR_LINES[0];
+    }
     const h = hashChatId(chatId);
     return FLAVOR_LINES[(h >> 5) % FLAVOR_LINES.length];
   }, [chatId]);
@@ -60,7 +70,7 @@ export function Greeting({ chatId }: GreetingProps) {
         />
         <div className="relative z-[1] flex flex-col items-center gap-2 text-center">
           <h2 className="sr-only">Empty chat</h2>
-          {status === "authenticated" && session?.user && (
+          {mounted && status === "authenticated" && session?.user && (
             <p
               className={cn(
                 "pointer-events-auto max-w-[280px] text-[13px] leading-snug",

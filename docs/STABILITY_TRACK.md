@@ -6,6 +6,16 @@ Use this when the goal is **reliable daily use**: predictable builds, safe deplo
 
 ---
 
+## Through June 2026 — operator focus
+
+**Where to invest:** Let **real use** show you—spend patterns, missed context about a specific person, workflows you thought you would delegate but want to keep. The roadmap does not replace observation.
+
+**Foundation:** **Embeddings + retrieval** are the lever that makes cross-session memory matter more than prompt tuning or ad hoc skills. In code: Ollama embeddings (`lib/ai/embeddings.ts`, `EMBEDDING_MODEL` / `OLLAMA_BASE_URL` in [AGENTS.md](../AGENTS.md)), Postgres `vector` search and FTS fallback (`lib/db/query-modules/memory.ts`), and the **`recallMemory`** tool (`lib/ai/tools/recall-memory.ts`)—vector first, then FTS, then optional Mem0 when configured. Backfill rows missing vectors when needed: `pnpm db:backfill-embeddings`.
+
+**Cadence:** Run the app **daily**; **weekly**, review evidence in `workspace/v2-eval/` (see flags below and [workspace/v2-eval/README.md](../workspace/v2-eval/README.md)). That loop is the core product discipline until the v1.0 stabilization bar in this doc and [docs/DECISIONS.md](DECISIONS.md).
+
+---
+
 ## Definition: “stable” for v1
 
 | Layer | Meaning |
@@ -73,6 +83,8 @@ Cost log nuance: `costs.jsonl` only records fallback tiers `gateway` and `gemini
 - [ ] **Verified** — Cron / QStash reach your app with correct `CRON_SECRET` and origin env (`AUTH_URL`, `NEXT_PUBLIC_APP_URL`); self-host: curl or systemd tested once ([AGENTS.md](../AGENTS.md#scheduled-jobs-on-the-host-no-vercel-cron)).
 
 ### Phase E — Product feedback (non-blocking)
+
+Aligns with **Through June 2026 — operator focus** above: logs and traces tell you what to fix first (including retrieval gaps).
 
 - [ ] Use [workspace/v2-eval/README.md](../workspace/v2-eval/README.md) to capture misses/noise.
 - [ ] Enable eval flags intentionally when collecting evidence:

@@ -1,5 +1,7 @@
 # Virgil + Reconciliation: Ready to Build
 
+> **Historical — Phase 1 reconciliation package (2024).** Executive summary of the ADR-002 Phase 1 doc set. **Current** overview: [`README.md`](README.md) and [`docs/PROJECT.md`](docs/PROJECT.md).
+
 ## What Just Happened
 
 I've created a complete Phase 1 implementation package for Virgil, based on the reconciliation blueprint (Three Paths, One Assistant + Three Tiers).

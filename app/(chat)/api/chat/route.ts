@@ -110,6 +110,10 @@ import {
   isDelegationConfigured,
 } from "@/lib/integrations/delegation-provider";
 import {
+  logChatPathTelemetryEvent,
+  normalizeChatTelemetryErrorCode,
+} from "@/lib/reliability/chat-path-telemetry";
+import {
   type BotIdVerification,
   handleBotIdForChatPost,
   isBotIdEnforceEnabled,
@@ -1080,6 +1084,18 @@ export async function POST(request: Request) {
             totalTokens: usage?.totalTokens ?? null,
           }).catch(() => undefined);
         }
+
+        logChatPathTelemetryEvent({
+          userId: session.user.id,
+          chatId: id,
+          requestedModelId: chatModel,
+          effectiveModelId: v2EvalStreamMetrics.effectiveModelId,
+          fallbackTier:
+            v2EvalStreamMetrics.fallbackTier === "none"
+              ? null
+              : v2EvalStreamMetrics.fallbackTier,
+          outcome: "completed",
+        }).catch(() => undefined);
       },
       onError: (error) => {
         // #region agent log
@@ -1114,9 +1130,33 @@ export async function POST(request: Request) {
             getOllamaBaseUrl()
           );
           if (streamMsg) {
+            logChatPathTelemetryEvent({
+              userId: session.user.id,
+              chatId: id,
+              requestedModelId: chatModel,
+              effectiveModelId: v2EvalStreamMetrics.effectiveModelId,
+              fallbackTier:
+                v2EvalStreamMetrics.fallbackTier === "none"
+                  ? null
+                  : v2EvalStreamMetrics.fallbackTier,
+              outcome: "error",
+              errorCode: normalizeChatTelemetryErrorCode(error),
+            }).catch(() => undefined);
             return streamMsg;
           }
         }
+        logChatPathTelemetryEvent({
+          userId: session.user.id,
+          chatId: id,
+          requestedModelId: chatModel,
+          effectiveModelId: v2EvalStreamMetrics.effectiveModelId,
+          fallbackTier:
+            v2EvalStreamMetrics.fallbackTier === "none"
+              ? null
+              : v2EvalStreamMetrics.fallbackTier,
+          outcome: "error",
+          errorCode: normalizeChatTelemetryErrorCode(error),
+        }).catch(() => undefined);
         return "Oops, an error occurred!";
       },
     });

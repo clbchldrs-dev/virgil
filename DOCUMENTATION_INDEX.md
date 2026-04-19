@@ -1,6 +1,8 @@
 # Virgil Phase 1: Complete Documentation Index
 
-**Status:** Ready to build with Cursor  
+> **Historical — January 2024 Phase 1 package.** This index described a Cursor implementation sprint that is **long superseded** by shipped **Virgil 1.1** work. For current onboarding use **[`README.md`](README.md)** → **[`AGENTS.md`](AGENTS.md)** → **[`docs/PROJECT.md`](docs/PROJECT.md)**. The body below is **archive context** only (paths and commands may be outdated, e.g. `npm` vs `pnpm`).
+
+**Status (original):** Ready to build with Cursor  
 **Date:** January 15, 2024  
 **Repository:** `/Users/caleb/Documents/virgil/`
 

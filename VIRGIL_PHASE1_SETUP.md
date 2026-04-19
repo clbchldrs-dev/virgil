@@ -1,5 +1,7 @@
 # Virgil Phase 1 Setup — Cursor Implementation Guide
 
+> **Historical — Phase 1 (2024).** Superseded for setup by [`AGENTS.md`](AGENTS.md) (Setup checklist, Postgres/Redis, Docker). Keep this file only for narrative context on the original ADR-002 sprint.
+
 **Goal:** Implement Three Paths, One Assistant in Virgil (TypeScript/Next.js)  
 **Timeline:** 4 weeks, 8 Cursor sessions  
 **Deliverable:** Jobs API + Tier 1 (Observe) + Tier 2 (Propose, no approval yet)

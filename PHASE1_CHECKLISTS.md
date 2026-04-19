@@ -1,5 +1,7 @@
 # Phase 1 Implementation Checklists
 
+> **Historical — Phase 1 (2024).** Superseded for day-to-day work by [`README.md`](README.md), [`AGENTS.md`](AGENTS.md), and [`docs/PROJECT.md`](docs/PROJECT.md). Checklist commands may reference old env names (`DATABASE_URL`) or `npm`; use **pnpm** and **`.env.local`** per AGENTS.md.
+
 Use these to track progress through all 8 sessions and 4 weeks.
 
 ---

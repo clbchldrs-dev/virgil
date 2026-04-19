@@ -5,6 +5,7 @@ Authoritative detail (env table, Vercel, quotas, self-hosted cron) lives in **[A
 **v1 vs v2 framing (no env duplication):** [docs/PROJECT.md](docs/PROJECT.md) (Deployment tracks), [docs/V1_V2_RISK_AUDIT.md](docs/V1_V2_RISK_AUDIT.md) (what v1 complicates for v2).
 
 - **[docs/vercel-env-setup.md](docs/vercel-env-setup.md)** — **Vercel env copy order**, `AUTH_URL` / `NEXT_PUBLIC_APP_URL`, first deploy checklist
+- **[docs/virgil-manos-delegation.md](docs/virgil-manos-delegation.md)** — **Vercel → `virgil-manos`**: Cloudflare Tunnel to Hermes (`HERMES_*`); OpenClaw stays local behind Hermes
 - **[AGENTS.md — Deployment (production)](AGENTS.md#deployment-production)** — provision, deploy, **environment variable summary**, Hobby limits, cost posture
 - **[docs/free-tier-feature-map.md](docs/free-tier-feature-map.md)** — which **features** hit **Vercel / QStash / Resend / Gateway** quotas
 - **[AGENTS.md — Scheduled jobs / self-hosted schedules](AGENTS.md#scheduled-jobs-on-the-host-no-vercel-cron)** — cron parity with [`vercel.json`](vercel.json)

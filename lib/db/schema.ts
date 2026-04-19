@@ -58,6 +58,39 @@ export const message = pgTable("Message_v2", {
 
 export type DBMessage = InferSelectModel<typeof message>;
 
+export const chatPathTelemetry = pgTable(
+  "ChatPathTelemetry",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    chatId: uuid("chatId").references(() => chat.id, { onDelete: "set null" }),
+    requestedModelId: text("requestedModelId").notNull(),
+    effectiveModelId: text("effectiveModelId").notNull(),
+    requestedPath: varchar("requestedPath", { length: 16 }).notNull(),
+    effectivePath: varchar("effectivePath", { length: 16 }).notNull(),
+    fallbackTier: varchar("fallbackTier", { length: 16 }),
+    outcome: varchar("outcome", { length: 16 }).notNull(),
+    errorCode: varchar("errorCode", { length: 64 }),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    userCreatedIdx: index("ChatPathTelemetry_userId_createdAt_idx").on(
+      table.userId,
+      table.createdAt
+    ),
+    userPathCreatedIdx: index(
+      "ChatPathTelemetry_userId_effectivePath_createdAt_idx"
+    ).on(table.userId, table.effectivePath, table.createdAt),
+    userOutcomeCreatedIdx: index(
+      "ChatPathTelemetry_userId_outcome_createdAt_idx"
+    ).on(table.userId, table.outcome, table.createdAt),
+  })
+);
+
+export type ChatPathTelemetry = InferSelectModel<typeof chatPathTelemetry>;
+
 export const vote = pgTable(
   "Vote_v2",
   {

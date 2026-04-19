@@ -1,5 +1,7 @@
 # Session Summary: Virgil Phase 1 Implementation
 
+> **Historical — 2024-01-15.** Narrative record of the reconciliation that produced the Phase 1 doc bundle. **Current** project state and SSOT map: [`docs/PROJECT.md`](docs/PROJECT.md).
+
 **Date:** 2024-01-15  
 **Context:** Completed reconciliation of three async systems + created Phase 1 implementation package  
 **Status:** Ready to build with Cursor  
