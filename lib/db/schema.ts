@@ -468,13 +468,23 @@ export const pendingIntent = pgTable("PendingIntent", {
   intent: jsonb("intent").$type<Record<string, unknown>>().notNull(),
   skill: text("skill"),
   status: varchar("status", {
-    enum: ["pending", "confirmed", "sent", "completed", "failed", "rejected"],
+    enum: [
+      "pending",
+      "confirmed",
+      "sent",
+      "processing",
+      "completed",
+      "failed",
+      "rejected",
+    ],
   })
     .notNull()
     .default("pending"),
   requiresConfirmation: boolean("requiresConfirmation")
     .notNull()
     .default(false),
+  /** True when intent is on the DB bus for Hermes/Manos poll worker (no inbound HTTP from Vercel). */
+  awaitingPollWorker: boolean("awaitingPollWorker").notNull().default(false),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   sentAt: timestamp("sentAt"),
   result: jsonb("result").$type<Record<string, unknown>>(),

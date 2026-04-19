@@ -1,18 +1,101 @@
 import "server-only";
 
-import { and, desc, eq, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  isNotNull,
+  isNull,
+  lt,
+  or,
+  sql,
+} from "drizzle-orm";
 import { VirgilError } from "@/lib/errors";
 import {
   getPendingIntentSkipReason,
   isPendingIntentRetryable,
 } from "@/lib/integrations/delegation-idempotency";
 import {
+  getDelegationPollWaitMs,
+  isDelegationPollPrimaryActive,
+} from "@/lib/integrations/delegation-poll-config";
+import {
   delegationPing,
   delegationSendIntent,
 } from "@/lib/integrations/delegation-provider";
-import type { ClawIntent } from "@/lib/integrations/openclaw-types";
+import type { ClawIntent, ClawResult } from "@/lib/integrations/openclaw-types";
 import { db } from "../client";
-import { pendingIntent } from "../schema";
+import { pendingIntent, type PendingIntent } from "../schema";
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function buildDeferredPollResult(skill: string): ClawResult {
+  return {
+    success: true,
+    skill,
+    executedAt: new Date().toISOString(),
+    output:
+      "Queued for your local Hermes worker (database poll). Execution runs when the worker is online; check this intent id for results.",
+    deferredToPollWorker: true,
+  };
+}
+
+function clawResultFromRowResult(
+  raw: Record<string, unknown> | null | undefined,
+  skillFallback: string
+): ClawResult | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const success = raw.success;
+  const skill = raw.skill;
+  const executedAt = raw.executedAt;
+  if (typeof success !== "boolean") {
+    return null;
+  }
+  if (typeof skill !== "string" || typeof executedAt !== "string") {
+    return null;
+  }
+  return {
+    success,
+    skill,
+    executedAt,
+    output: typeof raw.output === "string" ? raw.output : undefined,
+    error: typeof raw.error === "string" ? raw.error : undefined,
+    routedVia:
+      raw.routedVia === "openclaw" || raw.routedVia === "hermes"
+        ? raw.routedVia
+        : undefined,
+    deferredToPollWorker:
+      raw.deferredToPollWorker === true ? true : undefined,
+  };
+}
+
+async function waitForPollWorkerCompletion({
+  id,
+  userId,
+  timeoutMs,
+}: {
+  id: string;
+  userId: string;
+  timeoutMs: number;
+}): Promise<{ row: PendingIntent } | { timedOut: true }> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const row = await getPendingIntentByIdForUser({ id, userId });
+    if (!row) {
+      return { timedOut: true };
+    }
+    if (row.status === "completed" || row.status === "failed") {
+      return { row };
+    }
+    await sleep(400);
+  }
+  return { timedOut: true };
+}
 
 function parseClawIntent(raw: Record<string, unknown>): ClawIntent | null {
   const skill = raw.skill;
@@ -173,6 +256,7 @@ export function getRetryableOpenClawIntents() {
     .where(
       and(
         eq(pendingIntent.status, "sent"),
+        eq(pendingIntent.awaitingPollWorker, false),
         isNull(pendingIntent.result),
         isNotNull(pendingIntent.sentAt),
         lt(pendingIntent.sentAt, sql<string>`(now() - interval '5 minutes')`)
@@ -239,6 +323,54 @@ export async function trySendPendingIntentById({
     throw new VirgilError("bad_request:api", "Stored intent is invalid.");
   }
 
+  if (isDelegationPollPrimaryActive()) {
+    await db
+      .update(pendingIntent)
+      .set({
+        status: "sent",
+        sentAt: new Date(),
+        awaitingPollWorker: true,
+      })
+      .where(eq(pendingIntent.id, id));
+
+    const waitMs = getDelegationPollWaitMs();
+    if (waitMs > 0) {
+      const outcome = await waitForPollWorkerCompletion({
+        id,
+        userId,
+        timeoutMs: waitMs,
+      });
+      if ("timedOut" in outcome) {
+        const fail: ClawResult = {
+          success: false,
+          skill: parsed.skill,
+          executedAt: new Date().toISOString(),
+          error: `Local poll worker did not complete within ${String(waitMs)}ms. The task remains queued for Hermes.`,
+        };
+        return { skipped: false as const, result: fail };
+      }
+      const parsedResult = clawResultFromRowResult(
+        outcome.row.result ?? undefined,
+        parsed.skill
+      );
+      if (parsedResult) {
+        return { skipped: false as const, result: parsedResult };
+      }
+      const fail: ClawResult = {
+        success: false,
+        skill: parsed.skill,
+        executedAt: new Date().toISOString(),
+        error: "Worker completed but result payload was invalid.",
+      };
+      return { skipped: false as const, result: fail };
+    }
+
+    return {
+      skipped: false as const,
+      result: buildDeferredPollResult(parsed.skill),
+    };
+  }
+
   const online = await delegationPing();
   if (!online) {
     return { skipped: true as const, reason: "backend_offline" as const };
@@ -246,7 +378,11 @@ export async function trySendPendingIntentById({
 
   await db
     .update(pendingIntent)
-    .set({ status: "sent", sentAt: new Date() })
+    .set({
+      status: "sent",
+      sentAt: new Date(),
+      awaitingPollWorker: false,
+    })
     .where(eq(pendingIntent.id, id));
 
   const result = await delegationSendIntent(parsed);
@@ -256,10 +392,71 @@ export async function trySendPendingIntentById({
     .set({
       status: result.success ? "completed" : "failed",
       result: result as unknown as Record<string, unknown>,
+      awaitingPollWorker: false,
     })
     .where(eq(pendingIntent.id, id));
 
   return { skipped: false as const, result };
+}
+
+/**
+ * Hermes/Manos poll worker: claim the next intent released to the DB bus (outbound HTTPS only).
+ */
+export async function claimNextPendingIntentForPollWorker(): Promise<
+  PendingIntent | null
+> {
+  return db.transaction(async (tx) => {
+    const picked = await tx
+      .select({ id: pendingIntent.id })
+      .from(pendingIntent)
+      .where(
+        and(
+          eq(pendingIntent.status, "sent"),
+          eq(pendingIntent.awaitingPollWorker, true),
+          isNull(pendingIntent.result)
+        )
+      )
+      .orderBy(asc(pendingIntent.sentAt))
+      .limit(1)
+      .for("update", { skipLocked: true });
+
+    const first = picked[0];
+    if (!first) {
+      return null;
+    }
+
+    const [updated] = await tx
+      .update(pendingIntent)
+      .set({ status: "processing" })
+      .where(eq(pendingIntent.id, first.id))
+      .returning();
+
+    return updated ?? null;
+  });
+}
+
+/**
+ * Hermes/Manos poll worker: mark a claimed intent complete (must be `processing`).
+ */
+export async function completePollWorkerIntent({
+  id,
+  result,
+}: {
+  id: string;
+  result: ClawResult;
+}): Promise<PendingIntent | null> {
+  const [updated] = await db
+    .update(pendingIntent)
+    .set({
+      status: result.success ? "completed" : "failed",
+      result: result as unknown as Record<string, unknown>,
+      awaitingPollWorker: false,
+    })
+    .where(
+      and(eq(pendingIntent.id, id), eq(pendingIntent.status, "processing"))
+    )
+    .returning();
+  return updated ?? null;
 }
 
 /** Delegation backlog: pending rows that never left the queue (for owner messaging). */

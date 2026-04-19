@@ -26,7 +26,8 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
+import { unstable_serialize } from "swr/infinite";
 import { useLocalStorage, useWindowSize } from "usehooks-ts";
 import {
   ModelSelector,
@@ -74,6 +75,7 @@ import {
 } from "../ui/dropdown-menu";
 import { PaperclipIcon, StopIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
+import { getChatHistoryPaginationKey } from "./sidebar-history";
 import {
   type SlashCommand,
   SlashCommandMenu,
@@ -81,6 +83,10 @@ import {
 } from "./slash-commands";
 import { SuggestedActions } from "./suggested-actions";
 import type { VisibilityType } from "./visibility-selector";
+import {
+  VoiceDictationButton,
+  type VoiceDictationHandle,
+} from "./voice-dictation-button";
 
 function setCookie(name: string, value: string) {
   const maxAge = 60 * 60 * 24 * 365;
@@ -132,8 +138,12 @@ function PureMultimodalInput({
   setShowThinking: Dispatch<SetStateAction<boolean>>;
 }) {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
   const { setTheme, resolvedTheme } = useTheme();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputLiveRef = useRef(input);
+  inputLiveRef.current = input;
+  const voiceDictationRef = useRef<VoiceDictationHandle | null>(null);
   const { width } = useWindowSize();
   const hasAutoFocused = useRef(false);
   const weeklyDraftHydrated = useRef(false);
@@ -185,17 +195,28 @@ function PureMultimodalInput({
     setLocalStorageInput(input);
   }, [input, setLocalStorageInput]);
 
-  const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = event.target.value;
-    setInput(val);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadQueue, setUploadQueue] = useState<string[]>([]);
+  const [slashOpen, setSlashOpen] = useState(false);
+  const [slashQuery, setSlashQuery] = useState("");
+  const [slashIndex, setSlashIndex] = useState(0);
 
-    if (val.startsWith("/") && !val.includes(" ")) {
-      setSlashOpen(true);
-      setSlashQuery(val.slice(1));
-      setSlashIndex(0);
-    } else {
-      setSlashOpen(false);
-    }
+  const applyComposerText = useCallback(
+    (val: string) => {
+      setInput(val);
+      if (val.startsWith("/") && !val.includes(" ")) {
+        setSlashOpen(true);
+        setSlashQuery(val.slice(1));
+        setSlashIndex(0);
+      } else {
+        setSlashOpen(false);
+      }
+    },
+    [setInput]
+  );
+
+  const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    applyComposerText(event.target.value);
   };
 
   const handleSlashSelect = (cmd: SlashCommand) => {
@@ -255,13 +276,24 @@ function PureMultimodalInput({
     }
   };
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadQueue, setUploadQueue] = useState<string[]>([]);
-  const [slashOpen, setSlashOpen] = useState(false);
-  const [slashQuery, setSlashQuery] = useState("");
-  const [slashIndex, setSlashIndex] = useState(0);
+  const refreshChatHistory = useCallback(() => {
+    mutate(unstable_serialize(getChatHistoryPaginationKey)).catch(() => {
+      /* sidebar revalidate failures are non-fatal */
+    });
+  }, [mutate]);
+
+  const sendMessageWithHistoryRefresh = useCallback(
+    (message: Parameters<UseChatHelpers<ChatMessage>["sendMessage"]>[0]) => {
+      const fn = sendMessage as UseChatHelpers<ChatMessage>["sendMessage"];
+      const result = fn(message);
+      refreshChatHistory();
+      return result;
+    },
+    [sendMessage, refreshChatHistory]
+  );
 
   const submitForm = useCallback(() => {
+    voiceDictationRef.current?.stop();
     window.history.pushState(
       {},
       "",
@@ -270,7 +302,7 @@ function PureMultimodalInput({
 
     const textToSend = applyGoalRoutingHint(input);
 
-    sendMessage({
+    sendMessageWithHistoryRefresh({
       role: "user",
       parts: [
         ...attachments.map((attachment) => ({
@@ -301,7 +333,7 @@ function PureMultimodalInput({
     input,
     setInput,
     attachments,
-    sendMessage,
+    sendMessageWithHistoryRefresh,
     setAttachments,
     setLocalStorageInput,
     width,
@@ -445,8 +477,9 @@ function PureMultimodalInput({
         uploadQueue.length === 0 && (
           <SuggestedActions
             chatId={chatId}
+            key={chatId}
             selectedVisibilityType={selectedVisibilityType}
-            sendMessage={sendMessage}
+            sendMessage={sendMessageWithHistoryRefresh}
           />
         )}
 
@@ -574,6 +607,12 @@ function PureMultimodalInput({
               selectedModelId={selectedModelId}
               status={status}
             />
+            <VoiceDictationButton
+              disabled={status !== "ready" || uploadQueue.length > 0}
+              getText={() => inputLiveRef.current}
+              ref={voiceDictationRef}
+              setText={applyComposerText}
+            />
             <ModelSelectorCompact
               onModelChange={onModelChange}
               selectedModelId={selectedModelId}
@@ -662,6 +701,9 @@ export const MultimodalInput = memo(
       return false;
     }
     if (prevProps.messages.length !== nextProps.messages.length) {
+      return false;
+    }
+    if (prevProps.chatId !== nextProps.chatId) {
       return false;
     }
 

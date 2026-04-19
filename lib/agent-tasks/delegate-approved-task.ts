@@ -77,7 +77,7 @@ export async function delegateApprovedAgentTask({
       ok: false,
       code: "not_configured",
       message:
-        "Delegation is not configured. Set Hermes or OpenClaw URLs (see AGENTS.md and docs/openclaw-bridge.md).",
+        "Delegation is not configured. Set Hermes or OpenClaw URLs, or enable database poll mode (`VIRGIL_DELEGATION_POLL_PRIMARY` + worker secret — see AGENTS.md and docs/virgil-manos-delegation.md).",
     };
   }
 

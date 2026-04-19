@@ -1,4 +1,7 @@
 import {
+  isDelegationPollPrimaryActive,
+} from "@/lib/integrations/delegation-poll-config";
+import {
   listHermesSkillNames,
   pingHermes,
   sendHermesIntent,
@@ -92,6 +95,9 @@ function getSecondaryDelegationProvider(): DelegationProvider | null {
 
 /** True if the primary gateway responds, or (when failover on) the secondary does. */
 export async function delegationPing(): Promise<boolean> {
+  if (isDelegationPollPrimaryActive()) {
+    return true;
+  }
   const primary = getDelegationProvider();
   if (await primary.ping()) {
     return true;
@@ -140,5 +146,7 @@ export async function delegationListSkillNamesUnion(): Promise<string[]> {
 }
 
 export function isDelegationConfigured(): boolean {
-  return getDelegationProvider().isConfigured();
+  return (
+    getDelegationProvider().isConfigured() || isDelegationPollPrimaryActive()
+  );
 }

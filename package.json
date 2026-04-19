@@ -34,6 +34,7 @@
     "virgil:preflight": "tsx scripts/virgil-preflight.ts",
     "virgil:preflight:strict": "tsx scripts/virgil-preflight.ts --strict",
     "memory:bridge": "tsx scripts/memory-bridge-cli.ts",
+    "delegation:poll-worker": "tsx scripts/delegation-poll-worker.ts",
     "env:vercel:pull": "vercel env pull .env.local",
     "env:vercel:ls": "vercel env ls",
     "digital-self:dev": "pnpm -C digital-self dev",

@@ -9,6 +9,8 @@ import {
 const KEYS = [
   "VIRGIL_DELEGATION_BACKEND",
   "VIRGIL_DELEGATION_FAILOVER",
+  "VIRGIL_DELEGATION_POLL_PRIMARY",
+  "VIRGIL_DELEGATION_WORKER_SECRET",
   "OPENCLAW_URL",
   "OPENCLAW_HTTP_URL",
   "HERMES_HTTP_URL",
@@ -93,6 +95,22 @@ test("delegation configured follows OpenClaw config on default backend", () => {
     {
       VIRGIL_DELEGATION_BACKEND: undefined,
       OPENCLAW_URL: "ws://host:13100",
+      OPENCLAW_HTTP_URL: undefined,
+      HERMES_HTTP_URL: undefined,
+    },
+    () => {
+      assert.equal(isDelegationConfigured(), true);
+    }
+  );
+});
+
+test("delegation configured when poll primary active without HTTP bridges", () => {
+  withEnv(
+    {
+      VIRGIL_DELEGATION_BACKEND: undefined,
+      VIRGIL_DELEGATION_POLL_PRIMARY: "1",
+      VIRGIL_DELEGATION_WORKER_SECRET: "worker-secret",
+      OPENCLAW_URL: undefined,
       OPENCLAW_HTTP_URL: undefined,
       HERMES_HTTP_URL: undefined,
     },

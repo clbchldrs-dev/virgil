@@ -117,8 +117,10 @@ const PureChatItem = ({
 };
 
 export const ChatItem = memo(PureChatItem, (prevProps, nextProps) => {
-  if (prevProps.isActive !== nextProps.isActive) {
-    return false;
-  }
-  return true;
+  return (
+    prevProps.chat.id === nextProps.chat.id &&
+    prevProps.chat.title === nextProps.chat.title &&
+    prevProps.chat.visibility === nextProps.chat.visibility &&
+    prevProps.isActive === nextProps.isActive
+  );
 });

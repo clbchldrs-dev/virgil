@@ -8,9 +8,44 @@
 2. **Failover** — When **both** Hermes and OpenClaw URLs are present in env, **`VIRGIL_DELEGATION_FAILOVER` defaults to on** (set to `0` / `false` / `off` to disable). If the primary does not respond to health `ping`, Virgil routes **send** operations to the secondary (Hermes ↔ OpenClaw). Skill lists for `delegateTask` / `embedViaDelegation` validation are the **union** of both catalogs when failover is enabled.
 3. **Reachability** — `GET /api/delegation/health` reports per-bridge probes plus `delegationOnline` (true if **either** bridge answers when failover is on). Implement the same **`wiki-embed`** (or `VIRGIL_DELEGATION_EMBED_SKILL`) skill on whichever gateway you treat as primary for embeddings, or on **both** if you rely on failover.
 
-## Vercel production: Cloudflare Tunnel to Hermes only
+## Vercel production (recommended): database poll worker (no tunnel)
 
-Use this when **Virgil runs on Vercel** (phone / any PC) and **`virgil-manos`** stays on the LAN. Vercel cannot open `http://192.168.x.x` or `127.0.0.1` on your home network, so delegation needs a **public HTTPS** endpoint that terminates on **Hermes** only.
+**Default story for hosted Virgil + LAN execution:** Virgil does **not** call your home network. It writes **`PendingIntent`** rows to Postgres; **Hermes** (or **Manos**) runs a small loop that **outbound**-only calls **`GET https://<your-app>/api/delegation/worker/claim`** with `Authorization: Bearer <secret>`, executes the skill locally, then **`POST /api/delegation/worker/complete`** with the same `ClawResult` shape as the HTTP bridge.
+
+| Variable | Purpose |
+|----------|---------|
+| `VIRGIL_DELEGATION_POLL_PRIMARY` | Set to `1` so `delegateTask` enqueues to the DB bus instead of synchronous HTTP from Vercel. |
+| `VIRGIL_DELEGATION_WORKER_SECRET` | Bearer token for worker routes (falls back to `HERMES_SHARED_SECRET` if unset). |
+| `VIRGIL_DELEGATION_POLL_WAIT_MS` | Optional; `0` (default) returns immediately with a queued success message. Set to e.g. `15000` to block the chat tool until the worker completes or times out (capped at 60s). |
+
+**Coexistence:** Leave **`HERMES_HTTP_URL`** unset on Vercel when using poll-only. For **local dev**, you can keep Hermes HTTP and omit `VIRGIL_DELEGATION_POLL_PRIMARY` so delegation still uses the synchronous HTTP path. Implementation: [`lib/db/query-modules/pending-intents.ts`](../lib/db/query-modules/pending-intents.ts), [`lib/integrations/delegation-poll-config.ts`](../lib/integrations/delegation-poll-config.ts).
+
+### Run the poll worker on manos (or Mac)
+
+The repo ships a loop that talks **outbound** to hosted Virgil and **inbound** only to loopback Hermes:
+
+```bash
+# From a checkout that has the same .env.local patterns (see below)
+pnpm delegation:poll-worker
+```
+
+**Environment on the LAN host** (e.g. `~/.env.local` next to the repo, or systemd `EnvironmentFile=`):
+
+| Variable | Purpose |
+|----------|---------|
+| `VIRGIL_DELEGATION_WORKER_BASE_URL` | Hosted app origin, e.g. `https://your-app.vercel.app` (no trailing slash). You can use `NEXT_PUBLIC_APP_URL` instead if already set. |
+| `VIRGIL_DELEGATION_WORKER_SECRET` | Same bearer as **`VIRGIL_DELEGATION_WORKER_SECRET`** (or **`HERMES_SHARED_SECRET`**) on Vercel. |
+| `HERMES_HTTP_URL` | Local Hermes, typically `http://127.0.0.1:8765`. |
+| `HERMES_SHARED_SECRET` | If your Hermes bridge requires auth for `POST …/execute`, set the same value Hermes expects (can match the worker→Vercel secret or be different — Hermes config is separate from Virgil’s worker routes). |
+| `HERMES_EXECUTE_PATH` | Optional; default `/api/execute` ([`lib/integrations/hermes-config.ts`](../lib/integrations/hermes-config.ts)). |
+| `VIRGIL_DELEGATION_POLL_INTERVAL_MS` | Optional idle delay after an empty claim (default `5000`). |
+| `VIRGIL_DELEGATION_WORKER_EXECUTE_TIMEOUT_MS` | Optional timeout for each Hermes execute (default `120000`). |
+
+The worker **drains the queue**: after a successful claim/complete it immediately claims again without sleeping. Use **systemd**, **pm2**, or **tmux** if you want it always on.
+
+## Vercel production (alternative): Cloudflare Tunnel to Hermes
+
+Use this when **Virgil runs on Vercel** (phone / any PC) and **`virgil-manos`** stays on the LAN **and** you want Virgil to call Hermes over **inbound** HTTPS instead of the poll bus. Vercel cannot open `http://192.168.x.x` or `127.0.0.1` on your home network, so delegation needs a **public HTTPS** endpoint that terminates on **Hermes** only.
 
 **Why Hermes-only on Vercel**
 

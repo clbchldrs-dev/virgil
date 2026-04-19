@@ -92,7 +92,7 @@ export const CRYPTIC_FALLBACK_LEFT_SUGGESTIONS: ChatEmptySuggestion[] = [
   },
 ];
 
-/** Right pill: flamboyant Dark Souls / soulslike energy. */
+/** Right pill: playful soulslike tone without crude double entendre. */
 export const DARK_SOULS_RIGHT_SUGGESTIONS: ChatEmptySuggestion[] = [
   {
     prompt:
@@ -107,7 +107,7 @@ export const DARK_SOULS_RIGHT_SUGGESTIONS: ChatEmptySuggestion[] = [
   {
     prompt:
       "What would Patches say about my current priorities? Be theatrical.",
-    lines: ["TRUST ME", "this hole is fine"],
+    lines: ["TRUST ME", "this shortcut is fine"],
   },
   {
     prompt: "Frame my next task as a soulslike boss name + one weak spot.",
@@ -130,7 +130,7 @@ export const DARK_SOULS_RIGHT_SUGGESTIONS: ChatEmptySuggestion[] = [
   },
   {
     prompt: "Give me a soulslike loading screen tip for real life.",
-    lines: ["TRY TONGUE", "but hole"],
+    lines: ["TIP:", "Don't roll into the spreadsheet"],
   },
   {
     prompt:
@@ -144,10 +144,40 @@ export const DARK_SOULS_RIGHT_SUGGESTIONS: ChatEmptySuggestion[] = [
   },
 ];
 
-/** Right pill: random chip from former left (cryptic) + right (soulslike) pools. */
+/** Extra right-pill starters: concrete prompts, product-safe chip lines. */
+export const HELPFUL_EMPTY_STATE_RIGHT_SUGGESTIONS: ChatEmptySuggestion[] = [
+  {
+    prompt:
+      "What should I focus on today if I only have two hours of deep work?",
+    lines: ["Two hours", "deep work—what first?"],
+  },
+  {
+    prompt: "Help me turn a vague worry into a concrete next step.",
+    lines: ["Stuck in my head", "untangle one thread"],
+  },
+  {
+    prompt: "What's a small experiment I could run this week to learn faster?",
+    lines: ["Smallest test", "I could run this week"],
+  },
+  {
+    prompt: "Ask me one question that would unlock the most useful advice.",
+    lines: ["One question", "to unlock the rest"],
+  },
+  {
+    prompt: "Summarize what I should do next in three bullet points.",
+    lines: ["Next three moves", "no fluff"],
+  },
+  {
+    prompt: "Help me decide between two good options I'm stuck between.",
+    lines: ["Two good paths", "pick with me"],
+  },
+];
+
+/** Right pill: cryptic + playful + straightforward starters (randomized on mount). */
 export const EMPTY_STATE_RANDOM_PROMPT_POOL: ChatEmptySuggestion[] = [
   ...CRYPTIC_FALLBACK_LEFT_SUGGESTIONS,
   ...DARK_SOULS_RIGHT_SUGGESTIONS,
+  ...HELPFUL_EMPTY_STATE_RIGHT_SUGGESTIONS,
 ];
 
 /** Left pill: video-game defeat / continue screen energy (preview, legacy). */

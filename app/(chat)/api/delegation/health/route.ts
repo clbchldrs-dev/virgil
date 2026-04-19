@@ -19,6 +19,10 @@ import {
   pingOpenClaw,
 } from "@/lib/integrations/openclaw-client";
 import { isOpenClawConfigured } from "@/lib/integrations/openclaw-config";
+import {
+  isDelegationPollPrimaryActive,
+  isDelegationPollPrimaryEnabled,
+} from "@/lib/integrations/delegation-poll-config";
 
 export const maxDuration = 10;
 
@@ -60,6 +64,12 @@ export async function GET() {
     timestamp: new Date().toISOString(),
     backend: provider.backend,
     failoverEnabled: isDelegationFailoverEnabled(),
+    pollPrimary: {
+      enabled: isDelegationPollPrimaryEnabled(),
+      active: isDelegationPollPrimaryActive(),
+      claimPath: "/api/delegation/worker/claim",
+      completePath: "/api/delegation/worker/complete",
+    },
     configured,
     delegationOnline,
     skillCount: delegationSkillNames.length,
