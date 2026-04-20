@@ -349,6 +349,25 @@ export function DeploymentCapabilitiesPanel({
                 {data.delegation.pollPrimaryActive ? (
                   <> Poll-primary delivery is active (see docs).</>
                 ) : null}
+                {data.delegation.pollPrimaryActive &&
+                data.delegationPollQueue ? (
+                  <>
+                    {" "}
+                    Stale processing intents (past reclaim TTL, will be requeued
+                    on next worker claim):{" "}
+                    <span
+                      className={
+                        data.delegationPollQueue.staleProcessingCount > 0
+                          ? "font-medium text-amber-600 dark:text-amber-400"
+                          : "font-mono text-foreground"
+                      }
+                      data-testid="deployment-delegation-stale-processing-count"
+                    >
+                      {data.delegationPollQueue.staleProcessingCount}
+                    </span>
+                    .
+                  </>
+                ) : null}
               </>
             ) : null}
           </p>

@@ -22,6 +22,9 @@ After sign-in, open **`/deployment`** to see delegation configuration, gateway r
 | `VIRGIL_DELEGATION_POLL_PRIMARY` | Set to `1` so `delegateTask` enqueues to the DB bus instead of synchronous HTTP from Vercel. |
 | `VIRGIL_DELEGATION_WORKER_SECRET` | Bearer token for worker routes (falls back to `HERMES_SHARED_SECRET` if unset). |
 | `VIRGIL_DELEGATION_POLL_WAIT_MS` | Optional; `0` (default) returns immediately with a queued success message. Set to e.g. `15000` to block the chat tool until the worker completes or times out (capped at 60s). |
+| `VIRGIL_DELEGATION_PROCESSING_RECLAIM_AFTER_MS` | Optional. If a poll-worker claim stays in `processing` longer than this (default **15 minutes**), Virgil requeues it to `sent` on the next `GET …/worker/claim` so a crashed worker does not strand work. Set **above** your Hermes execute timeout (`VIRGIL_DELEGATION_WORKER_EXECUTE_TIMEOUT_MS` on the worker). |
+
+**Stuck `processing` reclaim:** Each worker claim runs a reclaim pass first: intents in `processing` past the reclaim TTL return to `sent` with `awaitingPollWorker` unchanged so they can be claimed again. The signed-in Deployment page shows **stale processing intents** (count matching that predicate). See `reclaimStaleProcessingPollIntents` in `lib/db/query-modules/pending-intents.ts`.
 
 **Coexistence:** Leave **`HERMES_HTTP_URL`** unset on Vercel when using poll-only. For **local dev**, you can keep Hermes HTTP and omit `VIRGIL_DELEGATION_POLL_PRIMARY` so delegation still uses the synchronous HTTP path. Implementation: [`lib/db/query-modules/pending-intents.ts`](../lib/db/query-modules/pending-intents.ts), [`lib/integrations/delegation-poll-config.ts`](../lib/integrations/delegation-poll-config.ts).
 

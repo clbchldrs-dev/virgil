@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 
+import { companionToolFailure } from "@/lib/ai/companion-tool-result";
 import {
   type CalendarEventSummary,
   isGoogleCalendarSecretsConfigured,
@@ -37,16 +38,23 @@ export const listCalendarEvents = tool({
   }),
   execute: async ({ daysAhead = 7 }) => {
     if (!isVirgilCalendarIntegrationEnabled()) {
-      return {
-        error: "calendar_integration_disabled",
+      return companionToolFailure({
+        error: "companion_calendar_disabled",
+        errorCode: "calendar_integration_disabled",
+        retryable: false,
+        message: "Google Calendar is not enabled on this deployment.",
         hint: "Server admin must set VIRGIL_CALENDAR_INTEGRATION=1.",
-      };
+      });
     }
     if (!isGoogleCalendarSecretsConfigured()) {
-      return {
-        error: "calendar_oauth_incomplete",
+      return companionToolFailure({
+        error: "companion_calendar_oauth_incomplete",
+        errorCode: "calendar_oauth_incomplete",
+        retryable: false,
+        message:
+          "Calendar OAuth is not fully configured; cannot list events from Google.",
         hint: "Set GOOGLE_CALENDAR_CLIENT_ID, GOOGLE_CALENDAR_CLIENT_SECRET, and GOOGLE_CALENDAR_REFRESH_TOKEN (calendar.readonly scope).",
-      };
+      });
     }
 
     const now = new Date();
@@ -69,10 +77,12 @@ export const listCalendarEvents = tool({
       };
     } catch (e) {
       const message = e instanceof Error ? e.message : "unknown_error";
-      return {
-        error: "calendar_fetch_failed",
-        message,
-      };
+      return companionToolFailure({
+        error: "companion_calendar_fetch_failed",
+        errorCode: "calendar_fetch_failed",
+        retryable: true,
+        message: `Calendar request failed: ${message}`,
+      });
     }
   },
 });

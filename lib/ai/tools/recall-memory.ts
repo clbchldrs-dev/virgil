@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { companionToolFailure } from "@/lib/ai/companion-tool-result";
 import { isMem0Configured, mem0Search } from "@/lib/ai/mem0-client";
 import {
   searchMemories,
@@ -50,69 +51,79 @@ export function recallMemory({ userId }: { userId: string }) {
         .describe("Filter by memory type"),
     }),
     execute: async (input) => {
-      // #region agent log
-      agentIngestLogSession308ef5({
-        runId: "verify",
-        hypothesisId: "H0",
-        location: "recall-memory.ts:execute:start",
-        message: "recallMemory execute",
-        data: {
-          queryLen: input.query.length,
-          kind: input.kind ?? null,
-        },
-      });
-      // #endregion
-      const vectorResults = await searchMemoriesByVectorFromQueryText({
-        userId,
-        query: input.query,
-        kind: input.kind,
-        limit: 8,
-      });
-      // #region agent log
-      agentIngestLogSession308ef5({
-        runId: "verify",
-        hypothesisId: "H3",
-        location: "recall-memory.ts:after-vector",
-        message: "vector branch result",
-        data: { vectorCount: vectorResults.length },
-      });
-      // #endregion
-      if (vectorResults.length > 0) {
-        return mapDbMemories(vectorResults);
-      }
-
-      const ftsResults = await searchMemories({
-        userId,
-        query: input.query,
-        kind: input.kind,
-        limit: 8,
-      });
-      if (ftsResults.length > 0) {
-        return mapDbMemories(ftsResults);
-      }
-
-      if (isMem0Configured()) {
-        const mem0Results = await mem0Search(input.query, userId, {
-          limit: 8,
-          ...(input.kind ? { categories: [input.kind] } : {}),
+      try {
+        // #region agent log
+        agentIngestLogSession308ef5({
+          runId: "verify",
+          hypothesisId: "H0",
+          location: "recall-memory.ts:execute:start",
+          message: "recallMemory execute",
+          data: {
+            queryLen: input.query.length,
+            kind: input.kind ?? null,
+          },
         });
-
-        if (mem0Results.length > 0) {
-          return {
-            found: true,
-            count: mem0Results.length,
-            memories: mem0Results.map((m) => ({
-              kind: m.categories?.at(0) ?? "note",
-              content: m.memory ?? "",
-              savedAt: m.createdAt
-                ? new Date(m.createdAt).toISOString()
-                : new Date().toISOString(),
-            })),
-          };
+        // #endregion
+        const vectorResults = await searchMemoriesByVectorFromQueryText({
+          userId,
+          query: input.query,
+          kind: input.kind,
+          limit: 8,
+        });
+        // #region agent log
+        agentIngestLogSession308ef5({
+          runId: "verify",
+          hypothesisId: "H3",
+          location: "recall-memory.ts:after-vector",
+          message: "vector branch result",
+          data: { vectorCount: vectorResults.length },
+        });
+        // #endregion
+        if (vectorResults.length > 0) {
+          return mapDbMemories(vectorResults);
         }
-      }
 
-      return { found: false, message: "No relevant memories found." };
+        const ftsResults = await searchMemories({
+          userId,
+          query: input.query,
+          kind: input.kind,
+          limit: 8,
+        });
+        if (ftsResults.length > 0) {
+          return mapDbMemories(ftsResults);
+        }
+
+        if (isMem0Configured()) {
+          const mem0Results = await mem0Search(input.query, userId, {
+            limit: 8,
+            ...(input.kind ? { categories: [input.kind] } : {}),
+          });
+
+          if (mem0Results.length > 0) {
+            return {
+              found: true,
+              count: mem0Results.length,
+              memories: mem0Results.map((m) => ({
+                kind: m.categories?.at(0) ?? "note",
+                content: m.memory ?? "",
+                savedAt: m.createdAt
+                  ? new Date(m.createdAt).toISOString()
+                  : new Date().toISOString(),
+              })),
+            };
+          }
+        }
+
+        return { found: false, message: "No relevant memories found." };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "unknown_error";
+        return companionToolFailure({
+          error: "companion_recall_memory_failed",
+          errorCode: "recall_memory_query_failed",
+          retryable: true,
+          message: `Memory search failed: ${msg}`,
+        });
+      }
     },
   });
 }

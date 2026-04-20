@@ -3,6 +3,7 @@ import "server-only";
 import {
   and,
   asc,
+  count,
   desc,
   eq,
   isNotNull,
@@ -18,6 +19,7 @@ import {
 } from "@/lib/integrations/delegation-idempotency";
 import {
   getDelegationPollWaitMs,
+  getDelegationProcessingReclaimAfterMs,
   isDelegationPollPrimaryActive,
 } from "@/lib/integrations/delegation-poll-config";
 import {
@@ -324,6 +326,48 @@ export async function rejectPendingIntent({
   return updated ?? null;
 }
 
+/** Rows stuck in `processing` (worker died or never completed) past the reclaim TTL. */
+function staleProcessingPollWhere() {
+  const ms = getDelegationProcessingReclaimAfterMs();
+  const staleBefore = new Date(Date.now() - ms);
+  const longSentFallback = new Date(Date.now() - 2 * 60 * 60 * 1000);
+  return and(
+    eq(pendingIntent.status, "processing"),
+    eq(pendingIntent.awaitingPollWorker, true),
+    isNull(pendingIntent.result),
+    or(
+      lt(pendingIntent.processingStartedAt, staleBefore),
+      and(
+        isNull(pendingIntent.processingStartedAt),
+        isNotNull(pendingIntent.sentAt),
+        lt(pendingIntent.sentAt, longSentFallback)
+      )
+    )
+  );
+}
+
+/**
+ * Requeue poll intents that stayed in `processing` too long (e.g. worker crash mid-run).
+ * Idempotent; safe to call frequently. Invoked before each poll-worker claim.
+ */
+export async function reclaimStaleProcessingPollIntents(): Promise<number> {
+  const updated = await db
+    .update(pendingIntent)
+    .set({ status: "sent", processingStartedAt: null })
+    .where(staleProcessingPollWhere())
+    .returning({ id: pendingIntent.id });
+  return updated.length;
+}
+
+/** Count of poll intents currently exceeding the processing TTL (matches reclaim predicate). */
+export async function countStaleProcessingPollIntents(): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(pendingIntent)
+    .where(staleProcessingPollWhere());
+  return Number(row?.n ?? 0);
+}
+
 // TODO: wire to retry cron — query for intents stuck in "sent" >5 min
 export function getRetryableOpenClawIntents() {
   return db
@@ -478,7 +522,8 @@ export async function trySendPendingIntentById({
 /**
  * Hermes/Manos poll worker: claim the next intent released to the DB bus (outbound HTTPS only).
  */
-export function claimNextPendingIntentForPollWorker(): Promise<PendingIntent | null> {
+export async function claimNextPendingIntentForPollWorker(): Promise<PendingIntent | null> {
+  await reclaimStaleProcessingPollIntents();
   return db.transaction(async (tx) => {
     const picked = await tx
       .select({ id: pendingIntent.id })
@@ -501,7 +546,10 @@ export function claimNextPendingIntentForPollWorker(): Promise<PendingIntent | n
 
     const [updated] = await tx
       .update(pendingIntent)
-      .set({ status: "processing" })
+      .set({
+        status: "processing",
+        processingStartedAt: new Date(),
+      })
       .where(eq(pendingIntent.id, first.id))
       .returning();
 
@@ -525,6 +573,7 @@ export async function completePollWorkerIntent({
       status: result.success ? "completed" : "failed",
       result: result as unknown as Record<string, unknown>,
       awaitingPollWorker: false,
+      processingStartedAt: null,
     })
     .where(
       and(eq(pendingIntent.id, id), eq(pendingIntent.status, "processing"))

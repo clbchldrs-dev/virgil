@@ -27,6 +27,7 @@ const minimalCapabilities = (): DeploymentCapabilities => ({
     plannerStageCount: null,
   },
   delegation: null,
+  delegationPollQueue: null,
 });
 
 test("diagnostics slice omits undefined detail", () => {

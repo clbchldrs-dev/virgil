@@ -1,6 +1,7 @@
 import { isJiraConfigured } from "@/lib/ai/tools/jira";
 import type { DelegationDeploymentSnapshot } from "@/lib/deployment/delegation-snapshot";
 import { getDelegationDeploymentSnapshot } from "@/lib/deployment/delegation-snapshot";
+import { isDelegationPollPrimaryActive } from "@/lib/integrations/delegation-poll-config";
 
 /**
  * Tool ids active for this process — must stay aligned with
@@ -49,6 +50,13 @@ export type DeploymentCapabilities = {
   agentTaskOrchestration: AgentTaskOrchestrationHints;
   /** Hermes/OpenClaw delegation — present when using async builder. */
   delegation?: DelegationDeploymentSnapshot | null;
+  /**
+   * DB poll queue health when `VIRGIL_DELEGATION_POLL_PRIMARY` + worker secret are active.
+   * `staleProcessingCount` matches rows eligible for reclaim (worker claim stuck too long).
+   */
+  delegationPollQueue?: {
+    staleProcessingCount: number;
+  } | null;
 };
 
 const TOOL_LABELS: Record<string, string> = {
@@ -207,8 +215,20 @@ export async function buildDeploymentCapabilities(options?: {
   const delegation = await getDelegationDeploymentSnapshot({
     bypassCache: options?.bypassDelegationCache === true,
   });
+  let delegationPollQueue: DeploymentCapabilities["delegationPollQueue"];
+  if (isDelegationPollPrimaryActive()) {
+    const { countStaleProcessingPollIntents } = await import(
+      "@/lib/db/query-modules/pending-intents"
+    );
+    delegationPollQueue = {
+      staleProcessingCount: await countStaleProcessingPollIntents(),
+    };
+  } else {
+    delegationPollQueue = null;
+  }
   return {
     ...base,
     delegation,
+    delegationPollQueue,
   };
 }

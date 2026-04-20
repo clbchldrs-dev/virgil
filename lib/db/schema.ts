@@ -513,6 +513,8 @@ export const pendingIntent = pgTable("PendingIntent", {
     .default(false),
   /** True when intent is on the DB bus for Hermes/Manos poll worker (no inbound HTTP from Vercel). */
   awaitingPollWorker: boolean("awaitingPollWorker").notNull().default(false),
+  /** Set when poll worker claims the row (`processing`); used to reclaim if the worker never completes. */
+  processingStartedAt: timestamp("processingStartedAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   sentAt: timestamp("sentAt"),
   result: jsonb("result").$type<Record<string, unknown>>(),

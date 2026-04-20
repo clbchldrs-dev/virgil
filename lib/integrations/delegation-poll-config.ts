@@ -43,3 +43,19 @@ export function getDelegationPollWaitMs(): number {
   }
   return Math.min(n, 60_000);
 }
+
+/**
+ * How long a poll-worker claim may sit in `processing` before Virgil requeues it to `sent`.
+ * Must exceed typical Hermes execution time (`VIRGIL_DELEGATION_WORKER_EXECUTE_TIMEOUT_MS` on the worker).
+ */
+export function getDelegationProcessingReclaimAfterMs(): number {
+  const raw = process.env.VIRGIL_DELEGATION_PROCESSING_RECLAIM_AFTER_MS?.trim();
+  if (!raw) {
+    return 900_000;
+  }
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 60_000) {
+    return 900_000;
+  }
+  return Math.min(n, 86_400_000);
+}
