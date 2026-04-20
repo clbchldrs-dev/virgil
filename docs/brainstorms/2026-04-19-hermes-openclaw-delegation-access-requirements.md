@@ -125,3 +125,5 @@ The earlier requirements (R1–R7) skew toward **visibility** (what is configure
 
 - **Gateway-only docs (no product change):** Lowest cost but leaves chat users and models blind — rejected as sole solution.
 - **New composite “mega tool” in Virgil that duplicates OpenClaw:** High carrying cost; rejected in favor of catalog surfacing + gateway skills.
+- **Rich per-user delegation RBAC in Virgil:** Maximum granularity; high carrying cost and easy mismatch with gateway-side execution — only if R9 forces it; default is env + gateway + clear role matrix.
+- **Virgil-enforced budgets/concurrency:** Rejected as default (see Key Decisions: passthrough); would be viable only if R11 is explicitly reopened with a single enforcement layer.
