@@ -38,6 +38,7 @@
     "virgil:start": "tsx scripts/virgil-start.ts",
     "virgil:status": "tsx scripts/virgil-status.ts",
     "virgil:env:init": "tsx scripts/virgil-env-init.ts",
+    "google-calendar:refresh-token": "tsx scripts/google-calendar-refresh-token.ts",
     "env:vercel:pull": "vercel env pull .env.local",
     "env:vercel:ls": "vercel env ls",
     "digital-self:dev": "pnpm -C digital-self dev",

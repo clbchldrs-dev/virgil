@@ -1105,6 +1105,131 @@ textarea:focus-visible {
   }
 }
 
+/* Calavera — persistent session mascot (jaw driven from stream; thought bubble during reasoning) */
+.pixel-chat-panel .calavera-avatar {
+  bottom: max(5.5rem, calc(env(safe-area-inset-bottom, 0px) + 5rem));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  opacity: 0.88;
+  position: absolute;
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  z-index: 2;
+}
+
+.pixel-chat-panel .calavera-avatar--active {
+  opacity: 1;
+}
+
+.pixel-chat-panel .calavera-avatar__thought {
+  background: color-mix(in oklch, var(--card) 88%, var(--background));
+  border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
+  border-radius: 0.65rem;
+  box-shadow: var(--shadow-card);
+  color: var(--muted-foreground);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  padding: 0.35rem 0.55rem;
+  position: relative;
+}
+
+.pixel-chat-panel .calavera-avatar__thought::after {
+  background: inherit;
+  border-bottom: inherit;
+  border-right: inherit;
+  bottom: -0.28rem;
+  content: "";
+  height: 0.45rem;
+  position: absolute;
+  right: 1.1rem;
+  transform: rotate(45deg);
+  width: 0.45rem;
+}
+
+.pixel-chat-panel .calavera-avatar__thought-dots {
+  display: inline-block;
+  opacity: 0.85;
+}
+
+.pixel-chat-panel .calavera-avatar__skull-wrap {
+  aspect-ratio: 20 / 15;
+  container-name: calavera-skull;
+  container-type: inline-size;
+  position: relative;
+  /* ≥40px so the 20-column grid lands on whole CSS px; avoids a mangled skull at tiny sizes */
+  width: clamp(2.5rem, 9vw, 2.85rem);
+}
+
+.pixel-chat-panel .calavera-avatar__svg {
+  display: block;
+  height: auto;
+  image-rendering: pixelated;
+  opacity: 0.62;
+  width: 100%;
+}
+
+.pixel-chat-panel .calavera-avatar__pixel {
+  fill: oklch(0.78 0.035 78);
+}
+
+.pixel-chat-panel .calavera-avatar__pixel--tooth {
+  fill: oklch(0.9 0.025 82);
+}
+
+.pixel-chat-panel .calavera-avatar__eyes {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.pixel-chat-panel .calavera-avatar__eye-anchor {
+  left: calc(4 / 20 * 100%);
+  position: absolute;
+  top: calc(5.5 / 15 * 100%);
+  transform: translate(-50%, -50%);
+}
+
+.pixel-chat-panel .calavera-avatar__eye-anchor:nth-child(2) {
+  left: calc(16 / 20 * 100%);
+}
+
+.pixel-chat-panel .calavera-avatar__eye {
+  animation: creepy-eyes-glow 5.2s ease-in-out infinite;
+  aspect-ratio: 2.85 / 1;
+  display: inline-block;
+  background:
+    radial-gradient(
+      ellipse 32% 88% at 50% 50%,
+      oklch(0.06 0.01 58) 0%,
+      oklch(0.06 0.01 58) 32%,
+      transparent 34%
+    ),
+    radial-gradient(
+      ellipse 100% 100% at 50% 48%,
+      oklch(0.95 0.22 58) 0%,
+      oklch(0.72 0.2 52) 42%,
+      oklch(0.38 0.1 48) 100%
+    );
+  border-radius: 50%;
+  box-shadow:
+    0 0 3px oklch(0.78 0.22 58 / 0.55),
+    0 0 8px oklch(0.68 0.2 55 / 0.32);
+  height: auto;
+  transform-origin: center;
+  /* Do not let cqw collapse eyes on narrow containers (was min(0.48rem, 5cqw) → ~2px wide). */
+  width: clamp(0.38rem, min(0.52rem, max(0.38rem, 12cqw)), 0.55rem);
+}
+
+.pixel-chat-panel
+  .calavera-avatar__eye-anchor:nth-child(2)
+  .calavera-avatar__eye {
+  animation-delay: 0.35s;
+}
+
 /* Empty chat: spooky pixel dialogue (theme tokens — invitation + session) */
 .empty-chat-greeting {
   contain: layout paint;

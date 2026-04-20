@@ -24,6 +24,11 @@ import { pathnameWithoutBasePath } from "@/lib/path-without-base";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Artifact } from "./artifact";
+import { CalaveraAvatar } from "./calavera-avatar";
+import {
+  CALAVERA_SKULL_GRIN_ROW,
+  CALAVERA_SKULL_PIXELS,
+} from "./calavera-skull-data";
 import { ChatErrorBanner } from "./chat-error-banner";
 import { ChatHeader } from "./chat-header";
 import { ChatMetricsSidePanel } from "./chat-metrics-side-panel";
@@ -32,62 +37,6 @@ import { submitEditedMessage } from "./message-editor";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
 import { OpenClawPendingBanner } from "./openclaw-pending-banner";
-
-/** Row index of the toothy grin (Papyrus-style); teeth get a slightly brighter fill in CSS. */
-const CREEPY_SKULL_GRIN_ROW = 9;
-
-/**
- * 20×15 pixel skull — Papyrus-style cheekbones + alternating “teeth” row under cheeks.
- * Mockup:
- *
- *   .....XXXXXXXXXX.....
- *   ..XXXXXXXXXXXXXXXX..
- *   .XXXXXXXXXXXXXXXXXX.
- *   .XXXXXXXXXXXXXXXXXX.
- *   .XX..XXXX..XXXX..XX.   ← outer socket centers at x=4 & 16 / 20 (CSS); middle gap unused
- *   .XX..XXXX..XXXX..XX.
- *   .XX..XXXX..XXXX..XX.
- *   XX..XX..XXXX..XX..XX   ← cheek flare
- *   XX..XX..XXXX..XX..XX
- *   X.X.X.X.X.X.X.X.X.X.   ← grin (gaps = dark mouth)
- *   ..XXXXXXXXXXXXXXXX..
- *   ...XXXXXXXXXXXXXX...
- *   ....XXXXXXXXXXXX....
- *   ......XXXXXXXX......
- *   ........XXXX........
- *
- * Bowtie SVG sits below this block (neck).
- */
-const CREEPY_SKULL_ROWS: readonly string[] = [
-  ".....XXXXXXXXXX.....",
-  "..XXXXXXXXXXXXXXXX..",
-  ".XXXXXXXXXXXXXXXXXX.",
-  ".XXXXXXXXXXXXXXXXXX.",
-  ".XX..XXXX..XXXX..XX.",
-  ".XX..XXXX..XXXX..XX.",
-  ".XX..XXXX..XXXX..XX.",
-  "XX..XX..XXXX..XX..XX",
-  "XX..XX..XXXX..XX..XX",
-  "X.X.X.X.X.X.X.X.X.X.",
-  "..XXXXXXXXXXXXXXXX..",
-  "...XXXXXXXXXXXXXX...",
-  "....XXXXXXXXXXXX....",
-  "......XXXXXXXX......",
-  "........XXXX........",
-];
-
-const CREEPY_SKULL_PIXELS: readonly [number, number][] = (() => {
-  const pixels: [number, number][] = [];
-  for (let y = 0; y < CREEPY_SKULL_ROWS.length; y++) {
-    const row = CREEPY_SKULL_ROWS[y] ?? "";
-    for (let x = 0; x < row.length; x++) {
-      if (row[x] === "X") {
-        pixels.push([x, y]);
-      }
-    }
-  }
-  return pixels;
-})();
 
 /** Pixel unit squares for invitation bowtie SVG (viewBox 0 0 15 5) — wings + center knot so the gap does not read as lips. */
 const CREEPY_BOWTIE_PIXELS: readonly [number, number][] = [
@@ -272,11 +221,11 @@ export function ChatShell() {
                         viewBox="0 0 20 15"
                         width="20"
                       >
-                        {CREEPY_SKULL_PIXELS.map(([x, y]) => (
+                        {CALAVERA_SKULL_PIXELS.map(([x, y]) => (
                           <rect
                             className={cn(
                               "chat-creepy-skull__pixel",
-                              y === CREEPY_SKULL_GRIN_ROW &&
+                              y === CALAVERA_SKULL_GRIN_ROW &&
                                 "chat-creepy-skull__pixel--tooth"
                             )}
                             height="1"
@@ -322,6 +271,9 @@ export function ChatShell() {
                 </div>
               )}
               <OpenClawPendingBanner />
+              {chatPhase === "session" && (
+                <CalaveraAvatar messages={messages} status={status} />
+              )}
               <Messages
                 addToolApprovalResponse={addToolApprovalResponse}
                 chatId={chatId}

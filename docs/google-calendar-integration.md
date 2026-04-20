@@ -40,7 +40,9 @@ Practical pattern:
 2. Complete consent as the target Google user.
 3. Exchange the authorization **code** for tokens; copy the **`refresh_token`** from the response (store it like a password).
 
-There is **no** refresh-token wizard shipped in this repo; many teams use a short local script with `google-auth-library`, the [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/) (with your own client credentials), or Google’s sample flows. **Revoke** test tokens if you expose a client secret during experiments.
+**Recommended (this repo):** run `pnpm google-calendar:refresh-token` after setting `GOOGLE_CALENDAR_CLIENT_ID` and `GOOGLE_CALENDAR_CLIENT_SECRET` in `.env.local` and adding the printed redirect URI in Google Cloud (see script output). It opens a browser, then prints `GOOGLE_CALENDAR_REFRESH_TOKEN=…` for you to paste into `.env.local`.
+
+Alternatives: a short local script with `google-auth-library`, the [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/) (with your own client credentials; redirect `https://developers.google.com/oauthplayground`), or Google’s sample flows. **Revoke** test tokens if you expose a client secret during experiments.
 
 ### 3. Environment variables
 
