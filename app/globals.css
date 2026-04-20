@@ -1001,7 +1001,7 @@ textarea:focus-visible {
 }
 
 /*
- * Orbital gaps in `.XX..XXXX..XXXX.` (16-wide) — same horizontal centers as legacy 20-col (x=4/20, x=16/20); band y∈[4,7) → center 5.5/17.
+ * Orbital gaps: left cols 3–4 (center 3.5), right 12–13 (center 12.5), mirror about midline x=8; y band → center 5.5/17.
  */
 .pixel-chat-panel .chat-creepy-eyes {
   inset: 0;
@@ -1011,14 +1011,14 @@ textarea:focus-visible {
 }
 
 .pixel-chat-panel .chat-creepy-eye-anchor {
-  left: calc(4 / 20 * 100%);
+  left: calc(3.5 / 16 * 100%);
   position: absolute;
   top: calc(5.5 / 17 * 100%);
   transform: translate(-50%, -50%);
 }
 
 .pixel-chat-panel .chat-creepy-eye-anchor:nth-child(2) {
-  left: calc(16 / 20 * 100%);
+  left: calc(12.5 / 16 * 100%);
 }
 
 .pixel-chat-panel .chat-creepy-eye-squint {
@@ -1052,21 +1052,21 @@ textarea:focus-visible {
 
 .pixel-chat-panel .chat-creepy-eye {
   animation: mascot-soft-blink 5.8s ease-in-out infinite;
-  aspect-ratio: 2.85 / 1;
+  /* Match calavera-avatar__eye shape; scale with large empty-state skull (same grid as corner mascot). */
+  aspect-ratio: 1.15 / 1;
   /* Was a flex item before; nested spans need a box for width/background to apply */
   display: inline-block;
-  /* Slightly under 2 grid columns wide — cqw vs .chat-creepy-skull-wrap */
   background:
     radial-gradient(
-      ellipse 32% 88% at 50% 50%,
+      ellipse 38% 90% at 50% 50%,
       oklch(0.06 0.01 58) 0%,
-      oklch(0.06 0.01 58) 32%,
-      transparent 34%
+      oklch(0.06 0.01 58) 34%,
+      transparent 38%
     ),
     radial-gradient(
-      ellipse 100% 100% at 50% 48%,
+      ellipse 100% 100% at 50% 46%,
       oklch(0.95 0.22 58) 0%,
-      oklch(0.72 0.2 52) 42%,
+      oklch(0.72 0.2 52) 48%,
       oklch(0.38 0.1 48) 100%
     );
   border-radius: 50%;
@@ -1076,7 +1076,11 @@ textarea:focus-visible {
     0 0 20px oklch(0.52 0.14 50 / 0.14);
   height: auto;
   transform-origin: center;
-  width: clamp(0.42rem, min(0.72rem, 7cqw), 0.82rem);
+  /*
+   * Large empty-state skull (see .chat-creepy-mascot) needs much larger cqw than the corner calavera;
+   * ~38cqw fills the bitmap sockets like the green eyes do on the small avatar (~20% of a ~2rem skull → ~38% of a scaled-up grid).
+   */
+  width: clamp(0.5rem, min(4rem, max(0.5rem, 38cqw)), 4.25rem);
 }
 
 .pixel-chat-panel .chat-creepy-eye-anchor:nth-child(2) .chat-creepy-eye {
@@ -1202,14 +1206,14 @@ textarea:focus-visible {
 }
 
 .pixel-chat-panel .calavera-avatar__eye-anchor {
-  left: calc(4 / 20 * 100%);
+  left: calc(3.5 / 16 * 100%);
   position: absolute;
   top: calc(5.5 / 17 * 100%);
   transform: translate(-50%, -50%);
 }
 
 .pixel-chat-panel .calavera-avatar__eye-anchor:nth-child(2) {
-  left: calc(16 / 20 * 100%);
+  left: calc(12.5 / 16 * 100%);
 }
 
 .pixel-chat-panel .calavera-avatar__eye-squint {

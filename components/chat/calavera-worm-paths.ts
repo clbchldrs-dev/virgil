@@ -7,7 +7,7 @@ export type CalaveraWormRoute = {
   readonly reverse: boolean;
 };
 
-/** Eye sockets, nasal bridge, mouth — same convention as calavera CSS eye anchors (~x 3.5 / 12.5, y 5.5). */
+/** Eye sockets, nasal bridge, mouth — 16×17 grid; sockets mirror about x=8 (~3.5 / 12.5, y 5.5), matching CSS anchors. */
 export const WORM_ROUTES: readonly CalaveraWormRoute[] = [
   { d: "M3.5 5.5 C4.9 7.4 6.3 9.3 8 10.85", reverse: false },
   { d: "M3.5 5.5 C4.9 7.4 6.3 9.3 8 10.85", reverse: true },

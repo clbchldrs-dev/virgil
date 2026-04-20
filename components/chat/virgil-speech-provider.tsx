@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { prepareTextForSpeech } from "@/lib/browser-tts";
+import { pickPreferredVoice } from "@/lib/browser-tts-voice";
 
 type VirgilSpeechContextValue = {
   /** `message.id` currently being spoken, or null */
@@ -23,22 +24,6 @@ type VirgilSpeechContextValue = {
 const VirgilSpeechContext = createContext<VirgilSpeechContextValue | null>(
   null
 );
-
-function pickPreferredVoice(
-  voices: SpeechSynthesisVoice[]
-): SpeechSynthesisVoice | null {
-  if (voices.length === 0) {
-    return null;
-  }
-  const enUs = voices.find(
-    (v) => v.lang === "en-US" || v.lang.startsWith("en-US")
-  );
-  if (enUs) {
-    return enUs;
-  }
-  const en = voices.find((v) => v.lang.startsWith("en"));
-  return en ?? voices[0] ?? null;
-}
 
 export function VirgilSpeechProvider({ children }: { children: ReactNode }) {
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(

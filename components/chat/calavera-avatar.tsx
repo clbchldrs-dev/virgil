@@ -3,6 +3,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useCalaveraStreamState } from "@/hooks/use-calavera-stream-state";
+import { useCalaveraWormIdleReplay } from "@/hooks/use-calavera-worm-idle";
 import { useIdleYawn } from "@/hooks/use-idle-yawn";
 import type { ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -23,9 +24,6 @@ type CalaveraAvatarProps = {
   status: UseChatHelpers<ChatMessage>["status"];
 };
 
-const WORM_IDLE_MIN_MS = 14_000;
-const WORM_IDLE_MAX_MS = 52_000;
-
 export function CalaveraAvatar({ messages, status }: CalaveraAvatarProps) {
   const { jawWordCount, showThoughtBubble, isAssistantStreaming } =
     useCalaveraStreamState(messages, status);
@@ -40,36 +38,10 @@ export function CalaveraAvatar({ messages, status }: CalaveraAvatarProps) {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  const [wormPlayId, setWormPlayId] = useState(0);
-
-  useEffect(() => {
-    if (status !== "ready" || prefersReducedMotion) {
-      return;
-    }
-    let cancelled = false;
-    let timeoutId: number | undefined;
-
-    const schedule = () => {
-      const delay =
-        WORM_IDLE_MIN_MS +
-        Math.floor(Math.random() * (WORM_IDLE_MAX_MS - WORM_IDLE_MIN_MS));
-      timeoutId = window.setTimeout(() => {
-        if (cancelled) {
-          return;
-        }
-        setWormPlayId((n) => n + 1);
-        schedule();
-      }, delay);
-    };
-
-    schedule();
-    return () => {
-      cancelled = true;
-      if (timeoutId !== undefined) {
-        window.clearTimeout(timeoutId);
-      }
-    };
-  }, [status, prefersReducedMotion]);
+  const wormPlayId = useCalaveraWormIdleReplay(
+    status === "ready",
+    prefersReducedMotion
+  );
 
   const yawnActive = status === "ready" && !prefersReducedMotion;
   const { jawDrop: idleJawDrop, eyeSquint } = useIdleYawn(yawnActive);

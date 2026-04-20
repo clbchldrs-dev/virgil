@@ -48,8 +48,21 @@ export function NightReviewTriggerButton({
     try {
       const res = await fetch(`${BASE}/api/night-review/trigger`, {
         method: "POST",
+        credentials: "same-origin",
       });
-      const data = (await res.json()) as TriggerJson;
+      const raw = await res.text();
+      let data: TriggerJson;
+      try {
+        data = JSON.parse(raw) as TriggerJson;
+      } catch {
+        toast({
+          type: "error",
+          description: res.ok
+            ? "Unexpected response from server. Try again."
+            : `Request failed (${res.status}). Check server logs.`,
+        });
+        return;
+      }
 
       if (res.ok && "ok" in data && data.ok) {
         toast({

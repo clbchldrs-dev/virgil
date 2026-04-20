@@ -8,7 +8,7 @@ export const CALAVERA_GRID_WIDTH = 16;
 export const CALAVERA_GRID_HEIGHT = 17;
 
 /**
- * 16×17 pixel skull — slightly narrower than the original 20px grid; two cheek rows add space between sockets and mouth.
+ * 16×17 pixel skull — eye rows mirror about x=8 (holes ~3.5 / 12.5); two cheek rows add space between sockets and mouth.
  * Jaw articulation: pixels with y < {@link CALAVERA_JAW_SPLIT_Y} are the cranium; y ≥ split move as mandible.
  */
 export const CALAVERA_JAW_SPLIT_Y = 11;
@@ -18,9 +18,9 @@ export const CALAVERA_SKULL_ROWS: readonly string[] = [
   "..XXXXXXXXXXXX..",
   ".XXXXXXXXXXXXXX.",
   ".XXXXXXXXXXXXXX.",
-  ".XX..XXXX..XXXX.",
-  ".XX..XXXX..XXXX.",
-  ".XX..XXXX..XXXX.",
+  ".XX..XXXXXXX..X.",
+  ".XX..XXXXXXX..X.",
+  ".XX..XXXXXXX..X.",
   "XX..XX..XXXX..XX",
   "XX..XX..XXXX..XX",
   "..XXXXXXXXXXXX..",

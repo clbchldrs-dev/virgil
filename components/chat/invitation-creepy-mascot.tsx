@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useCalaveraWormIdleReplay } from "@/hooks/use-calavera-worm-idle";
 import { useIdleYawn } from "@/hooks/use-idle-yawn";
 import { cn } from "@/lib/utils";
 import {
@@ -13,9 +14,10 @@ import {
   CALAVERA_SKULL_GRIN_ROW,
   CALAVERA_SKULL_PIXELS,
 } from "./calavera-skull-data";
+import { CalaveraWormCrawl } from "./calavera-worm-crawl";
 
 /**
- * Invitation empty-state skull + eyes + bowtie, with split jaw for idle yawn.
+ * Invitation empty-state skull + eyes + bowtie, with idle yawn + worm crawl (same as session calavera).
  */
 export function InvitationCreepyMascot() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -27,6 +29,8 @@ export function InvitationCreepyMascot() {
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
+
+  const wormPlayId = useCalaveraWormIdleReplay(true, prefersReducedMotion);
 
   const { jawDrop, eyeSquint } = useIdleYawn(!prefersReducedMotion);
 
@@ -101,6 +105,9 @@ export function InvitationCreepyMascot() {
               </span>
             </span>
           </div>
+          {!prefersReducedMotion && wormPlayId > 0 ? (
+            <CalaveraWormCrawl key={wormPlayId} playId={wormPlayId} />
+          ) : null}
         </div>
         <div className="chat-creepy-bowtie">
           <svg
