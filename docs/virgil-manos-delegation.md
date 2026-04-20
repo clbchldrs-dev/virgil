@@ -13,6 +13,8 @@
 
 After sign-in, open **`/deployment`** to see delegation configuration, gateway reachability, failover on/off, poll-primary mode (if active), and a **skill id list** with a freshness indicator. Use **Refresh skills snapshot** to bypass the short server cache (~55s) after you change gateway tools or env. Under the hood this matches **`GET /api/deployment/capabilities`**; add **`?refresh=1`** for the same bypass (requires session). Implementation: `lib/deployment/capabilities.ts` + `lib/deployment/delegation-snapshot.ts`.
 
+**Adding a new skill id:** implement and register tools on the gateway or poll worker host, then refresh the snapshot in Virgil — step-by-step: [openclaw-bridge.md § Adding a skill to the advertised list](openclaw-bridge.md#adding-a-skill-to-the-advertised-list) (tunnel or poll-primary: skill must exist on the execution path the worker uses).
+
 ## Vercel production (recommended): database poll worker (no tunnel)
 
 **Default story for hosted Virgil + LAN execution:** Virgil does **not** call your home network. It writes **`PendingIntent`** rows to Postgres; **Hermes** (or **Manos**) runs a small loop that **outbound**-only calls **`GET https://<your-app>/api/delegation/worker/claim`** with `Authorization: Bearer <secret>`, executes the skill locally, then **`POST /api/delegation/worker/complete`** with the same `ClawResult` shape as the HTTP bridge.

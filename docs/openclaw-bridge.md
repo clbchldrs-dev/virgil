@@ -29,6 +29,18 @@ Use this when **`HERMES_HTTP_URL` is unset**: Virgil’s **in-app** bridge ([`li
 - **Preferred:** Implement tools on the OpenClaw Gateway and expose them via **`GET`** `OPENCLAW_SKILLS_PATH` (default `/api/skills`) as JSON Virgil can parse ([`listOpenClawSkillsViaGateway()`](../lib/integrations/hermes-bridge.ts)).
 - **If `/api/skills` is empty, HTML, or missing:** set **`OPENCLAW_SKILLS_STATIC`** to a comma-separated list of **tool names that actually exist** on the gateway (e.g. `web,shell,wiki-embed`). Those ids are merged into the advertised list ([`getOpenClawStaticSkillNames()`](../lib/integrations/openclaw-config.ts)).
 
+### Adding a skill to the advertised list
+
+Gateway skills are **not** implemented in this repository. To expose a new skill id to `delegateTask`, the **Deployment** page, and companion prompts:
+
+1. **Register the tool on the gateway host** (OpenClaw, Hermes, or your bridge) so it can execute — same machine that already runs your delegation backend.
+2. **Publish the id** where Virgil discovers skills: prefer a working **`GET`** response on `OPENCLAW_SKILLS_PATH` (default `/api/skills`), or add the id to **`OPENCLAW_SKILLS_STATIC`** if the dynamic list is empty or unusable.
+3. **Restart** the gateway (or reload its config) if your stack requires it after adding a tool.
+4. **In Virgil (signed in):** open **`/deployment`**, click **Refresh skills snapshot**, or use **`GET /api/deployment/capabilities?refresh=1`** to bypass the short server cache. Confirm the new id appears and **`skillsStatus`** is `ok` (not only cached/unavailable).
+5. **Smoke:** run a safe **`delegateTask`** with an explicit **`skill`** matching the new id (prefer a read-only diagnostic first). If you use **poll-primary** delivery (`VIRGIL_DELEGATION_POLL_PRIMARY`), the worker on `manos` must execute that skill too — see [virgil-manos-delegation.md](virgil-manos-delegation.md).
+
+Unknown or omitted skills still fall back to **`generic-task`** per [`delegate-to-openclaw`](../lib/ai/tools/delegate-to-openclaw.ts) matching rules.
+
 **3. How Virgil `skill` maps to OpenClaw**
 
 With gateway invoke ([`openclaw-gateway.ts`](../lib/integrations/openclaw-gateway.ts)): **`delegateTask({ skill })`** becomes **`tool: <skill>`** in `POST /tools/invoke`, unless **`generic-task`** is used (then **`OPENCLAW_GENERIC_TASK_TOOL`**, default **`web`**), or **`OPENCLAW_SINGLE_TOOL_MODE=1`** (one tool for everything; original skill passed in args). Register matching tool names on OpenClaw for every id you expect the model to pick.
@@ -177,6 +189,7 @@ Success outcomes:
 
 ## Known limitations and operator notes
 
+- **Local Ollama slim/compact prompts** omit the **live gateway skill appendix** that hosted chat injects from `getDelegationDeploymentSnapshot` (token budget). For the canonical skill id list, use **signed-in `/deployment`** or **`GET /api/deployment/capabilities`**.
 - **HTTP REST only.** `OPENCLAW_URL` accepts a `ws://` value but it is converted to HTTP; no live WebSocket connection is made. Set `OPENCLAW_HTTP_URL` directly if this is confusing.
 - **Personal assistant mode only.** Tools are registered when `!isBusinessMode && isOpenClawConfigured()`. Business/front-desk mode does not expose delegation.
 - **Execute/skills/health paths are assumptions.** Default paths (`/api/execute`, `/api/skills`, `/health`) may not match your OpenClaw release; override with `OPENCLAW_*_PATH` env vars.
