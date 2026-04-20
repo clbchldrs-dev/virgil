@@ -30,7 +30,7 @@ export const CALAVERA_SKULL_ROWS: readonly string[] = [
   "...XXXXXXXXXX...",
   "....XXXXXXXX....",
   "......XXXX......",
-  "........XX......",
+  ".......XX.......",
 ];
 
 export const CALAVERA_SKULL_PIXELS: readonly [number, number][] = (() => {

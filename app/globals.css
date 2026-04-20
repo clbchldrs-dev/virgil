@@ -1078,9 +1078,9 @@ textarea:focus-visible {
   transform-origin: center;
   /*
    * Large empty-state skull (see .chat-creepy-mascot) needs much larger cqw than the corner calavera;
-   * ~38cqw fills the bitmap sockets like the green eyes do on the small avatar (~20% of a ~2rem skull → ~38% of a scaled-up grid).
+   * ~33cqw matches the bitmap sockets (~15% smaller than the first pass that used 38cqw).
    */
-  width: clamp(0.5rem, min(4rem, max(0.5rem, 38cqw)), 4.25rem);
+  width: clamp(0.5rem, min(4rem, max(0.5rem, 33cqw)), 4.25rem);
 }
 
 .pixel-chat-panel .chat-creepy-eye-anchor:nth-child(2) .chat-creepy-eye {
