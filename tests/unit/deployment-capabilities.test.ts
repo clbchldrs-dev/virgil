@@ -40,6 +40,8 @@ test("buildDeploymentCapabilities marks local inference unavailable on Vercel", 
       );
       const c = buildDeploymentCapabilitiesSync();
       assert.equal(c.environment, "vercel");
+      assert.ok(c.agentTaskOrchestration);
+      assert.equal(typeof c.agentTaskOrchestration.triageEnabled, "boolean");
       assert.equal(c.localInference.available, false);
       assert.match(c.localInference.detail, /Ollama|LAN|serverless/i);
       const shell = c.agentTools.find((t) => t.id === "executeShell");

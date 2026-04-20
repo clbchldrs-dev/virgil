@@ -1,7 +1,9 @@
-import type { AgentTask } from "@/lib/db/schema";
 import { resolveAgentTaskImpactTier } from "@/lib/agent-tasks/impact-tier";
+import type { AgentTask } from "@/lib/db/schema";
 
-function hasOutOfBandAcknowledgment(metadata: Record<string, unknown>): boolean {
+function hasOutOfBandAcknowledgment(
+  metadata: Record<string, unknown>
+): boolean {
   const raw = metadata.outOfBandAcknowledgedAt;
   return typeof raw === "string" && raw.trim().length > 0;
 }
@@ -41,10 +43,7 @@ export function getAgentTaskApprovalBlockMessage(
     return null;
   }
 
-  if (
-    options.outOfBandReviewAcknowledged ||
-    hasOutOfBandAcknowledgment(meta)
-  ) {
+  if (options.outOfBandReviewAcknowledged || hasOutOfBandAcknowledgment(meta)) {
     return null;
   }
 

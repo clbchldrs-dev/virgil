@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildTriageSystemPrompt } from "@/lib/agent-tasks/triage-prompt";
 import { agentTaskTriageOutputSchema } from "@/lib/agent-tasks/schema";
+import { buildTriageSystemPrompt } from "@/lib/agent-tasks/triage-prompt";
 
 test("triage system prompt forbids workflow authority", () => {
   const p = buildTriageSystemPrompt();
@@ -10,11 +10,7 @@ test("triage system prompt forbids workflow authority", () => {
     /do \*\*not\*\* control AgentTask workflow status/i,
     "must state triage does not control workflow status"
   );
-  assert.match(
-    p,
-    /advisory/i,
-    "must describe output as advisory"
-  );
+  assert.match(p, /advisory/i, "must describe output as advisory");
 });
 
 test("triage schema rejects legacy approve/reject recommendation values", () => {

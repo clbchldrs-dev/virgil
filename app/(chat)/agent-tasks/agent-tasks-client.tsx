@@ -7,13 +7,24 @@ import useSWR from "swr";
 import { toast } from "@/components/chat/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { resolveAgentTaskImpactTier } from "@/lib/agent-tasks/impact-tier";
 import type { AgentTask } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
+
+type OrchestrationHints = {
+  triageEnabled: boolean;
+  multiAgentPlannerEnabled: boolean;
+  plannerStageCount: number | null;
+};
 
 type Props = {
   initialTasks: AgentTask[];
   /** From `?status=` when linked from Background, etc. */
   initialStatus?: string;
+  githubAgentTasksConfigured: boolean;
+  delegationConfigured: boolean;
+  orchestrationHints: OrchestrationHints;
 };
 
 const ALL_STATUSES = [
@@ -140,7 +151,18 @@ function parseStatusFilter(raw: string | undefined): StatusFilter {
     : "all";
 }
 
-export function AgentTasksClient({ initialTasks, initialStatus }: Props) {
+function hasOobAck(meta: Record<string, unknown>): boolean {
+  const t = meta.outOfBandAcknowledgedAt;
+  return typeof t === "string" && t.trim().length > 0;
+}
+
+export function AgentTasksClient({
+  initialTasks,
+  initialStatus,
+  githubAgentTasksConfigured,
+  delegationConfigured,
+  orchestrationHints,
+}: Props) {
   const [filter, setFilter] = useState<StatusFilter>(() =>
     parseStatusFilter(initialStatus)
   );
@@ -168,6 +190,12 @@ export function AgentTasksClient({ initialTasks, initialStatus }: Props) {
 
   const [pending, setPending] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  /** Tasks where the owner checked the out-of-band review box (no GitHub integration). */
+  const [oobAckChecked, setOobAckChecked] = useState<Set<string>>(
+    () => new Set()
+  );
+  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
+  const [completionDraft, setCompletionDraft] = useState("");
 
   const toggleExpand = useCallback((id: string) => {
     setExpanded((prev) => {
@@ -181,28 +209,45 @@ export function AgentTasksClient({ initialTasks, initialStatus }: Props) {
     });
   }, []);
 
-  const patchStatus = useCallback(
-    async (id: string, newStatus: string) => {
-      setPending(id);
+  const patchTask = useCallback(
+    async (payload: {
+      id: string;
+      status: string;
+      completionSummary?: string;
+      outOfBandReviewAcknowledged?: boolean;
+    }) => {
+      setPending(payload.id);
       try {
+        const body: Record<string, unknown> = {
+          id: payload.id,
+          status: payload.status,
+        };
+        if (payload.completionSummary !== undefined) {
+          body.completionSummary = payload.completionSummary;
+        }
+        if (payload.outOfBandReviewAcknowledged === true) {
+          body.outOfBandReviewAcknowledged = true;
+        }
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/agent-tasks`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id, status: newStatus }),
+            body: JSON.stringify(body),
           }
         );
         if (!res.ok) {
-          const j = await res.json().catch(() => ({}));
+          const j = (await res.json().catch(() => ({}))) as { error?: string };
           throw new Error(
             typeof j.error === "string" ? j.error : "Update failed"
           );
         }
         await mutate();
+        setCompletingTaskId(null);
+        setCompletionDraft("");
         toast({
           type: "success",
-          description: `Task moved to ${STATUS_LABELS[newStatus] ?? newStatus}.`,
+          description: `Task moved to ${STATUS_LABELS[payload.status] ?? payload.status}.`,
         });
       } catch (e) {
         toast({
@@ -215,6 +260,57 @@ export function AgentTasksClient({ initialTasks, initialStatus }: Props) {
       }
     },
     [mutate]
+  );
+
+  const tryApprove = useCallback(
+    (task: AgentTask) => {
+      const tier = resolveAgentTaskImpactTier({
+        taskType: task.taskType,
+        priority: task.priority,
+        metadata: task.metadata,
+      });
+      const meta = (task.metadata ?? {}) as Record<string, unknown>;
+
+      if (
+        tier === "elevated" &&
+        githubAgentTasksConfigured &&
+        !task.githubIssueUrl?.trim()
+      ) {
+        toast({
+          type: "error",
+          description:
+            "High-impact task: a GitHub issue link is required before approval. Fix GitHub integration or recreate the task.",
+        });
+        return;
+      }
+
+      if (
+        tier === "elevated" &&
+        !githubAgentTasksConfigured &&
+        !hasOobAck(meta) &&
+        !oobAckChecked.has(task.id)
+      ) {
+        toast({
+          type: "error",
+          description:
+            "Confirm out-of-band review using the checkbox before approving.",
+        });
+        return;
+      }
+
+      const needAckPayload =
+        tier === "elevated" &&
+        !githubAgentTasksConfigured &&
+        !hasOobAck(meta) &&
+        oobAckChecked.has(task.id);
+
+      patchTask({
+        id: task.id,
+        status: "approved",
+        outOfBandReviewAcknowledged: needAckPayload ? true : undefined,
+      });
+    },
+    [githubAgentTasksConfigured, oobAckChecked, patchTask]
   );
 
   const delegateTask = useCallback(
@@ -284,6 +380,28 @@ export function AgentTasksClient({ initialTasks, initialStatus }: Props) {
     </div>
   );
 
+  const opsSummary = (
+    <p className="text-muted-foreground text-xs leading-relaxed">
+      This server: agent-task triage is{" "}
+      <span className="text-foreground">
+        {orchestrationHints.triageEnabled ? "enabled" : "disabled"}
+      </span>
+      ; delegation is{" "}
+      <span className="text-foreground">
+        {delegationConfigured ? "configured" : "not configured"}
+      </span>
+      {orchestrationHints.multiAgentPlannerEnabled ? (
+        <>
+          ; gateway multi-agent planner is on
+          {orchestrationHints.plannerStageCount == null
+            ? ""
+            : ` (${orchestrationHints.plannerStageCount} planner stage${orchestrationHints.plannerStageCount === 1 ? "" : "s"})`}
+        </>
+      ) : null}
+      .
+    </p>
+  );
+
   if (error) {
     return (
       <div className="space-y-4">
@@ -299,6 +417,7 @@ export function AgentTasksClient({ initialTasks, initialStatus }: Props) {
     return (
       <div className="space-y-4">
         {filterBar}
+        {opsSummary}
         <p className="text-muted-foreground text-sm">
           {filter === "all"
             ? "No tasks yet. Submit one from chat (gateway model) — then approve here so execution agents can run it."
@@ -311,6 +430,7 @@ export function AgentTasksClient({ initialTasks, initialStatus }: Props) {
   return (
     <div aria-busy={pending !== null} className="space-y-4">
       {filterBar}
+      {opsSummary}
       <ul className="space-y-3">
         {tasks.map((task) => {
           const isExpanded = expanded.has(task.id);
@@ -318,6 +438,23 @@ export function AgentTasksClient({ initialTasks, initialStatus }: Props) {
           const meta = (task.metadata ?? {}) as Record<string, unknown>;
           const filePaths = meta.filePaths as string[] | undefined;
           const proposedApproach = meta.proposedApproach as string | undefined;
+          const completionSummary = meta.completionSummary as
+            | string
+            | undefined;
+          const tier = resolveAgentTaskImpactTier({
+            taskType: task.taskType,
+            priority: task.priority,
+            metadata: task.metadata,
+          });
+          const showOobCheckbox =
+            task.status === "submitted" &&
+            tier === "elevated" &&
+            !githubAgentTasksConfigured &&
+            !hasOobAck(meta);
+          const approveBlockedByGithub =
+            tier === "elevated" &&
+            githubAgentTasksConfigured &&
+            !task.githubIssueUrl?.trim();
 
           return (
             <li
@@ -345,6 +482,11 @@ export function AgentTasksClient({ initialTasks, initialStatus }: Props) {
                     <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground uppercase tracking-wide">
                       {task.priority}
                     </span>
+                    {tier === "elevated" ? (
+                      <span className="rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-medium text-amber-900 uppercase tracking-wide dark:text-amber-100">
+                        High impact
+                      </span>
+                    ) : null}
                     <span className="text-muted-foreground text-xs">
                       {formatDistanceToNow(new Date(task.createdAt), {
                         addSuffix: true,
@@ -365,31 +507,114 @@ export function AgentTasksClient({ initialTasks, initialStatus }: Props) {
                 </div>
 
                 {transitions.length > 0 && (
-                  <div className="flex shrink-0 flex-wrap gap-2">
-                    {transitions.map((t) => (
-                      <Button
-                        className="h-8 min-h-10 text-xs sm:min-h-8"
-                        disabled={pending === task.id}
-                        key={t.kind === "delegate" ? "delegate" : t.status}
-                        onClick={() =>
-                          t.kind === "delegate"
-                            ? delegateTask(task.id)
-                            : patchStatus(task.id, t.status)
-                        }
-                        size="sm"
-                        type="button"
-                        variant={
-                          t.kind === "status" && t.status === "rejected"
-                            ? "outline"
-                            : "secondary"
-                        }
-                      >
-                        {t.label}
-                      </Button>
-                    ))}
+                  <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+                    {showOobCheckbox ? (
+                      <label className="flex max-w-sm cursor-pointer items-start gap-2 text-left text-muted-foreground text-xs">
+                        <input
+                          checked={oobAckChecked.has(task.id)}
+                          className="mt-0.5"
+                          onChange={(e) => {
+                            setOobAckChecked((prev) => {
+                              const next = new Set(prev);
+                              if (e.target.checked) {
+                                next.add(task.id);
+                              } else {
+                                next.delete(task.id);
+                              }
+                              return next;
+                            });
+                          }}
+                          type="checkbox"
+                        />
+                        <span>
+                          I reviewed this high-impact task out-of-band (no
+                          GitHub mirror on this deployment).
+                        </span>
+                      </label>
+                    ) : null}
+                    {approveBlockedByGithub ? (
+                      <p className="max-w-xs text-amber-800 text-xs dark:text-amber-200">
+                        Approve is blocked until a GitHub issue URL is present
+                        on this task (normally created at submit time).
+                      </p>
+                    ) : null}
+                    <div className="flex flex-wrap gap-2">
+                      {transitions.map((t) => (
+                        <Button
+                          className="h-8 min-h-10 text-xs sm:min-h-8"
+                          disabled={
+                            pending === task.id ||
+                            (t.kind === "status" &&
+                              t.status === "approved" &&
+                              approveBlockedByGithub)
+                          }
+                          key={t.kind === "delegate" ? "delegate" : t.status}
+                          onClick={() => {
+                            if (t.kind === "delegate") {
+                              delegateTask(task.id);
+                            } else if (t.status === "approved") {
+                              tryApprove(task);
+                            } else if (t.status === "done") {
+                              setCompletingTaskId(task.id);
+                              setCompletionDraft("");
+                            } else {
+                              patchTask({ id: task.id, status: t.status });
+                            }
+                          }}
+                          size="sm"
+                          type="button"
+                          variant={
+                            t.kind === "status" && t.status === "rejected"
+                              ? "outline"
+                              : "secondary"
+                          }
+                        >
+                          {t.label}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
+
+              {completingTaskId === task.id && task.status === "in_progress" ? (
+                <div className="mt-3 space-y-2 rounded-lg border border-border/60 bg-muted/30 p-3">
+                  <p className="font-medium text-muted-foreground text-xs">
+                    Optional completion notes (stored on the task)
+                  </p>
+                  <Textarea
+                    onChange={(e) => setCompletionDraft(e.target.value)}
+                    placeholder="What changed, PR link, or follow-ups…"
+                    value={completionDraft}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      onClick={() =>
+                        patchTask({
+                          id: task.id,
+                          status: "done",
+                          completionSummary: completionDraft,
+                        })
+                      }
+                      size="sm"
+                      type="button"
+                    >
+                      Save & mark done
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setCompletingTaskId(null);
+                        setCompletionDraft("");
+                      }}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
 
               {isExpanded && (
                 <div className="mt-3 space-y-3 border-border/40 border-t pt-3">
@@ -420,6 +645,16 @@ export function AgentTasksClient({ initialTasks, initialStatus }: Props) {
                       </ul>
                     </div>
                   )}
+                  {completionSummary ? (
+                    <div className="space-y-1">
+                      <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                        Completion notes
+                      </p>
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                        {completionSummary}
+                      </p>
+                    </div>
+                  ) : null}
                   {task.agentNotes && (
                     <div className="space-y-1">
                       <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">

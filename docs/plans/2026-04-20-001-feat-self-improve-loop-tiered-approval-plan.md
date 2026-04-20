@@ -127,7 +127,7 @@ GitHub/Postgres playbook, command-center degradation copy, tests.
 
 ## Implementation Units
 
-- [ ] **Unit 1: Impact tier resolution module**
+- [x] **Unit 1: Impact tier resolution module**
 
 **Goal:** Single source of truth for `standard` vs `elevated` impact given task fields.
 
@@ -154,7 +154,7 @@ GitHub/Postgres playbook, command-center degradation copy, tests.
 
 ---
 
-- [ ] **Unit 2: Triage cannot approve — prompt and schema guardrails**
+- [x] **Unit 2: Triage cannot approve — prompt and schema guardrails**
 
 **Goal:** Make it impossible for triage output to imply status changes; reinforce R3 in model instructions.
 
@@ -178,7 +178,7 @@ GitHub/Postgres playbook, command-center degradation copy, tests.
 
 ---
 
-- [ ] **Unit 3: Elevated approval checkpoint — UI + optional API metadata**
+- [x] **Unit 3: Elevated approval checkpoint — UI + optional API metadata**
 
 **Goal:** When approving an **elevated** task, owner completes an out-of-band checkpoint before `approved`.
 
@@ -206,7 +206,7 @@ GitHub/Postgres playbook, command-center degradation copy, tests.
 
 ---
 
-- [ ] **Unit 4: Operator runbook + AGENTS alignment**
+- [x] **Unit 4: Operator runbook + AGENTS alignment**
 
 **Goal:** Durable documentation for tiers, SoT, and rituals (see R6, R7).
 
@@ -228,7 +228,7 @@ GitHub/Postgres playbook, command-center degradation copy, tests.
 
 ---
 
-- [ ] **Unit 5: Completion feedback hook**
+- [x] **Unit 5: Completion feedback hook**
 
 **Goal:** Satisfy R4 minimally with auditable **optional** completion notes.
 
@@ -249,7 +249,7 @@ GitHub/Postgres playbook, command-center degradation copy, tests.
 
 ---
 
-- [ ] **Unit 6: Degradation copy — triage and delegation**
+- [x] **Unit 6: Degradation copy — triage and delegation**
 
 **Goal:** R5 clarity when workers or gateways are misconfigured.
 
@@ -272,7 +272,7 @@ GitHub/Postgres playbook, command-center degradation copy, tests.
 
 ---
 
-- [ ] **Unit 7: Orchestration / delegation operator hints**
+- [x] **Unit 7: Orchestration / delegation operator hints**
 
 **Goal:** R8–R9 — surface env posture without new analytics product.
 
@@ -294,7 +294,7 @@ GitHub/Postgres playbook, command-center degradation copy, tests.
 
 ---
 
-- [ ] **Unit 8: GitHub vs Postgres playbook**
+- [x] **Unit 8: GitHub vs Postgres playbook**
 
 **Goal:** Address deferred reconciliation question with **process**, not automation.
 

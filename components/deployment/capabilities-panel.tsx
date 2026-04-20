@@ -83,6 +83,35 @@ export function DeploymentCapabilitiesPanel({
         </ul>
       </section>
 
+      <section className="space-y-2">
+        <h2 className="font-medium text-foreground">
+          Agent tasks and gateway planner
+        </h2>
+        <p className="text-muted-foreground">
+          Background triage and optional multi-stage planner are env-gated — no
+          secrets shown here.
+        </p>
+        <ul className="space-y-1 text-muted-foreground text-xs">
+          <li>
+            <span className="font-medium text-foreground">Triage worker:</span>{" "}
+            {data.agentTaskOrchestration.triageEnabled ? "enabled" : "disabled"}{" "}
+            (<code className="text-[0.65rem]">AGENT_TASK_TRIAGE_ENABLED</code>)
+          </li>
+          <li>
+            <span className="font-medium text-foreground">
+              Multi-agent planner:
+            </span>{" "}
+            {data.agentTaskOrchestration.multiAgentPlannerEnabled
+              ? `on${
+                  data.agentTaskOrchestration.plannerStageCount == null
+                    ? ""
+                    : ` (${data.agentTaskOrchestration.plannerStageCount} stage${data.agentTaskOrchestration.plannerStageCount === 1 ? "" : "s"})`
+                }`
+              : "off"}
+          </li>
+        </ul>
+      </section>
+
       <section className="space-y-3">
         <h2 className="font-medium text-foreground">Companion agent tools</h2>
         <p className="text-muted-foreground">

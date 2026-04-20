@@ -41,7 +41,7 @@ test("elevated + GitHub configured blocks without issue URL", () => {
       outOfBandReviewAcknowledged: false,
     }
   );
-  assert.ok(m && m.includes("GitHub"));
+  assert.ok(m?.includes("GitHub"));
 });
 
 test("elevated + GitHub configured allows when issue URL present", () => {
@@ -68,7 +68,7 @@ test("elevated + no GitHub blocks without ack", () => {
       outOfBandReviewAcknowledged: false,
     }
   );
-  assert.ok(m && m.includes("out-of-band"));
+  assert.ok(m?.includes("out-of-band"));
 });
 
 test("elevated + no GitHub allows with body ack", () => {

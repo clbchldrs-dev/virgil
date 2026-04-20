@@ -21,11 +21,7 @@ export type AgentTaskTypeForTier =
   | "docs"
   | "infra";
 
-export type AgentTaskPriorityForTier =
-  | "low"
-  | "medium"
-  | "high"
-  | "critical";
+export type AgentTaskPriorityForTier = "low" | "medium" | "high" | "critical";
 
 export type ResolveAgentTaskImpactTierInput = {
   taskType: AgentTaskTypeForTier;
@@ -33,9 +29,7 @@ export type ResolveAgentTaskImpactTierInput = {
   metadata?: Record<string, unknown> | null;
 };
 
-function isOverride(
-  v: unknown
-): v is AgentTaskImpactTier {
+function isOverride(v: unknown): v is AgentTaskImpactTier {
   return v === "standard" || v === "elevated";
 }
 

@@ -472,7 +472,7 @@ Then: `systemctl daemon-reload && systemctl enable --now virgil-night-enqueue.ti
 pnpm dev
 ```
 
-Open the URL shown (usually `http://localhost:3000`). Register or use guest login.
+Open the URL shown (usually `http://localhost:3000`). Register or sign in. **Guest** sessions (no account) are **off by default**; set `VIRGIL_GUEST_LOGIN_ENABLED=1` for temporary guest login on login/register (see env table).
 
 ### Ollama (local Qwen in the model picker)
 
@@ -654,6 +654,7 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `NEXT_PUBLIC_APP_URL` | If not localhost | If not localhost   | Same origin as `AUTH_URL` for client; **build-time** for Next. Off Vercel, **required** for correct absolute URLs (e.g. night-review enqueue → QStash → `POST /api/night-review/run`). |
 | `VIRGIL_PASSWORDLESS_LOGIN` | No | No | Set to `1` with `VIRGIL_PASSWORDLESS_EMAILS` to disable password auth and use email-only sign-in for allowlisted addresses (trusted / single-owner only; see Setup checklist). |
 | `VIRGIL_PASSWORDLESS_EMAILS` | With passwordless | Same | Comma-separated emails allowed for passwordless sign-in (case-insensitive). |
+| `VIRGIL_GUEST_LOGIN_ENABLED` | No | No | Set to `1` / `true` to allow **temporary guest** sign-in from login/register (`guest-*` users). **Default off** when unset. |
 | `VERCEL_URL`          | No               | Set by Vercel      | Used when present to derive base URL for enqueue; absent on self-hosted — then `NEXT_PUBLIC_APP_URL` applies. |
 | `OLLAMA_BASE_URL`     | If using Ollama  | If using Ollama    | Default `http://127.0.0.1:11434` local; Docker/LAN: see [Setup checklist](#setup-checklist) / [beta-lan-gaming-pc.md](docs/beta-lan-gaming-pc.md). |
 | `VIRGIL_OPEN_URL`     | No               | No                 | Optional; launcher / smoke open URL (packaging). |
@@ -804,7 +805,7 @@ When changing local-model behavior, favor focused regression tests around:
 
 ## Agent Task Pickup Convention
 
-Virgil can accept self-improvement tasks via chat (`submitAgentTask` tool, gateway-only). Tasks are stored in the `AgentTask` Postgres table and optionally mirrored as GitHub Issues with `agent-task` + type labels. The owner can manage tasks in-app at **`/agent-tasks`** (list, filter, approve/reject/done).
+Virgil can accept self-improvement tasks via chat (`submitAgentTask` tool, gateway-only). Tasks are stored in the `AgentTask` Postgres table and optionally mirrored as GitHub Issues with `agent-task` + type labels. The owner can manage tasks in-app at **`/agent-tasks`** (list, filter, approve/reject/done). **High-impact** tasks use **tiered approval** (GitHub issue link or out-of-band acknowledgment) — see [docs/operator-runbook-agent-tasks.md](docs/operator-runbook-agent-tasks.md).
 
 ### For Cursor agents (or other automated agents)
 
@@ -823,7 +824,7 @@ When `AGENT_TASK_TRIAGE_ENABLED=1`, a cron job (`GET /api/agent-tasks/enqueue`, 
 ### API
 
 - `GET /api/agent-tasks?status=approved` — list tasks (auth required)
-- `PATCH /api/agent-tasks` — update status/notes (auth required, body: `{ id, status, agentNotes? }`)
+- `PATCH /api/agent-tasks` — update status/notes (auth required, body: `{ id, status, agentNotes?, completionSummary?, outOfBandReviewAcknowledged? }`). Server enforces **elevated** approval rules from [docs/operator-runbook-agent-tasks.md](docs/operator-runbook-agent-tasks.md).
 
 ## Key Decisions
 
