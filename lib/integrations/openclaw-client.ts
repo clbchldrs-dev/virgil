@@ -3,7 +3,15 @@ import {
   getOpenClawHealthPath,
   getOpenClawHttpOrigin,
   getOpenClawSkillsPath,
+  getOpenClawStaticSkillNames,
+  mergeOpenClawSkillNameLists,
 } from "@/lib/integrations/openclaw-config";
+import {
+  buildOpenClawGatewayInvokeBody,
+  formatOpenClawGatewayResultPayload,
+  isOpenClawGatewayExecutePath,
+  openClawGatewayAuthHeaders,
+} from "@/lib/integrations/openclaw-gateway";
 import type { ClawIntent, ClawResult } from "@/lib/integrations/openclaw-types";
 
 const FETCH_TIMEOUT_MS = 8000;
@@ -56,36 +64,37 @@ export async function pingOpenClaw(): Promise<boolean> {
 }
 
 export async function listOpenClawSkills(): Promise<string[]> {
+  const staticNames = getOpenClawStaticSkillNames();
   const base = getOpenClawHttpOrigin();
   if (!base) {
-    return [];
+    return staticNames;
   }
   const path = getOpenClawSkillsPath();
   try {
     const res = await fetchWithTimeout(`${base}${path}`, {
       method: "GET",
-      headers: { Accept: "application/json" },
+      headers: openClawGatewayAuthHeaders(),
     });
     if (!res.ok) {
-      return [];
+      return staticNames;
     }
     const data: unknown = await res.json();
+    let fromResponse: string[] = [];
     if (Array.isArray(data)) {
-      return data.filter((x): x is string => typeof x === "string");
-    }
-    if (
+      fromResponse = data.filter((x): x is string => typeof x === "string");
+    } else if (
       data &&
       typeof data === "object" &&
       "skills" in data &&
       Array.isArray((data as { skills: unknown }).skills)
     ) {
-      return (data as { skills: unknown[] }).skills.filter(
+      fromResponse = (data as { skills: unknown[] }).skills.filter(
         (x): x is string => typeof x === "string"
       );
     }
-    return [];
+    return mergeOpenClawSkillNameLists(fromResponse, staticNames);
   } catch {
-    return [];
+    return staticNames;
   }
 }
 
@@ -118,30 +127,38 @@ export async function sendOpenClawIntent(
   }
   const path = getOpenClawExecutePath();
   const timeoutMs = options?.timeoutMs ?? FETCH_TIMEOUT_MS;
+  const gateway = isOpenClawGatewayExecutePath();
   try {
     const res = await fetchOpenClawWithTimeout(
       `${base}${path}`,
       {
         method: "POST",
         headers: {
+          ...(gateway ? openClawGatewayAuthHeaders() : {}),
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(intent),
+        body: gateway
+          ? buildOpenClawGatewayInvokeBody(intent)
+          : JSON.stringify(intent),
       },
       timeoutMs
     );
     const text = await res.text();
     let output: string | undefined;
     if (text) {
-      try {
-        const j: unknown = JSON.parse(text);
-        output =
-          typeof j === "object" && j !== null && "output" in j
-            ? String((j as { output: unknown }).output)
-            : text;
-      } catch {
-        output = text;
+      if (gateway) {
+        output = formatOpenClawGatewayResultPayload(text);
+      } else {
+        try {
+          const j: unknown = JSON.parse(text);
+          output =
+            typeof j === "object" && j !== null && "output" in j
+              ? String((j as { output: unknown }).output)
+              : text;
+        } catch {
+          output = text;
+        }
       }
     }
     if (!res.ok) {

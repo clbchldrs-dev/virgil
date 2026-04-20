@@ -291,6 +291,34 @@ export const goalCheckIn = pgTable(
 
 export type GoalCheckIn = InferSelectModel<typeof goalCheckIn>;
 
+/** Owner daily checklist (calendar day in owner TZ); separate rows per day, no auto-rollover. */
+export const dayTask = pgTable(
+  "DayTask",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    forDate: date("forDate", { mode: "string" }).notNull(),
+    title: text("title").notNull(),
+    sortOrder: integer("sortOrder").notNull(),
+    completedAt: timestamp("completedAt"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    userDateSortUnique: uniqueIndex(
+      "DayTask_userId_forDate_sortOrder_unique"
+    ).on(table.userId, table.forDate, table.sortOrder),
+    userDateIdx: index("DayTask_userId_forDate_idx").on(
+      table.userId,
+      table.forDate
+    ),
+  })
+);
+
+export type DayTask = InferSelectModel<typeof dayTask>;
+
 export const blockerIncident = pgTable("BlockerIncident", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   userId: uuid("userId")

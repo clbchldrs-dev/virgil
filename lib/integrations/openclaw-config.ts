@@ -50,3 +50,44 @@ export function getOpenClawSkillsPath(): string {
 export function getOpenClawHealthPath(): string {
   return process.env.OPENCLAW_HEALTH_PATH?.trim() || "/health";
 }
+
+/** True when delegation targets the Gateway's `POST /tools/invoke` surface (no legacy GET skill catalog). */
+export function usesOpenClawToolsInvokePath(): boolean {
+  if (process.env.OPENCLAW_GATEWAY_TOOLS_INVOKE?.trim() === "1") {
+    return true;
+  }
+  return getOpenClawExecutePath().toLowerCase().includes("tools/invoke");
+}
+
+/**
+ * Comma-separated tool/skill ids merged with GET `OPENCLAW_SKILLS_PATH` results.
+ * Use when the gateway only exposes `POST /tools/invoke` and has no JSON skills route
+ * (GET default `/api/skills` returns 404 on current OpenClaw Gateway).
+ */
+export function getOpenClawStaticSkillNames(): string[] {
+  const raw = process.env.OPENCLAW_SKILLS_STATIC?.trim();
+  if (!raw) {
+    return [];
+  }
+  return [
+    ...new Set(
+      raw
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    ),
+  ].sort();
+}
+
+export function mergeOpenClawSkillNameLists(...lists: string[][]): string[] {
+  const out = new Set<string>();
+  for (const list of lists) {
+    for (const id of list) {
+      const t = id.trim();
+      if (t) {
+        out.add(t);
+      }
+    }
+  }
+  return [...out].sort();
+}

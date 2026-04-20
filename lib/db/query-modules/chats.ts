@@ -4,7 +4,7 @@ import { and, desc, eq, gt, inArray, lt, type SQL } from "drizzle-orm";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
 import { VirgilError } from "@/lib/errors";
 import { db } from "../client";
-import { type Chat, chat, message, stream, vote } from "../schema";
+import { type Chat, chat, memory, message, stream, vote } from "../schema";
 
 export async function saveChat({
   id,
@@ -32,6 +32,11 @@ export async function saveChat({
 
 export async function deleteChatById({ id }: { id: string }) {
   try {
+    await db
+      .update(memory)
+      .set({ chatId: null })
+      .where(eq(memory.chatId, id));
+
     await db.delete(vote).where(eq(vote.chatId, id));
     await db.delete(message).where(eq(message.chatId, id));
     await db.delete(stream).where(eq(stream.chatId, id));
@@ -61,6 +66,11 @@ export async function deleteAllChatsByUserId({ userId }: { userId: string }) {
     }
 
     const chatIds = userChats.map((c) => c.id);
+
+    await db
+      .update(memory)
+      .set({ chatId: null })
+      .where(inArray(memory.chatId, chatIds));
 
     await db.delete(vote).where(inArray(vote.chatId, chatIds));
     await db.delete(message).where(inArray(message.chatId, chatIds));

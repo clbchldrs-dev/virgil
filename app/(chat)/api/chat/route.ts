@@ -46,6 +46,7 @@ import {
   mergePlannerOutlineIntoSystemPrompt,
   runPlannerOutline,
 } from "@/lib/ai/orchestration/multi-agent";
+import { formatDayTasksForPrompt } from "@/lib/ai/day-task-context";
 import { formatActiveGoalsForPrompt } from "@/lib/ai/pivot-goal-context";
 import type { RequestHints } from "@/lib/ai/prompts";
 import {
@@ -374,13 +375,24 @@ export async function POST(request: Request) {
     }
 
     const modelConfig = getChatModelWithLocalFallback(chatModel);
-    const { capabilities, recentMemories, activeGoals, recentHealthSnapshots } =
-      await loadChatPromptContext({
-        userId: session.user.id,
-        chatModel,
-      });
+    const {
+      capabilities,
+      recentMemories,
+      activeGoals,
+      dayTasksToday,
+      dayTaskCalendarKey,
+      recentHealthSnapshots,
+    } = await loadChatPromptContext({
+      userId: session.user.id,
+      chatModel,
+    });
     promptContextLoadedAtMs = Date.now();
-    const goalContextAppendix = formatActiveGoalsForPrompt(activeGoals);
+    const goalContextAppendix = [
+      formatDayTasksForPrompt(dayTasksToday, dayTaskCalendarKey),
+      formatActiveGoalsForPrompt(activeGoals),
+    ]
+      .filter((block) => block.length > 0)
+      .join("\n\n");
     const isReasoningModel = capabilities?.reasoning === true;
     const supportsTools = capabilities?.tools === true;
     const promptSupportsTools = supportsTools && !isOllamaLocal;

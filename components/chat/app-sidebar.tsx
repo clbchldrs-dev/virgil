@@ -23,6 +23,7 @@ import {
   getChatHistoryPaginationKey,
   SidebarHistory,
 } from "@/components/chat/sidebar-history";
+import { SidebarDayTasks } from "@/components/chat/sidebar-day-tasks";
 import { SidebarUserNav } from "@/components/chat/sidebar-user-nav";
 import {
   Sidebar,
@@ -255,6 +256,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               />
             </div>
           )}
+          <SidebarDayTasks user={user} />
           <div
             className={cn(
               isMobile

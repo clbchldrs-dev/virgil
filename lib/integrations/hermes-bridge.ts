@@ -19,7 +19,16 @@ import {
 import {
   getOpenClawExecutePath,
   getOpenClawHttpOrigin,
+  getOpenClawStaticSkillNames,
+  mergeOpenClawSkillNameLists,
 } from "@/lib/integrations/openclaw-config";
+import {
+  buildOpenClawGatewayInvokeBody,
+  formatOpenClawGatewayResultPayload,
+  isOpenClawGatewayExecutePath,
+  openClawGatewayAuthHeaders,
+  openClawGatewayToolNameForIntent,
+} from "@/lib/integrations/openclaw-gateway";
 import type { ClawIntent } from "@/lib/integrations/openclaw-types";
 
 const EXECUTE_TIMEOUT_MS = 120_000;
@@ -32,112 +41,6 @@ export type HermesBridgeHealth = {
   openClawReachable: boolean | null;
   timestamp: string;
 };
-
-/** Shared-secret Bearer for the OpenClaw Gateway (token or password auth mode). */
-function openClawBearerSecret(): string {
-  return (
-    process.env.OPENCLAW_GATEWAY_TOKEN?.trim() ||
-    process.env.OPENCLAW_GATEWAY_PASSWORD?.trim() ||
-    ""
-  );
-}
-
-function openClawAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { Accept: "application/json" };
-  const bearer = openClawBearerSecret();
-  if (bearer) {
-    headers.Authorization = `Bearer ${bearer}`;
-  }
-  return headers;
-}
-
-/** The "generic" OpenClaw tool name used when a Virgil skill has no matching tool. */
-function openClawDefaultTool(): string {
-  return process.env.OPENCLAW_GENERIC_TASK_TOOL?.trim() || "web";
-}
-
-function usesOpenClawToolsInvoke(): boolean {
-  if (process.env.OPENCLAW_GATEWAY_TOOLS_INVOKE === "1") {
-    return true;
-  }
-  return getOpenClawExecutePath().toLowerCase().includes("tools/invoke");
-}
-
-/**
- * Single-tool mode (default when talking to the OpenClaw Gateway) maps every
- * Virgil delegation to one OpenClaw tool and passes the original skill inside
- * `args.virgilSkill`. Set `OPENCLAW_SINGLE_TOOL_MODE=0` to send skill ids as
- * OpenClaw tool names one-to-one (legacy mode).
- */
-function openClawSingleToolMode(): boolean {
-  if (!usesOpenClawToolsInvoke()) {
-    return false;
-  }
-  const raw = process.env.OPENCLAW_SINGLE_TOOL_MODE?.trim().toLowerCase();
-  if (raw === "0" || raw === "false" || raw === "off") {
-    return false;
-  }
-  return true;
-}
-
-function openClawToolNameForIntent(intent: ClawIntent): string {
-  if (openClawSingleToolMode()) {
-    return openClawDefaultTool();
-  }
-  const trimmed = intent.skill.trim();
-  if (trimmed === "generic-task") {
-    return openClawDefaultTool();
-  }
-  return trimmed;
-}
-
-function openClawGatewayArgs(intent: ClawIntent): Record<string, unknown> {
-  if (openClawSingleToolMode()) {
-    return {
-      ...intent.params,
-      virgilSkill: intent.skill,
-      virgilSource: intent.source,
-      virgilPriority: intent.priority,
-    };
-  }
-  return intent.params;
-}
-
-function formatGatewayResultPayload(raw: string): string {
-  try {
-    const j: unknown = JSON.parse(raw);
-    if (
-      j &&
-      typeof j === "object" &&
-      "ok" in j &&
-      (j as { ok?: unknown }).ok === true &&
-      "result" in j
-    ) {
-      const r = (j as { result: unknown }).result;
-      if (typeof r === "string") {
-        return r;
-      }
-      return JSON.stringify(r, null, 2);
-    }
-    if (
-      j &&
-      typeof j === "object" &&
-      "ok" in j &&
-      (j as { ok?: unknown }).ok === false &&
-      "error" in j
-    ) {
-      const err = (j as { error: unknown }).error;
-      const msg =
-        err && typeof err === "object" && err !== null && "message" in err
-          ? String((err as { message: unknown }).message)
-          : JSON.stringify(err);
-      return msg;
-    }
-  } catch {
-    /* fall through */
-  }
-  return raw;
-}
 
 export function parseBridgeIntent(body: unknown): ClawIntent | null {
   if (!body || typeof body !== "object") {
@@ -208,24 +111,27 @@ async function listOpenClawSkillsViaGateway(): Promise<string[]> {
   try {
     const res = await fetchOpenClawWithTimeout(
       `${origin}${path}`,
-      { method: "GET", headers: openClawAuthHeaders() },
+      { method: "GET", headers: openClawGatewayAuthHeaders() },
       8000
     );
     if (!res.ok) {
-      return [];
+      return getOpenClawStaticSkillNames();
     }
     const ct = res.headers.get("content-type") ?? "";
     if (ct.includes("text/html")) {
-      return [];
+      return getOpenClawStaticSkillNames();
     }
     const text = await res.text();
     let data: unknown;
     try {
       data = JSON.parse(text);
     } catch {
-      return [];
+      return getOpenClawStaticSkillNames();
     }
-    return parseSkillIdsLoose(data);
+    return mergeOpenClawSkillNameLists(
+      parseSkillIdsLoose(data),
+      getOpenClawStaticSkillNames()
+    );
   } catch {
     // Fall back to the un-authenticated openclaw-client helper in case the
     // bare-metal path returns JSON without auth (unlikely but harmless).
@@ -290,16 +196,12 @@ export async function bridgeExecute(
     };
   }
 
-  const gatewayMode = usesOpenClawToolsInvoke();
+  const gatewayMode = isOpenClawGatewayExecutePath();
   const toolName = gatewayMode
-    ? openClawToolNameForIntent(intent)
+    ? openClawGatewayToolNameForIntent(intent)
     : intent.skill;
   const bodyJson = gatewayMode
-    ? JSON.stringify({
-        tool: toolName,
-        args: openClawGatewayArgs(intent),
-        sessionKey: "main",
-      })
+    ? buildOpenClawGatewayInvokeBody(intent)
     : JSON.stringify(intent);
 
   try {
@@ -308,7 +210,7 @@ export async function bridgeExecute(
       {
         method: "POST",
         headers: {
-          ...openClawAuthHeaders(),
+          ...openClawGatewayAuthHeaders(),
           "Content-Type": "application/json",
         },
         body: bodyJson,
@@ -322,7 +224,7 @@ export async function bridgeExecute(
           status: 200,
           body: {
             success: true,
-            output: formatGatewayResultPayload(text),
+            output: formatOpenClawGatewayResultPayload(text),
             skill: intent.skill,
             openClawTool: toolName,
           },
@@ -333,7 +235,8 @@ export async function bridgeExecute(
         body: {
           success: false,
           error:
-            formatGatewayResultPayload(text) || `HTTP ${String(res.status)}`,
+            formatOpenClawGatewayResultPayload(text) ||
+            `HTTP ${String(res.status)}`,
           skill: intent.skill,
           openClawTool: toolName,
         },

@@ -7,6 +7,8 @@ const KEYS = [
   "OPENCLAW_EXECUTE_PATH",
   "OPENCLAW_SKILLS_PATH",
   "OPENCLAW_HEALTH_PATH",
+  "OPENCLAW_GATEWAY_TOOLS_INVOKE",
+  "OPENCLAW_SKILLS_STATIC",
 ] as const;
 
 function withEnv(
@@ -42,7 +44,10 @@ import {
   getOpenClawHealthPath,
   getOpenClawHttpOrigin,
   getOpenClawSkillsPath,
+  getOpenClawStaticSkillNames,
   isOpenClawConfigured,
+  mergeOpenClawSkillNameLists,
+  usesOpenClawToolsInvokePath,
 } from "../../lib/integrations/openclaw-config";
 
 test("isOpenClawConfigured false when both vars unset", () => {
@@ -174,5 +179,48 @@ test("path helpers use env when set", () => {
       assert.equal(getOpenClawSkillsPath(), "/v2/skills");
       assert.equal(getOpenClawHealthPath(), "/v2/ping");
     }
+  );
+});
+
+test("usesOpenClawToolsInvokePath when execute path or flag matches", () => {
+  withEnv(
+    {
+      OPENCLAW_GATEWAY_TOOLS_INVOKE: undefined,
+      OPENCLAW_EXECUTE_PATH: "/tools/invoke",
+    },
+    () => {
+      assert.equal(usesOpenClawToolsInvokePath(), true);
+    }
+  );
+  withEnv(
+    {
+      OPENCLAW_GATEWAY_TOOLS_INVOKE: "1",
+      OPENCLAW_EXECUTE_PATH: "/api/execute",
+    },
+    () => {
+      assert.equal(usesOpenClawToolsInvokePath(), true);
+    }
+  );
+  withEnv(
+    {
+      OPENCLAW_GATEWAY_TOOLS_INVOKE: undefined,
+      OPENCLAW_EXECUTE_PATH: "/api/execute",
+    },
+    () => {
+      assert.equal(usesOpenClawToolsInvokePath(), false);
+    }
+  );
+});
+
+test("getOpenClawStaticSkillNames parses comma list", () => {
+  withEnv({ OPENCLAW_SKILLS_STATIC: " web , wiki-embed ,web " }, () => {
+    assert.deepEqual(getOpenClawStaticSkillNames(), ["web", "wiki-embed"]);
+  });
+});
+
+test("mergeOpenClawSkillNameLists dedupes and sorts", () => {
+  assert.deepEqual(
+    mergeOpenClawSkillNameLists(["b", "a"], ["a", "c"]),
+    ["a", "b", "c"]
   );
 });

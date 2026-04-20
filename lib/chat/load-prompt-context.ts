@@ -9,15 +9,24 @@ import {
 import {
   getRecentMemories,
   listActiveGoalsForUser,
+  listDayTasksForUser,
   listHealthSnapshotsForUser,
 } from "@/lib/db/queries";
-import type { Goal, HealthSnapshot, Memory } from "@/lib/db/schema";
+import type { DayTask, Goal, HealthSnapshot, Memory } from "@/lib/db/schema";
+import {
+  computeWindowKey,
+  getNightReviewTimezone,
+} from "@/lib/night-review/config";
 import { agentIngestLogSession308ef5 } from "@/lib/debug/agent-ingest-log";
 
 export type ChatPromptContextLoad = {
   capabilities: ModelCapabilities;
   recentMemories: Memory[];
   activeGoals: Goal[];
+  /** Today's day-list tasks in owner TZ (`NIGHT_REVIEW_TIMEZONE`). */
+  dayTasksToday: DayTask[];
+  /** YYYY-MM-DD key matching {@link dayTasksToday}. */
+  dayTaskCalendarKey: string;
   /** Up to 3 health batches from the last 7 days (for gateway / full companion prompt only). */
   recentHealthSnapshots: HealthSnapshot[];
 };
@@ -42,8 +51,10 @@ export async function loadChatPromptContext({
   const capabilitiesPromise = getCapabilitiesForModel(chatModel);
 
   const healthSince = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const dayTaskCalendarKey = computeWindowKey(now, getNightReviewTimezone());
 
-  const [memoriesOutcome, goalsOutcome, healthOutcome] =
+  const [memoriesOutcome, goalsOutcome, dayTasksOutcome, healthOutcome] =
     await Promise.allSettled([
       getRecentMemories({
         userId,
@@ -51,6 +62,7 @@ export async function loadChatPromptContext({
         limit: getMemoryPromptFetchLimit(),
       }),
       listActiveGoalsForUser({ userId, limit: 12 }),
+      listDayTasksForUser({ userId, forDate: dayTaskCalendarKey }),
       listHealthSnapshotsForUser({
         userId,
         limit: 3,
@@ -87,6 +99,20 @@ export async function loadChatPromptContext({
     });
   }
 
+  let dayTasksToday: DayTask[] = [];
+  if (dayTasksOutcome.status === "fulfilled") {
+    dayTasksToday = dayTasksOutcome.value;
+  } else {
+    agentIngestLogSession308ef5({
+      hypothesisId: "prompt-ctx-day-tasks",
+      location: "load-prompt-context.ts:listDayTasksForUser",
+      message: "listDayTasksForUser rejected",
+      data: {
+        errorMessage: rejectionMessage(dayTasksOutcome.reason).slice(0, 500),
+      },
+    });
+  }
+
   let recentHealthSnapshots: HealthSnapshot[] = [];
   if (healthOutcome.status === "fulfilled") {
     recentHealthSnapshots = healthOutcome.value;
@@ -105,6 +131,8 @@ export async function loadChatPromptContext({
     capabilities,
     recentMemories,
     activeGoals,
+    dayTasksToday,
+    dayTaskCalendarKey,
     recentHealthSnapshots,
   };
 }
