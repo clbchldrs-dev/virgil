@@ -7,12 +7,16 @@ import {
   isDelegationPollPrimaryActive,
   isDelegationPollPrimaryEnabled,
 } from "@/lib/integrations/delegation-poll-config";
+import { evaluateDelegationPreflight } from "@/lib/integrations/delegation-preflight";
 import {
+  delegationListSkillDescriptorsUnion,
   delegationPing,
   getDelegationProvider,
   isDelegationConfigured,
   isDelegationFailoverEnabled,
 } from "@/lib/integrations/delegation-provider";
+import { evaluateDelegationReadiness } from "@/lib/integrations/delegation-readiness";
+import { resolveDelegationSkill } from "@/lib/integrations/delegation-routing";
 import {
   listHermesSkillNames,
   pingHermes,
@@ -64,6 +68,7 @@ export async function GET() {
     queuedBacklog,
     delegationOnline,
     delegationSkillNames,
+    delegationSkillDescriptors,
     hermesOnline,
     openClawOnline,
     hermesSkillNames,
@@ -73,6 +78,7 @@ export async function GET() {
     countDelegationBacklogForUser(userId),
     configured ? delegationPing() : Promise.resolve(false),
     configured ? provider.listSkillNames() : Promise.resolve([]),
+    configured ? delegationListSkillDescriptorsUnion() : Promise.resolve([]),
     hermesConfigured ? pingHermes() : Promise.resolve(false),
     openClawConfigured ? pingOpenClaw() : Promise.resolve(false),
     hermesConfigured ? listHermesSkillNames() : Promise.resolve([]),
@@ -93,6 +99,42 @@ export async function GET() {
     delegationOnline,
     skillCount: delegationSkillNames.length,
     skillsPreview: delegationSkillNames.slice(0, 25),
+    skillsContractVersion: "v0-name-only",
+    skillsContractStatus: "name_only",
+    skillDescriptorPreview: delegationSkillDescriptors.slice(0, 25),
+    delegationProbe: configured
+      ? (() => {
+          const description =
+            "List currently available skills and explain routing.";
+          const routing = resolveDelegationSkill({
+            description,
+            lane: "research",
+            advertisedSkills: delegationSkillNames,
+          });
+          const readiness = evaluateDelegationReadiness({
+            online: delegationOnline,
+            resolvedSkill: routing.resolvedSkill,
+            skillDescriptors: delegationSkillDescriptors,
+          });
+          const preflight = evaluateDelegationPreflight({
+            readiness,
+            advertisedSkillCount: delegationSkillDescriptors.length,
+          });
+          return {
+            description,
+            routing: routing.trace,
+            readiness,
+            preflight,
+          };
+        })()
+      : null,
+    delegateabilityProbe: configured
+      ? evaluateDelegationReadiness({
+          online: delegationOnline,
+          resolvedSkill: delegationSkillNames[0] ?? "generic-task",
+          skillDescriptors: delegationSkillDescriptors,
+        })
+      : null,
     queuedBacklog,
     pendingConfirmations: pendingConfirmations.length,
     offlineMessage: buildOfflineMessage({

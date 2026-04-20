@@ -12,5 +12,6 @@ test("delegation health route exposes backend diagnostics", async () => {
   assert.match(routeSource, /backend:\s*provider\.backend/);
   assert.match(routeSource, /delegationOnline/);
   assert.match(routeSource, /skillsPreview/);
+  assert.match(routeSource, /delegationProbe/);
   assert.match(routeSource, /probes:\s*\{/);
 });

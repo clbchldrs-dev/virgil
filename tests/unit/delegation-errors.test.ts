@@ -101,3 +101,22 @@ test("buildDelegationSendOutcome returns execution failure payload on backend fa
   assert.equal(outcome.backend, "openclaw");
   assert.equal(outcome.message, "permission denied");
 });
+
+test("buildDelegationSendOutcome marks network-style gateway failures retryable", () => {
+  const outcome = buildDelegationSendOutcome({
+    backend: "hermes",
+    intentId: "intent-4",
+    result: {
+      success: false,
+      error: "gateway unreachable",
+      errorCode: "primary_unreachable",
+      skill: "generic-task",
+      executedAt: "2026-01-01T00:00:00.000Z",
+    },
+  });
+
+  assert.equal(outcome.ok, false);
+  assert.equal(outcome.error, "delegation_execution_failed");
+  assert.equal(outcome.retryable, true);
+  assert.equal(outcome.errorCode, "primary_unreachable");
+});

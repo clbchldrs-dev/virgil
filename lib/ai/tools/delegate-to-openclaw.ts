@@ -14,16 +14,17 @@ import {
   buildDelegateTaskToolDescription,
   delegationUnknownSkillMessage,
 } from "@/lib/integrations/delegation-labels";
+import { evaluateDelegationPreflight } from "@/lib/integrations/delegation-preflight";
 import {
+  delegationListSkillDescriptorsUnion,
   delegationListSkillNamesUnion,
   delegationPing,
   getDelegationProvider,
 } from "@/lib/integrations/delegation-provider";
+import { evaluateDelegationReadiness } from "@/lib/integrations/delegation-readiness";
+import { resolveDelegationSkill } from "@/lib/integrations/delegation-routing";
 import { isDelegationStrictSkillAllowlist } from "@/lib/integrations/delegation-skill-policy";
-import {
-  delegationNeedsConfirmation,
-  matchSkillFromDescription,
-} from "@/lib/integrations/openclaw-match";
+import { delegationNeedsConfirmation } from "@/lib/integrations/openclaw-match";
 import type { ClawIntent } from "@/lib/integrations/openclaw-types";
 
 export function delegateTaskToOpenClaw({
@@ -51,6 +52,9 @@ export function delegateTaskToOpenClaw({
         const skills = shouldListSkills
           ? await delegationListSkillNamesUnion()
           : [];
+        const skillDescriptors = shouldListSkills
+          ? await delegationListSkillDescriptorsUnion()
+          : [];
 
         if (
           strict &&
@@ -63,6 +67,11 @@ export function delegateTaskToOpenClaw({
           return {
             ok: false,
             queued: false,
+            error: "delegation_preflight_failed",
+            reason: "preflight_failed",
+            retryable: false,
+            backend,
+            errorCode: "provided_skill_not_advertised",
             message: delegationUnknownSkillMessage(
               backend,
               skillTrimmed,
@@ -71,11 +80,14 @@ export function delegateTaskToOpenClaw({
             ),
           };
         }
-        const resolvedSkill =
-          skillTrimmed ||
-          matchSkillFromDescription(description, skills) ||
-          "generic-task";
         const resolvedLane = lane ?? "home";
+        const routing = resolveDelegationSkill({
+          description,
+          providedSkill: skillTrimmed ?? undefined,
+          lane: resolvedLane,
+          advertisedSkills: skills,
+        });
+        const resolvedSkill = routing.resolvedSkill;
         const mergedParams: Record<string, unknown> = {
           ...(params ?? {}),
           description,
@@ -99,6 +111,31 @@ export function delegateTaskToOpenClaw({
           requiresConfirmation: needsConfirm,
         };
 
+        const online = await delegationPing();
+        const readiness = evaluateDelegationReadiness({
+          online,
+          providedSkill: skillTrimmed,
+          resolvedSkill,
+          skillDescriptors,
+        });
+        const preflight = evaluateDelegationPreflight({
+          readiness,
+          advertisedSkillCount: skillDescriptors.length,
+        });
+        if (!preflight.ok) {
+          return {
+            ok: false,
+            queued: false,
+            error: "delegation_preflight_failed",
+            reason: preflight.reason,
+            retryable: false,
+            backend,
+            errorCode: preflight.reason,
+            message: preflight.message,
+            readiness,
+            trace: { routing, preflight },
+          };
+        }
         const row = await queuePendingIntent({
           userId,
           chatId,
@@ -106,8 +143,6 @@ export function delegateTaskToOpenClaw({
           skill: resolvedSkill,
           requiresConfirmation: needsConfirm,
         });
-
-        const online = await delegationPing();
         if (!online) {
           const backlog = await countDelegationBacklogForUser(userId);
           const failure = buildDelegationSkipFailure({
@@ -118,6 +153,8 @@ export function delegateTaskToOpenClaw({
           return {
             ...failure,
             intentId: row.id,
+            readiness,
+            trace: { routing, preflight },
           };
         }
 
@@ -139,21 +176,31 @@ export function delegateTaskToOpenClaw({
             return {
               ...failure,
               intentId: row.id,
+              readiness,
+              trace: { routing, preflight },
             };
           }
-          return buildDelegationSendOutcome({
-            backend,
-            intentId: row.id,
-            result: sendResult.result,
-          });
+          return {
+            ...buildDelegationSendOutcome({
+              backend,
+              intentId: row.id,
+              result: sendResult.result,
+            }),
+            readiness,
+            trace: { routing, preflight },
+          };
         }
 
-        return buildDelegationQueuedSuccess({
-          backend,
-          intentId: row.id,
-          message:
-            "This action requires owner confirmation. Approve from notifications or use approveDelegationIntent (or approveOpenClawIntent).",
-        });
+        return {
+          ...buildDelegationQueuedSuccess({
+            backend,
+            intentId: row.id,
+            message:
+              "This action requires owner confirmation. Approve from notifications or use approveDelegationIntent (or approveOpenClawIntent).",
+          }),
+          readiness,
+          trace: { routing, preflight },
+        };
       } catch (err) {
         const msg =
           err instanceof Error
@@ -162,6 +209,11 @@ export function delegateTaskToOpenClaw({
         return {
           ok: false,
           queued: false,
+          error: "delegation_execution_failed",
+          reason: "execution_failed",
+          retryable: false,
+          backend: getDelegationProvider().backend,
+          errorCode: "tool_runtime_error",
           message: msg,
         };
       }

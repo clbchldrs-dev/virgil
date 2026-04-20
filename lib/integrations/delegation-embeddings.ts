@@ -48,8 +48,24 @@ export type DelegationEmbeddingsOk = {
 export type DelegationEmbeddingsErr = {
   ok: false;
   error: string;
+  reason:
+    | "validation_failed"
+    | "skill_not_advertised"
+    | "backend_offline"
+    | "execution_failed"
+    | "parse_failed";
+  errorCode: string;
+  retryable: boolean;
   backend: "openclaw" | "hermes";
 };
+
+function isRetryableDelegationErrorCode(code: string | undefined): boolean {
+  return (
+    code === "primary_unreachable" ||
+    code === "secondary_unreachable" ||
+    code === "both_unreachable"
+  );
+}
 
 function isNumberArray(value: unknown): value is number[] {
   return (
@@ -134,6 +150,9 @@ export async function fetchDelegationEmbeddings(
     return {
       ok: false,
       error: "At least one non-empty text is required.",
+      reason: "validation_failed",
+      errorCode: "invalid_input",
+      retryable: false,
       backend,
     };
   }
@@ -141,6 +160,9 @@ export async function fetchDelegationEmbeddings(
     return {
       ok: false,
       error: `At most ${String(MAX_TEXTS)} texts per call.`,
+      reason: "validation_failed",
+      errorCode: "invalid_input",
+      retryable: false,
       backend,
     };
   }
@@ -149,6 +171,9 @@ export async function fetchDelegationEmbeddings(
       return {
         ok: false,
         error: `Each text must be at most ${String(MAX_CHARS_PER_TEXT)} characters.`,
+        reason: "validation_failed",
+        errorCode: "invalid_input",
+        retryable: false,
         backend,
       };
     }
@@ -161,6 +186,9 @@ export async function fetchDelegationEmbeddings(
       return {
         ok: false,
         error: `Delegation backend does not advertise skill "${skill}". Add it on the gateway or set VIRGIL_DELEGATION_EMBED_SKILL to a listed id.`,
+        reason: "skill_not_advertised",
+        errorCode: "embed_skill_not_advertised",
+        retryable: false,
         backend,
       };
     }
@@ -182,6 +210,9 @@ export async function fetchDelegationEmbeddings(
     return {
       ok: false,
       error: "Delegation backend is offline.",
+      reason: "backend_offline",
+      errorCode: "backend_offline",
+      retryable: true,
       backend,
     };
   }
@@ -191,9 +222,13 @@ export async function fetchDelegationEmbeddings(
   });
 
   if (!result.success) {
+    const errorCode = result.errorCode ?? "embed_execution_failed";
     return {
       ok: false,
       error: result.error ?? "Delegation request failed.",
+      reason: "execution_failed",
+      errorCode,
+      retryable: isRetryableDelegationErrorCode(result.errorCode),
       backend: result.routedVia ?? backend,
     };
   }
@@ -203,6 +238,9 @@ export async function fetchDelegationEmbeddings(
     return {
       ok: false,
       error: parsed.error,
+      reason: "parse_failed",
+      errorCode: "embed_response_invalid",
+      retryable: false,
       backend: result.routedVia ?? backend,
     };
   }

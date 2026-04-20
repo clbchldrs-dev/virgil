@@ -37,7 +37,9 @@ export async function POST(request: Request) {
           ? 409
           : result.code === "not_configured"
             ? 400
-            : 500;
+            : result.code === "preflight_failed"
+              ? 422
+              : 500;
     return Response.json(
       { error: result.message, code: result.code, intentId: result.intentId },
       { status }

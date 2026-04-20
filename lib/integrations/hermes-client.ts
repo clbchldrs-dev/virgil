@@ -113,6 +113,7 @@ export async function sendHermesIntent(
     return {
       success: false,
       error: "Hermes HTTP base URL is not configured.",
+      errorCode: "not_configured",
       skill: intent.skill,
       executedAt,
     };
@@ -150,6 +151,7 @@ export async function sendHermesIntent(
       return {
         success: false,
         error: truncateError(output ?? `HTTP ${String(res.status)}`),
+        errorCode: "primary_unreachable",
         skill: intent.skill,
         executedAt,
       };
@@ -167,6 +169,7 @@ export async function sendHermesIntent(
         error instanceof Error
           ? truncateError(error.message)
           : "Request failed",
+      errorCode: "primary_unreachable",
       skill: intent.skill,
       executedAt,
     };

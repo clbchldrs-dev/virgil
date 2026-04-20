@@ -16,14 +16,17 @@ export type DelegationFailure = {
     | "delegation_backend_offline"
     | "intent_awaiting_confirmation"
     | "intent_not_sendable"
+    | "delegation_preflight_failed"
     | "delegation_execution_failed";
-  reason: DelegationSkipReason | "execution_failed";
+  reason: DelegationSkipReason | "execution_failed" | "preflight_failed";
   message: string;
   retryable: boolean;
   backend?: DelegationBackend;
   queuedBacklog?: number;
   intentId?: string;
   result?: ClawResult;
+  /** Machine-readable subcode for deterministic tool handling. */
+  errorCode?: string;
 };
 
 export type DelegationSuccess = {
@@ -85,7 +88,13 @@ export function buildDelegationSkipFailure({
 export function delegationFailureStatusCode(
   failure: DelegationFailure
 ): number {
-  return failure.error === "delegation_backend_offline" ? 503 : 409;
+  if (failure.error === "delegation_backend_offline") {
+    return 503;
+  }
+  if (failure.error === "delegation_preflight_failed") {
+    return 422;
+  }
+  return 409;
 }
 
 export function buildDelegationQueuedSuccess({
@@ -117,6 +126,10 @@ export function buildDelegationSendOutcome({
   result: ClawResult;
 }): DelegationOutcome {
   const effectiveBackend = result.routedVia ?? backend;
+  const retryableExecutionFailure =
+    result.errorCode === "primary_unreachable" ||
+    result.errorCode === "secondary_unreachable" ||
+    result.errorCode === "both_unreachable";
 
   if (result.success) {
     return {
@@ -136,10 +149,11 @@ export function buildDelegationSendOutcome({
     reason: "execution_failed",
     backend: effectiveBackend,
     intentId,
-    retryable: false,
+    retryable: retryableExecutionFailure,
     message:
       result.error ??
       `Delegation backend reported a failure (${delegationBackendDisplayName(effectiveBackend)}).`,
     result,
+    errorCode: result.errorCode,
   };
 }

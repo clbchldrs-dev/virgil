@@ -180,6 +180,13 @@ export type BridgeExecuteOutcome = {
   };
 };
 
+function formatToolList(tools: string[]): string {
+  if (tools.length === 0) {
+    return "(none)";
+  }
+  return tools.slice(0, 12).join(", ");
+}
+
 export async function bridgeExecute(
   intent: ClawIntent
 ): Promise<BridgeExecuteOutcome> {
@@ -203,6 +210,36 @@ export async function bridgeExecute(
   const bodyJson = gatewayMode
     ? buildOpenClawGatewayInvokeBody(intent)
     : JSON.stringify(intent);
+
+  if (gatewayMode) {
+    const advertisedTools = await listOpenClawSkillsViaGateway();
+    if (advertisedTools.length === 0) {
+      return {
+        status: 503,
+        body: {
+          success: false,
+          error:
+            "No OpenClaw tools are advertised for /tools/invoke. Set OPENCLAW_SKILLS_STATIC to the invokable tool ids (and set OPENCLAW_GENERIC_TASK_TOOL to one of them for generic-task).",
+          skill: intent.skill,
+          openClawTool: toolName,
+        },
+      };
+    }
+    if (!advertisedTools.includes(toolName)) {
+      return {
+        status: 503,
+        body: {
+          success: false,
+          error:
+            `Mapped tool "${toolName}" is not advertised by OpenClaw for /tools/invoke. ` +
+            `Advertised tools: ${formatToolList(advertisedTools)}. ` +
+            "Set OPENCLAW_GENERIC_TASK_TOOL or OPENCLAW_SKILLS_STATIC to a compatible tool id.",
+          skill: intent.skill,
+          openClawTool: toolName,
+        },
+      };
+    }
+  }
 
   try {
     const res = await fetchOpenClawWithTimeout(

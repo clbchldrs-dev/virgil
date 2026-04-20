@@ -1,14 +1,25 @@
 import { isDelegationEmbedToolEnabled } from "@/lib/integrations/delegation-embeddings";
 import { isDelegationPollPrimaryActive } from "@/lib/integrations/delegation-poll-config";
+import { evaluateDelegationPreflight } from "@/lib/integrations/delegation-preflight";
 import {
-  delegationListSkillNamesUnion,
+  delegationContractDiagnostics,
+  delegationListSkillDescriptorsUnion,
   delegationPing,
   getDelegationProvider,
   isDelegationConfigured,
   isDelegationFailoverEnabled,
 } from "@/lib/integrations/delegation-provider";
+import { evaluateDelegationReadiness } from "@/lib/integrations/delegation-readiness";
+import type { DelegationRoutingTrace } from "@/lib/integrations/delegation-routing";
+import { resolveDelegationSkill } from "@/lib/integrations/delegation-routing";
 import { isHermesConfigured } from "@/lib/integrations/hermes-config";
 import { isOpenClawConfigured } from "@/lib/integrations/openclaw-config";
+import type {
+  DelegationDiagnosticsCode,
+  DelegationSkillContractStatus,
+  DelegationSkillContractVersion,
+  DelegationSkillDescriptor,
+} from "@/lib/integrations/openclaw-types";
 
 const TTL_MS = 55_000;
 const MAX_SKILL_IDS_IN_APPENDIX = 24;
@@ -25,8 +36,24 @@ export type DelegationDeploymentSnapshot = {
   pollPrimaryActive: boolean;
   reachable: boolean | null;
   skills: string[];
+  skillDescriptors: DelegationSkillDescriptor[];
   skillsFetchedAt: string;
   skillsStatus: DelegationSkillsStatus;
+  skillsContractVersion: DelegationSkillContractVersion;
+  skillsContractStatus: DelegationSkillContractStatus;
+  diagnostics: {
+    reachabilityCode: DelegationDiagnosticsCode;
+    skillsCode: DelegationDiagnosticsCode;
+    primaryReachable: boolean;
+    secondaryReachable: boolean | null;
+    skillsCount: number;
+  };
+  delegationProbe: {
+    description: string;
+    readiness: ReturnType<typeof evaluateDelegationReadiness>;
+    routing: DelegationRoutingTrace;
+    preflight: ReturnType<typeof evaluateDelegationPreflight>;
+  } | null;
   /** When true, chat registers **embedViaDelegation** alongside **delegateTask**. */
   embedToolEnabled: boolean;
 };
@@ -53,8 +80,19 @@ function emptySnapshot(
     pollPrimaryActive: isDelegationPollPrimaryActive(),
     reachable: null,
     skills: [],
+    skillDescriptors: [],
     skillsFetchedAt: now,
     skillsStatus: "unavailable",
+    skillsContractVersion: "v0-name-only",
+    skillsContractStatus: "name_only",
+    diagnostics: {
+      reachabilityCode: "not_configured",
+      skillsCode: "skills_unavailable",
+      primaryReachable: false,
+      secondaryReachable: null,
+      skillsCount: 0,
+    },
+    delegationProbe: null,
     embedToolEnabled: false,
     ...partial,
   };
@@ -90,20 +128,41 @@ async function buildFreshSnapshot(): Promise<DelegationDeploymentSnapshot> {
   }
 
   const now = new Date().toISOString();
+  const diagnostics = await delegationContractDiagnostics();
   let skills: string[] = [];
+  let skillDescriptors: DelegationSkillDescriptor[] = [];
   let skillsStatus: DelegationSkillsStatus = "unavailable";
   let skillsFetchedAt = now;
+  const probeDescription =
+    "List currently available skills and explain routing.";
 
   try {
-    skills = await delegationListSkillNamesUnion();
+    skillDescriptors = await delegationListSkillDescriptorsUnion();
+    skills = skillDescriptors.map((skill) => skill.id);
     skillsStatus = "ok";
   } catch {
     if (cache !== null && cache.snapshot.skills.length > 0) {
       skills = cache.snapshot.skills;
+      skillDescriptors = cache.snapshot.skillDescriptors;
       skillsFetchedAt = cache.snapshot.skillsFetchedAt;
       skillsStatus = "cached";
     }
   }
+
+  const routing = resolveDelegationSkill({
+    description: probeDescription,
+    lane: "research",
+    advertisedSkills: skills,
+  });
+  const readiness = evaluateDelegationReadiness({
+    online: reachable === true,
+    resolvedSkill: routing.resolvedSkill,
+    skillDescriptors,
+  });
+  const preflight = evaluateDelegationPreflight({
+    readiness,
+    advertisedSkillCount: skillDescriptors.length,
+  });
 
   return {
     configured: true,
@@ -115,8 +174,24 @@ async function buildFreshSnapshot(): Promise<DelegationDeploymentSnapshot> {
     pollPrimaryActive,
     reachable,
     skills,
+    skillDescriptors,
     skillsFetchedAt,
     skillsStatus,
+    skillsContractVersion: "v0-name-only",
+    skillsContractStatus: "name_only",
+    diagnostics: {
+      reachabilityCode: diagnostics.reachabilityCode,
+      skillsCode: diagnostics.skillsCode,
+      primaryReachable: diagnostics.primaryReachable,
+      secondaryReachable: diagnostics.secondaryReachable,
+      skillsCount: diagnostics.skillsCount,
+    },
+    delegationProbe: {
+      description: probeDescription,
+      readiness,
+      routing: routing.trace,
+      preflight,
+    },
     embedToolEnabled: isDelegationEmbedToolEnabled(),
   };
 }
@@ -165,7 +240,7 @@ export function buildDelegationCapabilityAppendix(
     "Routing: intents go to the primary backend when it is up; otherwise the secondary may be used when failover is on. There is no per-message backend switch in Virgil.";
 
   if (snapshot.skillsStatus === "unavailable" && snapshot.skills.length === 0) {
-    return `Delegation (${backendName}): ${reach} ${failover} ${routing} Skill list unavailable — use the deployment page or omit the skill field so one can be inferred.`;
+    return `Delegation (${backendName}): ${reach} ${failover} ${routing} Skill list unavailable — use the deployment page or omit the skill field so one can be inferred. Contract: ${snapshot.skillsContractVersion} (${snapshot.skillsContractStatus}). Diagnostics: reachability=${snapshot.diagnostics.reachabilityCode}, skills=${snapshot.diagnostics.skillsCode}.`;
   }
 
   const sample = snapshot.skills.slice(0, MAX_SKILL_IDS_IN_APPENDIX);
@@ -180,5 +255,5 @@ export function buildDelegationCapabilityAppendix(
         ? `(skills may be stale; last fetch ${snapshot.skillsFetchedAt})`
         : "";
 
-  return `Delegation (${backendName}): ${reach} ${failover} ${routing} Known skill ids (from gateway; not exhaustive if list failed): ${sample.join(", ")}${extra}. ${freshness}`;
+  return `Delegation (${backendName}): ${reach} ${failover} ${routing} Known skill ids (from gateway; not exhaustive if list failed): ${sample.join(", ")}${extra}. ${freshness} Contract: ${snapshot.skillsContractVersion} (${snapshot.skillsContractStatus}). Diagnostics: reachability=${snapshot.diagnostics.reachabilityCode}, skills=${snapshot.diagnostics.skillsCode}.`;
 }

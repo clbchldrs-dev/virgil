@@ -3,11 +3,13 @@
 import useSWR from "swr";
 import { toast } from "@/components/chat/toast";
 import { Button } from "@/components/ui/button";
+import { buildDeploymentDiagnosticsPayload } from "@/lib/deployment/build-deployment-diagnostics-payload";
 import type { DeploymentCapabilities } from "@/lib/deployment/capabilities";
 import { cn } from "@/lib/utils";
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const CAPABILITIES_URL = `${BASE_PATH}/api/deployment/capabilities`;
+const DELEGATION_HEALTH_URL = `${BASE_PATH}/api/delegation/health`;
 
 async function fetchCapabilities(url: string): Promise<DeploymentCapabilities> {
   const res = await fetch(url);
@@ -163,26 +165,40 @@ export function DeploymentCapabilitiesPanel({
             <h2 className="font-medium text-foreground">
               Delegation (Hermes / OpenClaw)
             </h2>
-            {data.delegation.configured ? (
+            <div className="flex shrink-0 flex-wrap justify-end gap-2">
               <Button
                 className="shrink-0"
-                data-testid="deployment-delegation-refresh"
-                disabled={isValidating}
+                data-testid="deployment-copy-diagnostics"
                 onClick={async () => {
                   try {
-                    await mutate(
-                      () => fetchCapabilities(`${CAPABILITIES_URL}?refresh=1`),
-                      { revalidate: false }
+                    let delegationHealth: unknown = null;
+                    try {
+                      const healthRes = await fetch(DELEGATION_HEALTH_URL);
+                      delegationHealth = healthRes.ok
+                        ? await healthRes.json()
+                        : {
+                            ok: false,
+                            httpStatus: healthRes.status,
+                          };
+                    } catch {
+                      delegationHealth = { ok: false, error: "fetch_failed" };
+                    }
+                    const payload = buildDeploymentDiagnosticsPayload({
+                      capabilities: data,
+                      delegationHealth,
+                    });
+                    await navigator.clipboard.writeText(
+                      JSON.stringify(payload, null, 2)
                     );
                     toast({
                       type: "success",
-                      description: "Delegation snapshot refreshed.",
+                      description: "Diagnostics JSON copied to clipboard.",
                     });
                   } catch {
                     toast({
                       type: "error",
                       description:
-                        "Could not refresh delegation snapshot. Try again or check that you are signed in.",
+                        "Could not copy diagnostics. Check clipboard permissions or try again.",
                     });
                   }
                 }}
@@ -190,9 +206,73 @@ export function DeploymentCapabilitiesPanel({
                 type="button"
                 variant="outline"
               >
-                {isValidating ? "Refreshing…" : "Refresh skills snapshot"}
+                Copy diagnostics JSON
               </Button>
-            ) : null}
+              {data.delegation.configured ? (
+                <Button
+                  className="shrink-0"
+                  data-testid="deployment-run-probe"
+                  disabled={isValidating}
+                  onClick={async () => {
+                    try {
+                      // Ping health first so operator sees fresh route-level status.
+                      await fetch(DELEGATION_HEALTH_URL);
+                      await mutate(
+                        () =>
+                          fetchCapabilities(`${CAPABILITIES_URL}?refresh=1`),
+                        { revalidate: false }
+                      );
+                      toast({
+                        type: "success",
+                        description: "Delegation probe refreshed.",
+                      });
+                    } catch {
+                      toast({
+                        type: "error",
+                        description:
+                          "Could not run delegation probe. Check gateway status and try again.",
+                      });
+                    }
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  Run probe now
+                </Button>
+              ) : null}
+              {data.delegation.configured ? (
+                <Button
+                  className="shrink-0"
+                  data-testid="deployment-delegation-refresh"
+                  disabled={isValidating}
+                  onClick={async () => {
+                    try {
+                      await mutate(
+                        () =>
+                          fetchCapabilities(`${CAPABILITIES_URL}?refresh=1`),
+                        { revalidate: false }
+                      );
+                      toast({
+                        type: "success",
+                        description: "Delegation snapshot refreshed.",
+                      });
+                    } catch {
+                      toast({
+                        type: "error",
+                        description:
+                          "Could not refresh delegation snapshot. Try again or check that you are signed in.",
+                      });
+                    }
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  {isValidating ? "Refreshing…" : "Refresh skills snapshot"}
+                </Button>
+              ) : null}
+            </div>
           </div>
           {data.delegation.configured ? (
             <div className="space-y-2">
@@ -287,6 +367,78 @@ export function DeploymentCapabilitiesPanel({
               switch in Virgil.
             </p>
           ) : null}
+          {data.delegation.configured ? (
+            <p className="text-muted-foreground text-xs">
+              Diagnostics: reachability{" "}
+              <span className="font-mono">
+                {data.delegation.diagnostics.reachabilityCode}
+              </span>
+              , skills{" "}
+              <span className="font-mono">
+                {data.delegation.diagnostics.skillsCode}
+              </span>
+              , primary reachable{" "}
+              <span className="font-mono">
+                {data.delegation.diagnostics.primaryReachable ? "yes" : "no"}
+              </span>
+              {data.delegation.diagnostics.secondaryReachable ===
+              null ? null : (
+                <>
+                  , secondary reachable{" "}
+                  <span className="font-mono">
+                    {data.delegation.diagnostics.secondaryReachable
+                      ? "yes"
+                      : "no"}
+                  </span>
+                </>
+              )}
+              , skill count{" "}
+              <span className="font-mono">
+                {data.delegation.diagnostics.skillsCount}
+              </span>
+              .
+            </p>
+          ) : null}
+          {data.delegation.configured && data.delegation.delegationProbe ? (
+            <div
+              className="space-y-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5 text-xs"
+              data-testid="deployment-delegation-probe"
+            >
+              <p className="text-muted-foreground">
+                Delegation probe:{" "}
+                <span className="font-mono text-foreground">
+                  {data.delegation.delegationProbe.routing.resolvedSkill}
+                </span>{" "}
+                via{" "}
+                <span className="font-mono text-foreground">
+                  {data.delegation.delegationProbe.routing.strategy}
+                </span>
+                .
+              </p>
+              <p className="text-muted-foreground">
+                Readiness:{" "}
+                <span className="font-mono text-foreground">
+                  {data.delegation.delegationProbe.readiness.recommendation}
+                </span>{" "}
+                (score{" "}
+                <span className="font-mono text-foreground">
+                  {data.delegation.delegationProbe.readiness.score.toFixed(2)}
+                </span>
+                ). Preflight:{" "}
+                <span className="font-mono text-foreground">
+                  {data.delegation.delegationProbe.preflight.ok
+                    ? "pass"
+                    : "blocked"}
+                </span>
+                .
+              </p>
+              {data.delegation.delegationProbe.readiness.reasons.length > 0 ? (
+                <p className="text-muted-foreground">
+                  Why: {data.delegation.delegationProbe.readiness.reasons[0]}.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           {data.delegation.hermesEnvPresent ||
           data.delegation.openclawEnvPresent ? (
             <p className="text-muted-foreground text-xs">
@@ -297,6 +449,17 @@ export function DeploymentCapabilitiesPanel({
           ) : null}
           {data.delegation.configured ? (
             <>
+              <p className="text-muted-foreground text-xs">
+                Skill contract:{" "}
+                <span className="font-mono">
+                  {data.delegation.skillsContractVersion}
+                </span>{" "}
+                (
+                <span className="font-mono">
+                  {data.delegation.skillsContractStatus}
+                </span>
+                ).
+              </p>
               {data.delegation.skillsStatus === "ok" ? (
                 <p className="text-muted-foreground text-xs">
                   Skills snapshot:{" "}
@@ -323,11 +486,20 @@ export function DeploymentCapabilitiesPanel({
                   className="divide-y divide-border/60 rounded-lg border border-border/60 font-mono text-xs"
                   data-testid="deployment-delegation-skill-list"
                 >
-                  {data.delegation.skills.slice(0, 48).map((id) => (
-                    <li className="px-3 py-1.5 text-foreground" key={id}>
-                      {id}
-                    </li>
-                  ))}
+                  {data.delegation.skillDescriptors
+                    .slice(0, 48)
+                    .map((skill) => (
+                      <li
+                        className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5"
+                        key={skill.id}
+                      >
+                        <span className="text-foreground">{skill.id}</span>
+                        <span className="text-muted-foreground">
+                          {skill.riskLevel} risk ·{" "}
+                          {skill.sourceBackends.join("+")}
+                        </span>
+                      </li>
+                    ))}
                   {data.delegation.skills.length > 48 ? (
                     <li className="px-3 py-1.5 text-muted-foreground">
                       +{data.delegation.skills.length - 48} more

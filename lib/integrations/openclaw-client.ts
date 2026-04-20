@@ -121,6 +121,7 @@ export async function sendOpenClawIntent(
     return {
       success: false,
       error: "OpenClaw HTTP base URL is not configured.",
+      errorCode: "not_configured",
       skill: intent.skill,
       executedAt,
     };
@@ -165,6 +166,7 @@ export async function sendOpenClawIntent(
       return {
         success: false,
         error: truncateError(output ?? `HTTP ${String(res.status)}`),
+        errorCode: "primary_unreachable",
         skill: intent.skill,
         executedAt,
       };
@@ -179,6 +181,7 @@ export async function sendOpenClawIntent(
     return {
       success: false,
       error: e instanceof Error ? truncateError(e.message) : "Request failed",
+      errorCode: "primary_unreachable",
       skill: intent.skill,
       executedAt,
     };

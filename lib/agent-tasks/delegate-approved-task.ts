@@ -14,12 +14,16 @@ import {
   buildDelegationSkipFailure,
   type DelegationOutcome,
 } from "@/lib/integrations/delegation-errors";
+import { evaluateDelegationPreflight } from "@/lib/integrations/delegation-preflight";
 import {
+  delegationListSkillDescriptorsUnion,
   delegationListSkillNamesUnion,
   delegationPing,
   getDelegationProvider,
   isDelegationConfigured,
 } from "@/lib/integrations/delegation-provider";
+import { evaluateDelegationReadiness } from "@/lib/integrations/delegation-readiness";
+import { resolveDelegationSkill } from "@/lib/integrations/delegation-routing";
 import {
   delegationNeedsConfirmation,
   matchSkillFromDescription,
@@ -30,17 +34,23 @@ export type DelegateApprovedAgentTaskErrorCode =
   | "not_configured"
   | "not_found"
   | "bad_status"
+  | "preflight_failed"
   | "update_failed";
 
-function summarizeOutcomeForMetadata(
-  outcome: DelegationOutcome
-): Record<string, unknown> {
+function summarizeOutcomeForMetadata(args: {
+  outcome: DelegationOutcome;
+  readiness?: ReturnType<typeof evaluateDelegationReadiness>;
+  trace?: Record<string, unknown>;
+}): Record<string, unknown> {
+  const { outcome, readiness, trace } = args;
   if (outcome.ok) {
     return {
       ok: true,
       status: outcome.status,
       backend: outcome.backend,
       intentId: outcome.intentId,
+      ...(readiness ? { readiness } : {}),
+      ...(trace ? { trace } : {}),
     };
   }
   return {
@@ -49,6 +59,8 @@ function summarizeOutcomeForMetadata(
     backend: outcome.backend,
     intentId: outcome.intentId,
     message: outcome.message,
+    ...(readiness ? { readiness } : {}),
+    ...(trace ? { trace } : {}),
   };
 }
 
@@ -96,9 +108,19 @@ export async function delegateApprovedAgentTask({
   const delegationProvider = getDelegationProvider();
   const backend = delegationProvider.backend;
   const skills = await delegationListSkillNamesUnion();
+  const skillDescriptors = await delegationListSkillDescriptorsUnion();
   const fullDescription = `${task.title}\n\n${task.description}`.trim();
+  const routing = resolveDelegationSkill({
+    description: fullDescription,
+    lane: "code",
+    taskType: task.taskType,
+    advertisedSkills: skills,
+  });
   const resolvedSkill =
-    matchSkillFromDescription(fullDescription, skills) ?? "generic-task";
+    routing.trace.strategy === "fallback_generic"
+      ? (matchSkillFromDescription(fullDescription, skills) ??
+        routing.resolvedSkill)
+      : routing.resolvedSkill;
   const needsConfirm = delegationNeedsConfirmation(
     fullDescription,
     resolvedSkill
@@ -126,6 +148,25 @@ export async function delegateApprovedAgentTask({
     requiresConfirmation: needsConfirm,
   };
 
+  const online = await delegationPing();
+  const readiness = evaluateDelegationReadiness({
+    online,
+    resolvedSkill,
+    skillDescriptors,
+  });
+  const preflight = evaluateDelegationPreflight({
+    readiness,
+    advertisedSkillCount: skillDescriptors.length,
+  });
+
+  if (!preflight.ok) {
+    return {
+      ok: false,
+      code: "preflight_failed",
+      message: preflight.message ?? "Delegation preflight failed.",
+    };
+  }
+
   const row = await queuePendingIntent({
     userId,
     chatId: task.chatId ?? undefined,
@@ -134,10 +175,7 @@ export async function delegateApprovedAgentTask({
     requiresConfirmation: needsConfirm,
   });
 
-  const online = await delegationPing();
-
   let outcome: DelegationOutcome;
-
   if (!online) {
     const backlog = await countDelegationBacklogForUser(userId);
     const failure = buildDelegationSkipFailure({
@@ -183,7 +221,11 @@ export async function delegateApprovedAgentTask({
     userId,
     intentId: row.id,
     backend,
-    outcomeSummary: summarizeOutcomeForMetadata(outcome),
+    outcomeSummary: summarizeOutcomeForMetadata({
+      outcome,
+      readiness,
+      trace: { routing, preflight },
+    }),
   });
 
   if (!updated) {

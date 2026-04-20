@@ -25,6 +25,9 @@ export function embedViaDelegation() {
         return {
           ok: false as const,
           error: result.error,
+          reason: result.reason,
+          errorCode: result.errorCode,
+          retryable: result.retryable,
           backend: result.backend,
         };
       }
