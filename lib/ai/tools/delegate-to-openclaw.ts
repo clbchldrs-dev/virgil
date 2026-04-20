@@ -42,21 +42,21 @@ export function delegateTaskToOpenClaw({
         .min(8)
         .describe("What should be done, in plain language"),
       lane: virgilLaneIdSchema
-        .optional()
+        .nullish()
         .describe(
           "Delegation lane: use **home** for LAN/out-of-app execution (default); **chat**/**code**/**research** if tagging a mixed flow for logging"
         ),
       skill: z
         .string()
-        .optional()
+        .nullish()
         .describe(
-          "Known delegation skill id when available, e.g. send-whatsapp"
+          "Gateway/delegation skill id when known (e.g. openclaw, generic-task, send-whatsapp). Omit or null to infer from description."
         ),
       params: z
         .record(z.string(), z.unknown())
-        .optional()
+        .nullish()
         .describe("Skill-specific parameters when you know them"),
-      urgent: z.boolean().optional().describe("When true, use high priority"),
+      urgent: z.boolean().nullish().describe("When true, use high priority"),
     }),
     execute: async ({ description, lane, skill, params, urgent }) => {
       try {

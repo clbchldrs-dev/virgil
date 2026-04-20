@@ -21,7 +21,7 @@ Authoritative procedures and the **full env var catalog** live in **[AGENTS.md](
 3. `pnpm install` → `pnpm db:migrate` → `pnpm virgil:start` ([README.md](README.md)). The Next.js server, optional OpenClaw SSH tunnel, and optional delegation poll worker all run in the same terminal.
 4. Optional: `OLLAMA_BASE_URL` if Ollama is not on localhost; pull model tags you use ([README.md](README.md) — Models).
 
-**Preflight:** `pnpm virgil:status` (or `--strict` for CI). One command shows every feature block with fix hints; also exposed at `GET /api/virgil/status` in dev. See [AGENTS.md — Graceful local start](AGENTS.md#graceful-local-start-before-envlocal-is-complete).
+**Preflight:** `pnpm virgil:status` (or `--strict` for CI). One command shows every feature block with fix hints; also exposed at `GET /api/virgil/status` in dev. See [AGENTS.md — Graceful local start](AGENTS.md#graceful-local-start-before-envlocal-is-complete). **In the app:** user menu → **This deployment** (`/deployment`) shows what this running instance supports (cloud vs local models, tools) without raw env diagnostics.
 
 ---
 

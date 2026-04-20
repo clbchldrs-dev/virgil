@@ -219,8 +219,9 @@ test("getOpenClawStaticSkillNames parses comma list", () => {
 });
 
 test("mergeOpenClawSkillNameLists dedupes and sorts", () => {
-  assert.deepEqual(
-    mergeOpenClawSkillNameLists(["b", "a"], ["a", "c"]),
-    ["a", "b", "c"]
-  );
+  assert.deepEqual(mergeOpenClawSkillNameLists(["b", "a"], ["a", "c"]), [
+    "a",
+    "b",
+    "c",
+  ]);
 });

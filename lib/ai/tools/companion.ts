@@ -9,8 +9,6 @@ import {
 } from "./jira";
 import { executeShell } from "./shell";
 
-const isVercel = Boolean(process.env.VERCEL);
-
 const localOnlyTools = {
   readFile,
   writeFile,
@@ -29,9 +27,10 @@ const universalToolsBase = {
   listCalendarEvents,
 } as const;
 
+/** When adding tools here, update `getActiveCompanionToolIds` / `CANONICAL_COMPANION_TOOL_IDS` in `lib/deployment/capabilities.ts`. */
 export function getCompanionTools() {
   const jira = isJiraConfigured() ? jiraTools : {};
-  if (isVercel) {
+  if (process.env.VERCEL) {
     return { ...universalToolsBase, ...jira };
   }
   return { ...universalToolsBase, ...jira, ...localOnlyTools };

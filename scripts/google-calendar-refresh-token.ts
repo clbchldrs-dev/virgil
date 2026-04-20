@@ -168,7 +168,7 @@ function main(): void {
     if (err.code === "EADDRINUSE") {
       console.error(
         `Port ${PORT} is already in use (another refresh-token run?).\n` +
-          `Stop that process, or set GOOGLE_CALENDAR_OAUTH_PORT to a free port and add the matching redirect URI in Google Cloud.\n` +
+          "Stop that process, or set GOOGLE_CALENDAR_OAUTH_PORT to a free port and add the matching redirect URI in Google Cloud.\n" +
           `Find listener: lsof -nP -iTCP:${PORT} -sTCP:LISTEN`
       );
     } else {

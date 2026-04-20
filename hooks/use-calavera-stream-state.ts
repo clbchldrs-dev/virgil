@@ -14,15 +14,18 @@ function countWords(s: string): number {
 export type CalaveraStreamState = {
   /** Word count driving jaw motion (reasoning vs answer text). */
   jawWordCount: number;
-  /** Thought cloud while reasoning is the active stream. */
+  /**
+   * Thought cloud for the full “thinking” phase: after send until the assistant’s first answer text arrives.
+   * Covers submitted, pre-assistant streaming gap, reasoning (including after reasoning part finishes), tools, etc.
+   */
   showThoughtBubble: boolean;
-  /** Any assistant stream in progress — idle jaw when false. */
+  /** Assistant response in flight (submitted → first token, or streaming). */
   isAssistantStreaming: boolean;
 };
 
 /**
- * Derives Calavera jaw + thought-bubble state from the last assistant message.
- * Reasoning takes precedence while it is still streaming or before answer text exists.
+ * Derives Calavera jaw + thought-bubble state from chat status and messages.
+ * Thought bubble stays up until the assistant streams non-empty **text** (answer), not only while `reasoning.state === "streaming"`).
  */
 export function useCalaveraStreamState(
   messages: ChatMessage[],
@@ -35,44 +38,62 @@ export function useCalaveraStreamState(
       isAssistantStreaming: false,
     };
 
-    if (status !== "streaming") {
+    const generating = status === "submitted" || status === "streaming";
+    if (!generating) {
       return idle;
     }
 
+    if (status === "submitted") {
+      return {
+        jawWordCount: 0,
+        showThoughtBubble: true,
+        isAssistantStreaming: true,
+      };
+    }
+
+    // status === "streaming"
     const last = messages.at(-1);
-    if (!last || last.role !== "assistant") {
+    if (!last) {
+      return {
+        jawWordCount: 0,
+        showThoughtBubble: true,
+        isAssistantStreaming: true,
+      };
+    }
+
+    if (last.role === "user") {
+      return {
+        jawWordCount: 0,
+        showThoughtBubble: true,
+        isAssistantStreaming: true,
+      };
+    }
+
+    if (last.role !== "assistant") {
       return idle;
     }
 
     let reasoningText = "";
-    let reasoningStreaming = false;
-    let answerText = "";
-
     for (const part of last.parts ?? []) {
       if (part.type === "reasoning") {
         reasoningText += part.text ?? "";
-        if ("state" in part && part.state === "streaming") {
-          reasoningStreaming = true;
-        }
       }
+    }
+
+    let answerText = "";
+    for (const part of last.parts ?? []) {
       if (part.type === "text") {
         answerText += part.text ?? "";
       }
     }
 
+    const answerStarted = answerText.trim().length > 0;
+    const showThoughtBubble = !answerStarted;
     const isAssistantStreaming = true;
 
-    if (reasoningStreaming) {
-      return {
-        jawWordCount: countWords(reasoningText),
-        showThoughtBubble: true,
-        isAssistantStreaming,
-      };
-    }
-
     return {
-      jawWordCount: countWords(answerText),
-      showThoughtBubble: false,
+      jawWordCount: countWords(showThoughtBubble ? reasoningText : answerText),
+      showThoughtBubble,
       isAssistantStreaming,
     };
   }, [messages, status]);

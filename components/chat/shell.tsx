@@ -20,72 +20,21 @@ import {
   useArtifactSelector,
 } from "@/hooks/use-artifact";
 import { postVirgilDebugIngest } from "@/lib/debug-ingest";
+import { VIRGIL_CONTINUE_SEARCH_PARAM } from "@/lib/empty-suggestion-pools";
 import { pathnameWithoutBasePath } from "@/lib/path-without-base";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Artifact } from "./artifact";
 import { CalaveraAvatar } from "./calavera-avatar";
-import {
-  CALAVERA_SKULL_GRIN_ROW,
-  CALAVERA_SKULL_PIXELS,
-} from "./calavera-skull-data";
 import { ChatErrorBanner } from "./chat-error-banner";
 import { ChatHeader } from "./chat-header";
 import { ChatMetricsSidePanel } from "./chat-metrics-side-panel";
 import { DataStreamHandler } from "./data-stream-handler";
+import { InvitationCreepyMascot } from "./invitation-creepy-mascot";
 import { submitEditedMessage } from "./message-editor";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
 import { OpenClawPendingBanner } from "./openclaw-pending-banner";
-
-/** Pixel unit squares for invitation bowtie SVG (viewBox 0 0 15 5) — wings + center knot so the gap does not read as lips. */
-const CREEPY_BOWTIE_PIXELS: readonly [number, number][] = [
-  [2, 0],
-  [3, 0],
-  [4, 0],
-  [10, 0],
-  [11, 0],
-  [12, 0],
-  [1, 1],
-  [2, 1],
-  [3, 1],
-  [4, 1],
-  [5, 1],
-  [7, 1],
-  [9, 1],
-  [10, 1],
-  [11, 1],
-  [12, 1],
-  [13, 1],
-  [0, 2],
-  [1, 2],
-  [2, 2],
-  [3, 2],
-  [6, 2],
-  [7, 2],
-  [8, 2],
-  [11, 2],
-  [12, 2],
-  [13, 2],
-  [14, 2],
-  [1, 3],
-  [2, 3],
-  [3, 3],
-  [4, 3],
-  [5, 3],
-  [7, 3],
-  [9, 3],
-  [10, 3],
-  [11, 3],
-  [12, 3],
-  [13, 3],
-  [2, 4],
-  [3, 4],
-  [4, 4],
-  [10, 4],
-  [11, 4],
-  [12, 4],
-];
 
 export function ChatShell() {
   const searchParams = useSearchParams();
@@ -126,8 +75,15 @@ export function ChatShell() {
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
   const { setArtifact } = useArtifact();
   /** Empty `/chat/:id` uses invitation (orange, eyes) like `/`; stay on session while history is loading so existing threads do not flash orange. */
+  const hasPendingAutoSend =
+    isConcreteChatRoute &&
+    (searchParams.get(VIRGIL_CONTINUE_SEARCH_PARAM) === "1" ||
+      Boolean(searchParams.get("query")));
   const chatPhase =
-    messages.length > 0 || (isConcreteChatRoute && isLoading)
+    messages.length > 0 ||
+    (isConcreteChatRoute && isLoading) ||
+    hasPendingAutoSend ||
+    (isConcreteChatRoute && (status === "submitted" || status === "streaming"))
       ? "session"
       : "invitation";
 
@@ -208,68 +164,7 @@ export function ChatShell() {
                   <div className="chat-space-stars" />
                 </div>
               )}
-              {chatPhase === "invitation" && (
-                <div aria-hidden="true" className="chat-creepy-face">
-                  <div className="chat-creepy-mascot">
-                    <div className="chat-creepy-skull-wrap">
-                      <svg
-                        aria-hidden="true"
-                        className="chat-creepy-skull__svg"
-                        height="15"
-                        preserveAspectRatio="xMidYMid meet"
-                        shapeRendering="crispEdges"
-                        viewBox="0 0 20 15"
-                        width="20"
-                      >
-                        {CALAVERA_SKULL_PIXELS.map(([x, y]) => (
-                          <rect
-                            className={cn(
-                              "chat-creepy-skull__pixel",
-                              y === CALAVERA_SKULL_GRIN_ROW &&
-                                "chat-creepy-skull__pixel--tooth"
-                            )}
-                            height="1"
-                            key={`sk-${x}-${y}`}
-                            width="1"
-                            x={x}
-                            y={y}
-                          />
-                        ))}
-                      </svg>
-                      <div className="chat-creepy-eyes">
-                        <span className="chat-creepy-eye-anchor">
-                          <span className="chat-creepy-eye" />
-                        </span>
-                        <span className="chat-creepy-eye-anchor">
-                          <span className="chat-creepy-eye" />
-                        </span>
-                      </div>
-                    </div>
-                    <div className="chat-creepy-bowtie">
-                      <svg
-                        aria-hidden="true"
-                        className="chat-creepy-bowtie__svg"
-                        height="5"
-                        preserveAspectRatio="xMidYMid meet"
-                        shapeRendering="crispEdges"
-                        viewBox="0 0 15 5"
-                        width="15"
-                      >
-                        {CREEPY_BOWTIE_PIXELS.map(([x, y]) => (
-                          <rect
-                            className="chat-creepy-bowtie__pixel"
-                            height="1"
-                            key={`${x}-${y}`}
-                            width="1"
-                            x={x}
-                            y={y}
-                          />
-                        ))}
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {chatPhase === "invitation" && <InvitationCreepyMascot />}
               <OpenClawPendingBanner />
               {chatPhase === "session" && (
                 <CalaveraAvatar messages={messages} status={status} />
@@ -293,6 +188,7 @@ export function ChatShell() {
                 selectedModelId={currentModelId}
                 setMessages={setMessages}
                 status={status}
+                suppressEmptyGreeting={hasPendingAutoSend}
                 votes={votes}
               />
 

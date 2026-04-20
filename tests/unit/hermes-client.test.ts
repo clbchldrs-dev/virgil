@@ -75,7 +75,9 @@ test("pingHermes hits in-app bridge health when HERMES_HTTP_URL is unset", async
       try {
         const online = await pingHermes();
         assert.equal(online, true);
-        assert.ok(seenUrls.some((u) => u.includes("/api/hermes-bridge/health")));
+        assert.ok(
+          seenUrls.some((u) => u.includes("/api/hermes-bridge/health"))
+        );
       } finally {
         globalThis.fetch = originalFetch;
       }

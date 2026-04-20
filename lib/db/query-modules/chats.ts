@@ -32,10 +32,7 @@ export async function saveChat({
 
 export async function deleteChatById({ id }: { id: string }) {
   try {
-    await db
-      .update(memory)
-      .set({ chatId: null })
-      .where(eq(memory.chatId, id));
+    await db.update(memory).set({ chatId: null }).where(eq(memory.chatId, id));
 
     await db.delete(vote).where(eq(vote.chatId, id));
     await db.delete(message).where(eq(message.chatId, id));

@@ -13,11 +13,11 @@ import {
   listHealthSnapshotsForUser,
 } from "@/lib/db/queries";
 import type { DayTask, Goal, HealthSnapshot, Memory } from "@/lib/db/schema";
+import { agentIngestLogSession308ef5 } from "@/lib/debug/agent-ingest-log";
 import {
   computeWindowKey,
   getNightReviewTimezone,
 } from "@/lib/night-review/config";
-import { agentIngestLogSession308ef5 } from "@/lib/debug/agent-ingest-log";
 
 export type ChatPromptContextLoad = {
   capabilities: ModelCapabilities;

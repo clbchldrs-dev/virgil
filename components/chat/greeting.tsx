@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { guestRegex } from "@/lib/constants";
 import { getUserDisplayFirstName } from "@/lib/user-display";
-import { cn } from "@/lib/utils";
 
 const FLAVOR_LINES = [
   "*You feel watched by absolutely nothing in particular.*",
@@ -64,34 +63,47 @@ export function Greeting({ chatId }: GreetingProps) {
     ? getUserDisplayFirstName(session.user)
     : null;
 
+  const showSignedInRibbon =
+    mounted &&
+    status === "authenticated" &&
+    session?.user &&
+    !isGuest &&
+    displayFirst;
+
   return (
     <div
-      className="empty-chat-greeting flex max-w-sm flex-col items-center px-3"
+      className="empty-chat-greeting relative h-full w-full max-w-sm px-3"
       data-testid="empty-chat-greeting"
     >
+      {showSignedInRibbon && (
+        <p
+          className="empty-chat-greeting__signed-in-ribbon pointer-events-auto absolute inset-x-3 z-[1] truncate text-center text-[12px] leading-snug text-muted-foreground"
+          data-testid="empty-chat-session-label"
+          title={`Signed in as ${displayFirst}`}
+        >
+          Signed in as {displayFirst}
+        </p>
+      )}
       <div
         aria-hidden="true"
         className="empty-chat-greeting__vignette pointer-events-none"
       />
-      <div className="empty-chat-greeting__dialogue relative w-full">
-        <div
-          aria-hidden="true"
-          className="empty-chat-greeting__scanlines pointer-events-none rounded-[inherit]"
-        />
-        <div className="relative z-[1] flex flex-col items-center gap-2 text-center">
-          <h2 className="sr-only">Empty chat</h2>
-          {mounted && status === "authenticated" && session?.user && (
-            <p
-              className={cn(
-                "pointer-events-auto max-w-[280px] text-[13px] leading-snug",
-                isGuest
-                  ? "text-muted-foreground/60"
-                  : "font-medium text-foreground"
-              )}
-              data-testid="empty-chat-session-label"
-            >
-              {isGuest ? (
-                <>
+      <div className="flex h-full flex-col items-center justify-center">
+        <div className="empty-chat-greeting__dialogue relative w-full">
+          <div
+            aria-hidden="true"
+            className="empty-chat-greeting__scanlines pointer-events-none rounded-[inherit]"
+          />
+          <div className="relative z-[1] flex flex-col items-center gap-2 text-center">
+            <h2 className="sr-only">Empty chat</h2>
+            {mounted &&
+              status === "authenticated" &&
+              session?.user &&
+              isGuest && (
+                <p
+                  className="pointer-events-auto max-w-[280px] text-[13px] leading-snug text-muted-foreground/60"
+                  data-testid="empty-chat-session-label-guest"
+                >
                   Temporary session —{" "}
                   <Link
                     className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
@@ -100,31 +112,28 @@ export function Greeting({ chatId }: GreetingProps) {
                     Sign in
                   </Link>{" "}
                   for your account.
-                </>
-              ) : (
-                <>Signed in as {displayFirst}</>
+                </p>
               )}
-            </p>
-          )}
-          <div
-            aria-hidden="true"
-            className="empty-chat-greeting__soul text-primary"
-          >
-            <svg
+            <div
               aria-hidden="true"
-              className="mx-auto block"
-              fill="currentColor"
-              height="28"
-              viewBox="0 0 24 24"
-              width="28"
+              className="empty-chat-greeting__soul text-primary"
             >
-              <path d="M12 3l9 8v10H3V11l9-8zm0 2.2L5 11.5V19h14v-7.5L12 5.2z" />
-              <circle cx="12" cy="16.5" r="2.5" />
-            </svg>
+              <svg
+                aria-hidden="true"
+                className="mx-auto block"
+                fill="currentColor"
+                height="28"
+                viewBox="0 0 24 24"
+                width="28"
+              >
+                <path d="M12 3l9 8v10H3V11l9-8zm0 2.2L5 11.5V19h14v-7.5L12 5.2z" />
+                <circle cx="12" cy="16.5" r="2.5" />
+              </svg>
+            </div>
+            <p className="empty-chat-greeting__flavor text-muted-foreground/85">
+              {flavor}
+            </p>
           </div>
-          <p className="empty-chat-greeting__flavor text-muted-foreground/85">
-            {flavor}
-          </p>
         </div>
       </div>
     </div>

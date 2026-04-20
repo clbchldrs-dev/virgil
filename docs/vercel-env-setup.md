@@ -4,6 +4,10 @@ Use this when deploying Virgil to **Vercel** so auth, the client, cron, and back
 
 Authoritative reference: [AGENTS.md](../AGENTS.md) (full table and provider links). This page is a **copy order** and Vercel-specific notes.
 
+## In-app: what this deployment supports
+
+After deploy, the product itself can answer **what this Vercel instance supports** (hosted models vs local Ollama, which companion tools exist): open **This deployment** from the in-app user menu (`/deployment`). That page reads `GET /api/deployment/capabilities` and is safe for production. It does not replace the dashboard env table below or `pnpm env:vercel:pull` — it explains **behavior**, not secret values.
+
 ## Syncing Vercel with `.env.local` (stop editing twice)
 
 You still have **two stores** (Vercel + local file), but you do not need to **paste the same values manually** every time.

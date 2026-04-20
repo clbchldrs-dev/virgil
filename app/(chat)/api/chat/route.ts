@@ -27,6 +27,7 @@ import {
 } from "@/lib/ai/chat-fallback";
 import { createModelMetricsStreamHooks } from "@/lib/ai/chat-stream-metrics";
 import { buildCompanionSystemPrompt } from "@/lib/ai/companion-prompt";
+import { formatDayTasksForPrompt } from "@/lib/ai/day-task-context";
 import { buildLocalChatTitleFromUserMessage } from "@/lib/ai/local-title";
 import { isMem0Configured, mem0Add } from "@/lib/ai/mem0-client";
 import { resolveAutoChatModel } from "@/lib/ai/model-routing";
@@ -46,7 +47,6 @@ import {
   mergePlannerOutlineIntoSystemPrompt,
   runPlannerOutline,
 } from "@/lib/ai/orchestration/multi-agent";
-import { formatDayTasksForPrompt } from "@/lib/ai/day-task-context";
 import { formatActiveGoalsForPrompt } from "@/lib/ai/pivot-goal-context";
 import type { RequestHints } from "@/lib/ai/prompts";
 import {
@@ -245,7 +245,7 @@ export async function POST(request: Request) {
       const legacyGatewayMayFallbackToOllamaAfterFailure =
         !isOllamaLocal && isGatewayFallbackToOllamaEnabled();
 
-      void (async () => {
+      (async () => {
         try {
           const seam = await resolveChatRuntimeDecision({
             selectedChatModel,
@@ -286,7 +286,9 @@ export async function POST(request: Request) {
         } catch {
           /* shadow compare must never affect chat */
         }
-      })();
+      })().catch(() => {
+        /* shadow compare must never affect chat */
+      });
     }
 
     const chat = await getChatById({ id });

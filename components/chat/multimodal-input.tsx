@@ -55,6 +55,7 @@ import {
   saveWeeklyDraft,
   shouldPersistWeeklyDraft,
 } from "@/lib/chat/weekly-draft-storage";
+import type { DeploymentCapabilities } from "@/lib/deployment/capabilities";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
@@ -266,7 +267,7 @@ function PureMultimodalInput({
           action: {
             label: "Delete all",
             onClick: () => {
-              void (async () => {
+              (async () => {
                 const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
                 const res = await fetch(`${base}/api/history`, {
                   method: "DELETE",
@@ -285,7 +286,9 @@ function PureMultimodalInput({
                 );
                 router.push("/");
                 toast.success("All chats deleted");
-              })();
+              })().catch(() => {
+                /* errors surfaced via toast in-body */
+              });
             },
           },
         });
@@ -790,8 +793,14 @@ function PureModelSelectorCompact({
   onModelChange?: (modelId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const { data: modelsData } = useSWR(
-    `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/models`,
+    `${basePath}/api/models`,
+    (url: string) => fetch(url).then((r) => r.json()),
+    { revalidateOnFocus: true, dedupingInterval: 120_000 }
+  );
+  const { data: deployCaps } = useSWR<DeploymentCapabilities>(
+    `${basePath}/api/deployment/capabilities`,
     (url: string) => fetch(url).then((r) => r.json()),
     { revalidateOnFocus: true, dedupingInterval: 120_000 }
   );
@@ -969,6 +978,22 @@ function PureModelSelectorCompact({
             );
 
             const sections: ReactNode[] = [];
+            if (
+              deployCaps &&
+              !deployCaps.localInference.available &&
+              localEntries.length === 0
+            ) {
+              sections.push(
+                <ModelSelectorGroup
+                  heading="Local (economical)"
+                  key="_local_economical_unavailable"
+                >
+                  <div className="max-w-[min(100%,20rem)] px-2 py-2 text-[11px] text-muted-foreground leading-snug">
+                    {deployCaps.localInference.detail}
+                  </div>
+                </ModelSelectorGroup>
+              );
+            }
             if (localEntries.length > 0) {
               sections.push(
                 renderGroup(

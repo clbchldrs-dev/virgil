@@ -231,29 +231,23 @@ export function OpenClawPendingBanner() {
 
   if (showOffline) {
     return (
-      <div
-        className="border-border/50 border-b bg-muted/30 px-2 py-2.5 md:px-4"
-        role="status"
-      >
+      <output className="block border-border/50 border-b bg-muted/30 px-2 py-2.5 md:px-4">
         <p className="mx-auto max-w-4xl text-amber-800 text-xs dark:text-amber-200 md:text-sm">
           {data.offlineMessage}
         </p>
-      </div>
+      </output>
     );
   }
 
   if (!data.configured && data.queuedBacklog > 0) {
     return (
-      <div
-        className="border-border/50 border-b bg-muted/40 px-2 py-2.5 md:px-4"
-        role="status"
-      >
+      <output className="block border-border/50 border-b bg-muted/40 px-2 py-2.5 md:px-4">
         <p className="mx-auto max-w-4xl text-muted-foreground text-xs md:text-sm">
           {backendLabel(data)} is not configured, but you have{" "}
           {String(data.queuedBacklog)} queued delegation(s). Configure the
           active delegation backend to send them.
         </p>
-      </div>
+      </output>
     );
   }
 

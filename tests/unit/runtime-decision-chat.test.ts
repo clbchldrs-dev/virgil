@@ -5,8 +5,8 @@ import { resolveChatRuntimeDecision } from "@/lib/ai/runtime-decision/resolve-ch
 
 describe("resolveChatRuntimeDecision", () => {
   afterEach(() => {
-    delete process.env.VIRGIL_CHAT_FALLBACK;
-    delete process.env.VIRGIL_GATEWAY_FALLBACK_OLLAMA;
+    process.env.VIRGIL_CHAT_FALLBACK = undefined;
+    process.env.VIRGIL_GATEWAY_FALLBACK_OLLAMA = undefined;
   });
 
   test("keeps allowed selected gateway model", async () => {
@@ -49,8 +49,7 @@ describe("resolveChatRuntimeDecision", () => {
   test("when auto-resolved model disallowed, falls back to DEFAULT", async () => {
     const d = await resolveChatRuntimeDecision({
       selectedChatModel: VIRGIL_AUTO_MODEL_ID,
-      isAllowedChatModelId: async (id) =>
-        id === VIRGIL_AUTO_MODEL_ID ? true : false,
+      isAllowedChatModelId: async (id) => id === VIRGIL_AUTO_MODEL_ID,
       resolveAutoModel: async () => ({ modelId: "ollama/qwen2.5:3b" }),
     });
     assert.equal(d.effectiveChatModelId, DEFAULT_CHAT_MODEL);

@@ -17,13 +17,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
+import { SidebarDayTasks } from "@/components/chat/sidebar-day-tasks";
 import {
   clearChatHistorySwrPageCaches,
   EMPTY_CHAT_HISTORY_PAGE,
   getChatHistoryPaginationKey,
   SidebarHistory,
 } from "@/components/chat/sidebar-history";
-import { SidebarDayTasks } from "@/components/chat/sidebar-day-tasks";
 import { SidebarUserNav } from "@/components/chat/sidebar-user-nav";
 import {
   Sidebar,

@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { getSpeechRecognitionConstructor } from "@/lib/browser-stt-input";
 
 type UseSpeechDictationOptions = {
@@ -38,8 +44,13 @@ export function useSpeechDictation({
     onErrorRef.current = onError;
   }, [getText, setText, onError]);
 
-  const supported =
-    typeof window !== "undefined" && getSpeechRecognitionConstructor() !== null;
+  const supported = useSyncExternalStore(
+    () => () => {
+      /* Recognition availability is static for the page lifetime. */
+    },
+    () => getSpeechRecognitionConstructor() !== null,
+    () => false
+  );
 
   const teardown = useCallback(() => {
     const r = recognitionRef.current;

@@ -2,8 +2,8 @@ export { computeWallTimeMetrics } from "@/lib/background-jobs/wall-time-metrics"
 export * from "./query-modules/agent-task";
 export * from "./query-modules/background-jobs";
 export * from "./query-modules/chat-meta-and-streams";
-export * from "./query-modules/day-tasks";
 export * from "./query-modules/chats";
+export * from "./query-modules/day-tasks";
 export * from "./query-modules/documents";
 export * from "./query-modules/flight-deck-telemetry";
 export * from "./query-modules/goal-guidance";

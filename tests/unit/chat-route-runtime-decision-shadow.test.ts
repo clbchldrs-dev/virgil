@@ -35,8 +35,8 @@ function baseSeam(
 
 describe("runtime decision seam shadow", () => {
   afterEach(() => {
-    delete process.env.VIRGIL_RUNTIME_DECISION_SEAM_SHADOW;
-    delete process.env.VIRGIL_RUNTIME_DECISION_SEAM_AUTHORITATIVE;
+    process.env.VIRGIL_RUNTIME_DECISION_SEAM_SHADOW = undefined;
+    process.env.VIRGIL_RUNTIME_DECISION_SEAM_AUTHORITATIVE = undefined;
   });
 
   test("isRuntimeDecisionSeamShadowEnabled reads env", () => {

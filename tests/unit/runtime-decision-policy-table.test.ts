@@ -7,7 +7,7 @@ import {
 
 describe("gateway fallback policy (stable rule table)", () => {
   afterEach(() => {
-    delete process.env.VIRGIL_GATEWAY_FALLBACK_OLLAMA;
+    process.env.VIRGIL_GATEWAY_FALLBACK_OLLAMA = undefined;
   });
 
   test("never attempts Ollama after gateway auth failure when flag is on", () => {

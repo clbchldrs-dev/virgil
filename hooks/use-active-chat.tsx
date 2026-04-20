@@ -266,7 +266,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const virgilContinueHandledForChatIdRef = useRef<string | null>(null);
   useEffect(() => {
     virgilContinueHandledForChatIdRef.current = null;
-  }, [chatId]);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

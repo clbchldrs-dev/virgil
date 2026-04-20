@@ -217,12 +217,9 @@ export function SophonDailyClient({ initialBrief }: Props) {
   return (
     <div className="space-y-8">
       {stalenessText ? (
-        <div
-          className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground"
-          role="status"
-        >
+        <output className="block rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground">
           {stalenessText}
-        </div>
+        </output>
       ) : null}
 
       <div className="grid gap-8 md:grid-cols-1">

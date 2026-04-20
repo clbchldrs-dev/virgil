@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronUp } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
 import { signOut, useSession } from "next-auth/react";
@@ -21,6 +22,8 @@ import { guestRegex } from "@/lib/constants";
 import { getUserDisplayFirstName } from "@/lib/user-display";
 import { LoaderIcon } from "./icons";
 import { toast } from "./toast";
+
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 function emailToHue(email: string): number {
   let hash = 0;
@@ -85,6 +88,14 @@ export function SidebarUserNav({ user }: { user: User }) {
               }
             >
               {`Toggle ${resolvedTheme === "light" ? "dark" : "light"} mode`}
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild data-testid="user-nav-item-deployment">
+              <Link
+                className="cursor-pointer text-[13px]"
+                href={`${BASE_PATH}/deployment`}
+              >
+                This deployment
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild data-testid="user-nav-item-auth">

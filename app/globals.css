@@ -962,10 +962,11 @@ textarea:focus-visible {
   position: absolute;
   top: clamp(2.5rem, 10vh, 5.5rem);
   translate: -50% 0;
-  z-index: 1;
+  /* Above empty-chat greeting overlay (messages.tsx z-10) so the face isn’t covered by session label */
+  z-index: 12;
 }
 
-/* Single column: bowtie width = 15/20 of skull grid; centered with skull. */
+/* Single column: bowtie width = 15/16 of skull grid; centered with skull. */
 .pixel-chat-panel .chat-creepy-mascot {
   display: flex;
   flex-direction: column;
@@ -975,7 +976,7 @@ textarea:focus-visible {
 }
 
 .pixel-chat-panel .chat-creepy-skull-wrap {
-  aspect-ratio: 20 / 15;
+  aspect-ratio: 16 / 17;
   container-name: creepy-skull;
   container-type: inline-size;
   flex-shrink: 0;
@@ -995,13 +996,12 @@ textarea:focus-visible {
   fill: oklch(0.8 0.035 78);
 }
 
-.pixel-chat-panel .chat-creepy-skull__pixel--tooth {
-  fill: oklch(0.9 0.025 82);
+.pixel-chat-panel .chat-creepy-skull__pixel--smile {
+  fill: oklch(0.92 0.04 82);
 }
 
 /*
- * Three gaps in `.XX..XXXX..XXXX..XX.` — outer sockets occupy cols 3–4 and 15–16 (viewBox units).
- * Geometric centers: x=4 and x=16 (midpoint of [3,5) and [15,17)), not 3.5/15.5. Band y∈[4,7) → center 5.5/15.
+ * Orbital gaps in `.XX..XXXX..XXXX.` (16-wide) — same horizontal centers as legacy 20-col (x=4/20, x=16/20); band y∈[4,7) → center 5.5/17.
  */
 .pixel-chat-panel .chat-creepy-eyes {
   inset: 0;
@@ -1013,12 +1013,17 @@ textarea:focus-visible {
 .pixel-chat-panel .chat-creepy-eye-anchor {
   left: calc(4 / 20 * 100%);
   position: absolute;
-  top: calc(5.5 / 15 * 100%);
+  top: calc(5.5 / 17 * 100%);
   transform: translate(-50%, -50%);
 }
 
 .pixel-chat-panel .chat-creepy-eye-anchor:nth-child(2) {
   left: calc(16 / 20 * 100%);
+}
+
+.pixel-chat-panel .chat-creepy-eye-squint {
+  display: inline-block;
+  transform-origin: center center;
 }
 
 .pixel-chat-panel .chat-creepy-bowtie {
@@ -1037,8 +1042,8 @@ textarea:focus-visible {
   opacity: 1;
   transform-box: fill-box;
   transform-origin: center;
-  /* 15/20: same horizontal scale as skull pixel grid */
-  width: 75%;
+  /* 15/16: same horizontal scale as skull pixel grid */
+  width: calc(15 / 16 * 100%);
 }
 
 .pixel-chat-panel .chat-creepy-bowtie__pixel {
@@ -1046,7 +1051,7 @@ textarea:focus-visible {
 }
 
 .pixel-chat-panel .chat-creepy-eye {
-  animation: creepy-eyes-glow 5.2s ease-in-out infinite;
+  animation: mascot-soft-blink 5.8s ease-in-out infinite;
   aspect-ratio: 2.85 / 1;
   /* Was a flex item before; nested spans need a box for width/background to apply */
   display: inline-block;
@@ -1078,44 +1083,47 @@ textarea:focus-visible {
   animation-delay: 0.35s;
 }
 
-@keyframes creepy-eyes-glow {
+/* Softer than the old slit-blink — reads friendly on the pixel skulls. */
+@keyframes mascot-soft-blink {
   0%,
+  88%,
   100% {
-    filter: brightness(0.92);
-    opacity: 0.88;
+    filter: brightness(1);
+    opacity: 0.94;
     transform: scaleY(1);
   }
 
-  48% {
-    filter: brightness(1.12);
+  91% {
+    filter: brightness(1.06);
     opacity: 1;
-    transform: scaleY(1.04);
+    transform: scaleY(1.03);
   }
 
-  50% {
-    filter: brightness(0.2);
-    opacity: 0.12;
-    transform: scaleY(0.06);
+  94% {
+    filter: brightness(0.88);
+    opacity: 0.82;
+    transform: scaleY(0.38);
   }
 
-  52% {
-    filter: brightness(1.08);
-    opacity: 0.95;
-    transform: scaleY(1.02);
+  97% {
+    filter: brightness(1.02);
+    opacity: 0.96;
+    transform: scaleY(1);
   }
 }
 
-/* Calavera — persistent session mascot (jaw driven from stream; thought bubble during reasoning) */
+/* Calavera — persistent session mascot (jaw + thought bubble + idle worm) */
 .pixel-chat-panel .calavera-avatar {
   bottom: max(5.5rem, calc(env(safe-area-inset-bottom, 0px) + 5rem));
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 0.35rem;
-  opacity: 0.88;
+  opacity: 0.93;
   position: absolute;
   right: max(0.75rem, env(safe-area-inset-right, 0px));
-  z-index: 2;
+  /* Above empty-state overlay (messages.tsx z-10) so Virgil stays visible */
+  z-index: 15;
 }
 
 .pixel-chat-panel .calavera-avatar--active {
@@ -1154,29 +1162,36 @@ textarea:focus-visible {
   opacity: 0.85;
 }
 
+.pixel-chat-panel .calavera-avatar__mascot {
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+}
+
 .pixel-chat-panel .calavera-avatar__skull-wrap {
-  aspect-ratio: 20 / 15;
+  aspect-ratio: 16 / 17;
   container-name: calavera-skull;
   container-type: inline-size;
   position: relative;
-  /* ≥40px so the 20-column grid lands on whole CSS px; avoids a mangled skull at tiny sizes */
-  width: clamp(2.5rem, 9vw, 2.85rem);
+  /* ~34–36px max so the 16-column grid stays near integer CSS px without reading huge */
+  width: clamp(1.95rem, 5vw, 2.1rem);
 }
 
 .pixel-chat-panel .calavera-avatar__svg {
   display: block;
   height: auto;
   image-rendering: pixelated;
-  opacity: 0.62;
+  opacity: 0.78;
   width: 100%;
 }
 
 .pixel-chat-panel .calavera-avatar__pixel {
-  fill: oklch(0.78 0.035 78);
+  fill: oklch(0.84 0.045 145);
 }
 
-.pixel-chat-panel .calavera-avatar__pixel--tooth {
-  fill: oklch(0.9 0.025 82);
+.pixel-chat-panel .calavera-avatar__pixel--smile {
+  fill: oklch(0.91 0.04 95);
 }
 
 .pixel-chat-panel .calavera-avatar__eyes {
@@ -1189,7 +1204,7 @@ textarea:focus-visible {
 .pixel-chat-panel .calavera-avatar__eye-anchor {
   left: calc(4 / 20 * 100%);
   position: absolute;
-  top: calc(5.5 / 15 * 100%);
+  top: calc(5.5 / 17 * 100%);
   transform: translate(-50%, -50%);
 }
 
@@ -1197,31 +1212,36 @@ textarea:focus-visible {
   left: calc(16 / 20 * 100%);
 }
 
+.pixel-chat-panel .calavera-avatar__eye-squint {
+  display: inline-block;
+  transform-origin: center center;
+}
+
 .pixel-chat-panel .calavera-avatar__eye {
-  animation: creepy-eyes-glow 5.2s ease-in-out infinite;
-  aspect-ratio: 2.85 / 1;
+  animation: mascot-soft-blink 5.8s ease-in-out infinite;
+  aspect-ratio: 1.15 / 1;
   display: inline-block;
   background:
     radial-gradient(
-      ellipse 32% 88% at 50% 50%,
-      oklch(0.06 0.01 58) 0%,
-      oklch(0.06 0.01 58) 32%,
-      transparent 34%
+      ellipse 38% 90% at 50% 50%,
+      oklch(0.14 0.02 154) 0%,
+      oklch(0.14 0.02 154) 34%,
+      transparent 38%
     ),
     radial-gradient(
-      ellipse 100% 100% at 50% 48%,
-      oklch(0.95 0.22 58) 0%,
-      oklch(0.72 0.2 52) 42%,
-      oklch(0.38 0.1 48) 100%
+      ellipse 100% 100% at 50% 46%,
+      oklch(0.92 0.14 148) 0%,
+      oklch(0.72 0.16 152) 48%,
+      oklch(0.42 0.08 155) 100%
     );
   border-radius: 50%;
   box-shadow:
-    0 0 3px oklch(0.78 0.22 58 / 0.55),
-    0 0 8px oklch(0.68 0.2 55 / 0.32);
+    0 0 4px oklch(0.78 0.14 148 / 0.45),
+    0 0 10px oklch(0.62 0.12 150 / 0.28);
   height: auto;
   transform-origin: center;
   /* Do not let cqw collapse eyes on narrow containers (was min(0.48rem, 5cqw) → ~2px wide). */
-  width: clamp(0.38rem, min(0.52rem, max(0.38rem, 12cqw)), 0.55rem);
+  width: clamp(0.42rem, min(0.58rem, max(0.42rem, 13cqw)), 0.62rem);
 }
 
 .pixel-chat-panel
@@ -1230,11 +1250,66 @@ textarea:focus-visible {
   animation-delay: 0.35s;
 }
 
+.pixel-chat-panel .calavera-avatar__bowtie {
+  display: flex;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 4px oklch(0.55 0.22 27 / 0.45));
+  justify-content: center;
+  margin-top: -0.18rem;
+  width: 100%;
+}
+
+.pixel-chat-panel .calavera-avatar__bowtie__svg {
+  display: block;
+  height: auto;
+  image-rendering: pixelated;
+  opacity: 0.88;
+  transform-box: fill-box;
+  transform-origin: center;
+  width: calc(15 / 16 * 100%);
+}
+
+.pixel-chat-panel .calavera-avatar__bowtie__pixel {
+  fill: oklch(0.52 0.22 27);
+}
+
+/* Idle worm: SVG path sampling (getPointAtLength) — snake follows skull-space curves (socket↔mouth/nose). */
+.pixel-chat-panel .calavera-avatar__worm-crawl {
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  position: absolute;
+  z-index: 4;
+}
+
+.pixel-chat-panel .calavera-avatar__worm-crawl__track {
+  fill: none;
+  opacity: 0;
+  pointer-events: none;
+  stroke: none;
+}
+
+.pixel-chat-panel .calavera-avatar__worm-crawl__seg {
+  fill: oklch(0.48 0.12 38);
+  opacity: 0;
+  stroke: oklch(0.3 0.07 32);
+  stroke-width: 0.04;
+}
+
+.pixel-chat-panel .calavera-avatar__worm-crawl__seg--head {
+  fill: oklch(0.42 0.11 34);
+}
+
 /* Empty chat: spooky pixel dialogue (theme tokens — invitation + session) */
 .empty-chat-greeting {
   contain: layout paint;
   isolation: isolate;
   position: relative;
+}
+
+/* Signed-in label sits above the composer; keeps the dialogue card from overlapping Calavera */
+.empty-chat-greeting__signed-in-ribbon {
+  bottom: max(5.75rem, calc(env(safe-area-inset-bottom, 0px) + 5.35rem));
 }
 
 .empty-chat-greeting__vignette {

@@ -20,6 +20,8 @@ type MessagesProps = {
   isReadonly: boolean;
   isArtifactVisible: boolean;
   isLoading?: boolean;
+  /** Hides invitation greeting during URL-driven auto-send (e.g. Continue) before messages exist. */
+  suppressEmptyGreeting?: boolean;
   selectedModelId: string;
   onEditMessage?: (message: ChatMessage) => void;
 };
@@ -35,9 +37,17 @@ function PureMessages({
   isReadonly,
   isArtifactVisible,
   isLoading,
+  suppressEmptyGreeting = false,
   selectedModelId: _selectedModelId,
   onEditMessage,
 }: MessagesProps) {
+  const showEmptyChrome =
+    messages.length === 0 &&
+    !isLoading &&
+    !suppressEmptyGreeting &&
+    status !== "submitted" &&
+    status !== "streaming";
+
   const {
     containerRef: messagesContainerRef,
     endRef: messagesEndRef,
@@ -63,18 +73,18 @@ function PureMessages({
     <div
       className={cn(
         "relative flex-1",
-        messages.length === 0 && !isLoading ? "bg-transparent" : "bg-background"
+        showEmptyChrome ? "bg-transparent" : "bg-background"
       )}
     >
-      {messages.length === 0 && !isLoading && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+      {showEmptyChrome && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-stretch justify-center">
           <Greeting chatId={chatId} />
         </div>
       )}
       <div
         className={cn(
           "absolute inset-0 touch-pan-y overflow-y-auto",
-          messages.length > 0 ? "bg-background" : "bg-transparent"
+          showEmptyChrome ? "bg-transparent" : "bg-background"
         )}
         ref={messagesContainerRef}
         style={isArtifactVisible ? { scrollbarWidth: "none" } : undefined}
