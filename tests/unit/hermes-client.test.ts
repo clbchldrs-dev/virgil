@@ -51,7 +51,7 @@ const DEFAULT_INTENT: ClawIntent = {
   requiresConfirmation: false,
 };
 
-test("pingHermes returns false when base URL missing", async () => {
+test("pingHermes hits in-app bridge health when HERMES_HTTP_URL is unset", async () => {
   await withEnv(
     {
       HERMES_HTTP_URL: undefined,
@@ -59,7 +59,26 @@ test("pingHermes returns false when base URL missing", async () => {
       HERMES_SHARED_SECRET: undefined,
     },
     async () => {
-      assert.equal(await pingHermes(), false);
+      const originalFetch = globalThis.fetch;
+      const seenUrls: string[] = [];
+      globalThis.fetch = ((input: string | URL | Request) => {
+        const url =
+          typeof input === "string"
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : input.url;
+        seenUrls.push(url);
+        return Promise.resolve(new Response("ok", { status: 200 }));
+      }) as typeof fetch;
+
+      try {
+        const online = await pingHermes();
+        assert.equal(online, true);
+        assert.ok(seenUrls.some((u) => u.includes("/api/hermes-bridge/health")));
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
     }
   );
 });
@@ -227,7 +246,7 @@ test("sendHermesIntent sanitizes and truncates non-2xx error payload", async () 
   );
 });
 
-test("listHermesSkillNames returns [] when base URL missing", async () => {
+test("listHermesSkillNames uses in-app bridge when HERMES_HTTP_URL is unset", async () => {
   await withEnv(
     {
       HERMES_HTTP_URL: undefined,
@@ -235,7 +254,20 @@ test("listHermesSkillNames returns [] when base URL missing", async () => {
       HERMES_SHARED_SECRET: undefined,
     },
     async () => {
-      assert.deepEqual(await listHermesSkillNames(), []);
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = (() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ skills: [] }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          })
+        )) as typeof fetch;
+
+      try {
+        assert.deepEqual(await listHermesSkillNames(), []);
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
     }
   );
 });
