@@ -157,10 +157,17 @@ export function buildDeploymentCapabilitiesSync(): DeploymentCapabilities {
  * User-safe snapshot of what this deployment supports: models routing context,
  * agent tools, major inference modes, and delegation reachability + skill ids.
  * No secrets or raw env values.
+ *
+ * @param options.bypassDelegationCache — When true, re-probe delegation gateways
+ *   instead of using the short TTL cache (operator refresh only).
  */
-export async function buildDeploymentCapabilities(): Promise<DeploymentCapabilities> {
+export async function buildDeploymentCapabilities(options?: {
+  bypassDelegationCache?: boolean;
+}): Promise<DeploymentCapabilities> {
   const base = buildDeploymentCapabilitiesSync();
-  const delegation = await getDelegationDeploymentSnapshot();
+  const delegation = await getDelegationDeploymentSnapshot({
+    bypassCache: options?.bypassDelegationCache === true,
+  });
   return {
     ...base,
     delegation,

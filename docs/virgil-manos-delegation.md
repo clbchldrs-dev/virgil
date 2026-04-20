@@ -11,7 +11,7 @@
 
 ### Operator visibility (app UI)
 
-After sign-in, open **`/deployment`** to see delegation configuration, gateway reachability, failover on/off, poll-primary mode (if active), and a **skill id list** with a freshness indicator. Under the hood this matches **`GET /api/deployment/capabilities`** (`lib/deployment/capabilities.ts` + `lib/deployment/delegation-snapshot.ts`). Use it to confirm Virgil sees the same skill catalog you expect from Hermes/OpenClaw before debugging chat behavior.
+After sign-in, open **`/deployment`** to see delegation configuration, gateway reachability, failover on/off, poll-primary mode (if active), and a **skill id list** with a freshness indicator. Use **Refresh skills snapshot** to bypass the short server cache (~55s) after you change gateway tools or env. Under the hood this matches **`GET /api/deployment/capabilities`**; add **`?refresh=1`** for the same bypass (requires session). Implementation: `lib/deployment/capabilities.ts` + `lib/deployment/delegation-snapshot.ts`.
 
 ## Vercel production (recommended): database poll worker (no tunnel)
 

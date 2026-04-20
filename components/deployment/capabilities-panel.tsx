@@ -1,10 +1,13 @@
 "use client";
 
 import useSWR from "swr";
+import { toast } from "@/components/chat/toast";
+import { Button } from "@/components/ui/button";
 import type { DeploymentCapabilities } from "@/lib/deployment/capabilities";
 import { cn } from "@/lib/utils";
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const CAPABILITIES_URL = `${BASE_PATH}/api/deployment/capabilities`;
 
 async function fetchCapabilities(url: string): Promise<DeploymentCapabilities> {
   const res = await fetch(url);
@@ -19,8 +22,8 @@ export function DeploymentCapabilitiesPanel({
 }: {
   className?: string;
 }) {
-  const { data, error, isLoading } = useSWR(
-    `${BASE_PATH}/api/deployment/capabilities`,
+  const { data, error, isLoading, mutate, isValidating } = useSWR(
+    CAPABILITIES_URL,
     fetchCapabilities,
     { revalidateOnFocus: true, dedupingInterval: 120_000 }
   );
@@ -127,9 +130,41 @@ export function DeploymentCapabilitiesPanel({
           className="space-y-3 border-t border-border/50 pt-6"
           data-testid="deployment-delegation-block"
         >
-          <h2 className="font-medium text-foreground">
-            Delegation (Hermes / OpenClaw)
-          </h2>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h2 className="font-medium text-foreground">
+              Delegation (Hermes / OpenClaw)
+            </h2>
+            {data.delegation.configured ? (
+              <Button
+                className="shrink-0"
+                data-testid="deployment-delegation-refresh"
+                disabled={isValidating}
+                onClick={async () => {
+                  try {
+                    await mutate(
+                      () => fetchCapabilities(`${CAPABILITIES_URL}?refresh=1`),
+                      { revalidate: false }
+                    );
+                    toast({
+                      type: "success",
+                      description: "Delegation snapshot refreshed.",
+                    });
+                  } catch {
+                    toast({
+                      type: "error",
+                      description:
+                        "Could not refresh delegation snapshot. Try again or check that you are signed in.",
+                    });
+                  }
+                }}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {isValidating ? "Refreshing…" : "Refresh skills snapshot"}
+              </Button>
+            ) : null}
+          </div>
           {data.delegation.configured ? (
             <div className="space-y-2">
               <h3 className="font-medium text-foreground text-sm">

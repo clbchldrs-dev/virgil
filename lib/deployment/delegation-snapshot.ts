@@ -124,9 +124,18 @@ async function buildFreshSnapshot(): Promise<DelegationDeploymentSnapshot> {
 /**
  * Cached snapshot of delegation reachability and skill ids for deployment UI and prompts.
  * Uses a short TTL to avoid hammering LAN gateways on every request.
+ *
+ * @param options.bypassCache — When true, always re-fetch from gateways (used by
+ *   `GET /api/deployment/capabilities?refresh=1` for signed-in operators).
  */
-export async function getDelegationDeploymentSnapshot(): Promise<DelegationDeploymentSnapshot> {
-  if (cache !== null && Date.now() - cache.at < TTL_MS) {
+export async function getDelegationDeploymentSnapshot(options?: {
+  bypassCache?: boolean;
+}): Promise<DelegationDeploymentSnapshot> {
+  if (
+    !options?.bypassCache &&
+    cache !== null &&
+    Date.now() - cache.at < TTL_MS
+  ) {
     return cache.snapshot;
   }
   const snapshot = await buildFreshSnapshot();

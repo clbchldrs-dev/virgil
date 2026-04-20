@@ -86,3 +86,26 @@ test("buildDeploymentCapabilities lists canonical tool ids in stable order", asy
     }
   );
 });
+
+test("buildDeploymentCapabilities accepts bypassDelegationCache without throwing", async () => {
+  await withEnv(
+    {
+      VERCEL: undefined,
+      AI_GATEWAY_API_KEY: "k",
+      HERMES_HTTP_URL: undefined,
+      OPENCLAW_HTTP_URL: undefined,
+      OPENCLAW_URL: undefined,
+    },
+    async () => {
+      const { buildDeploymentCapabilities } = await import(
+        "../../lib/deployment/capabilities"
+      );
+      const c = await buildDeploymentCapabilities({
+        bypassDelegationCache: true,
+      });
+      assert.equal(c.environment, "local");
+      assert.ok(c.delegation);
+      assert.equal(typeof c.delegation?.configured, "boolean");
+    }
+  );
+});

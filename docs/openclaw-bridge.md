@@ -37,7 +37,7 @@ With gateway invoke ([`openclaw-gateway.ts`](../lib/integrations/openclaw-gatewa
 
 - **`GET /api/delegation/health`** — delegation online, skills listed.
 - **`GET /api/hermes-bridge/skills`** with `Authorization: Bearer $HERMES_SHARED_SECRET` when that secret is set (same as other bridge routes).
-- **`/deployment`** — Deployment page shows the same skill ids (cached snapshot).
+- **`/deployment`** — Deployment page shows the same skill ids (cached snapshot). After changing gateway tools or `OPENCLAW_SKILLS_STATIC`, use **Refresh skills snapshot** or **`GET /api/deployment/capabilities?refresh=1`** (signed in) to bypass the ~55s cache.
 
 Commented starter lines for copy-paste live in [`.env.example`](../.env.example) (search `OPENCLAW_`).
 

@@ -35,7 +35,7 @@ Operators wire `HERMES_*` / `OPENCLAW_*` and optional poll-primary (`docs/virgil
 ### Deferred to Separate Tasks
 
 - **Rich skill browser** (search, descriptions beyond gateway payload) — only if gateway metadata grows; start with ids + labels if available.
-- **Manual “refresh skills” button** — optional UX after TTL cache lands.
+- **Manual “refresh skills” button** — **shipped:** `/deployment` button + `GET /api/deployment/capabilities?refresh=1` (signed in) bypasses the TTL cache.
 
 ## Context & Research
 
@@ -97,7 +97,7 @@ flowchart LR
 
 ## Implementation Units
 
-- [ ] **Unit 1: Runbook + AGENTS alignment (R6, R5)**
+- [x] **Unit 1: Runbook + AGENTS alignment (R6, R5)**
 
 **Goal:** Operators have a **verified** path from env → working skills → Virgil; dual-backend semantics are documented at AGENTS level.
 
@@ -120,7 +120,7 @@ flowchart LR
 
 ---
 
-- [ ] **Unit 2: Delegation snapshot + TTL cache module**
+- [x] **Unit 2: Delegation snapshot + TTL cache module**
 
 **Goal:** Single module exposes **user-safe** delegation metadata + cached skill ids for API and chat.
 
@@ -145,7 +145,7 @@ flowchart LR
 
 ---
 
-- [ ] **Unit 3: Extend deployment capabilities API (R1, R2)**
+- [x] **Unit 3: Extend deployment capabilities API (R1, R2)**
 
 **Goal:** JSON includes **delegation** block; route awaits async builder.
 
@@ -169,7 +169,7 @@ flowchart LR
 
 ---
 
-- [ ] **Unit 4: Deployment page UI (R1, R2)**
+- [x] **Unit 4: Deployment page UI (R1, R2)**
 
 **Goal:** Operators see delegation section + skill list + **timestamp / status** for freshness.
 
@@ -193,7 +193,7 @@ flowchart LR
 
 ---
 
-- [ ] **Unit 5: Companion prompt appendix (R3)**
+- [x] **Unit 5: Companion prompt appendix (R3)**
 
 **Goal:** When delegation tools are registered, system prompt includes **consistent** guidance + **sample skill ids** from snapshot cache (bounded length).
 
@@ -218,7 +218,7 @@ flowchart LR
 
 ---
 
-- [ ] **Unit 6: Regression pass (R4)**
+- [x] **Unit 6: Regression pass (R4)**
 
 **Goal:** Confirm `delegateTask` / approval flows unchanged; **`VIRGIL_DELEGATION_STRICT_SKILLS`** error copy (`delegationUnknownSkillMessage`) remains coherent when prompt appendix lists a sampled skill set.
 
