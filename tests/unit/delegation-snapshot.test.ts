@@ -9,6 +9,7 @@ test("buildDelegationCapabilityAppendix returns empty when delegation not config
   );
   const snap: DelegationDeploymentSnapshot = {
     configured: false,
+    toolsPaused: false,
     primaryBackend: "hermes",
     explicitBackendEnv: false,
     failoverEnabled: false,
@@ -41,6 +42,7 @@ test("buildDelegationCapabilityAppendix mentions routing when configured", async
   );
   const appendix = buildDelegationCapabilityAppendix({
     configured: true,
+    toolsPaused: false,
     primaryBackend: "openclaw",
     explicitBackendEnv: true,
     failoverEnabled: false,
@@ -109,4 +111,38 @@ test("buildDelegationCapabilityAppendix mentions routing when configured", async
   });
   assert.match(appendix, /no per-message backend switch/i);
   assert.match(appendix, /generic-task/);
+});
+
+test("buildDelegationCapabilityAppendix explains pause when tools paused", async () => {
+  const { buildDelegationCapabilityAppendix } = await import(
+    "../../lib/deployment/delegation-snapshot"
+  );
+  const appendix = buildDelegationCapabilityAppendix({
+    configured: true,
+    toolsPaused: true,
+    primaryBackend: "hermes",
+    explicitBackendEnv: false,
+    failoverEnabled: false,
+    hermesEnvPresent: true,
+    openclawEnvPresent: false,
+    pollPrimaryActive: false,
+    reachable: true,
+    skills: [],
+    skillDescriptors: [],
+    skillsFetchedAt: "2026-04-19T00:00:00.000Z",
+    skillsStatus: "ok",
+    skillsContractVersion: "v0-name-only",
+    skillsContractStatus: "name_only",
+    diagnostics: {
+      reachabilityCode: "ok",
+      skillsCode: "ok",
+      primaryReachable: true,
+      secondaryReachable: null,
+      skillsCount: 0,
+    },
+    delegationProbe: null,
+    embedToolEnabled: false,
+  });
+  assert.match(appendix, /paused/i);
+  assert.match(appendix, /VIRGIL_DELEGATION_TOOLS_DISABLED/);
 });

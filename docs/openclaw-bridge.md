@@ -194,6 +194,14 @@ Success outcomes:
 - Skills cache is process-global (not per-user); appropriate for single-owner.
 - `matchSkillFromDescription` breaks ties by array order (deterministic but arbitrary).
 
+## Troubleshooting
+
+| Symptom | Check |
+|--------|--------|
+| Skill ids empty or **cached** warning on `/deployment` | OpenClaw `GET …/skills` (or `OPENCLAW_SKILLS_STATIC`); gateway must list tools you expect. Refresh snapshot after changes. |
+| `delegateTask` rejects unknown skill | Id must appear in the live catalog or use **`generic-task`**; optional **`VIRGIL_DELEGATION_STRICT_SKILLS`** rejects unknown ids when set. |
+| Chat missing delegation tools | **`VIRGIL_DELEGATION_TOOLS_DISABLED`** pauses registration; bridge env can still be set. |
+
 ## Related
 
 - **Path A (in-app bridge + OpenClaw):** section above; code [`lib/integrations/hermes-bridge.ts`](../lib/integrations/hermes-bridge.ts).

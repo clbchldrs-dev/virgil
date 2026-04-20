@@ -274,56 +274,93 @@ export function DeploymentCapabilitiesPanel({
               ) : null}
             </div>
           </div>
+          <p className="text-muted-foreground text-xs">
+            This page is for the signed-in account. Delegation chat tools use the
+            same session and owner scoping as the rest of chat.
+          </p>
+          <p className="text-muted-foreground text-xs">
+            <strong>Policy and limits:</strong> rate limits, tool allow/deny, and
+            OpenClaw-side enforcement run on your{" "}
+            <strong>gateway host</strong>, not inside Virgil. Optional in-app
+            skill filtering:{" "}
+            <code className="text-[0.65rem]">VIRGIL_DELEGATION_STRICT_SKILLS</code>
+            . See{" "}
+            <code className="text-[0.65rem]">docs/openclaw-bridge.md</code>.
+          </p>
+          {data.delegation.toolsPaused ? (
+            <p
+              className="rounded-md border border-amber-600/40 bg-amber-500/10 px-3 py-2 text-amber-900 text-sm dark:text-amber-100"
+              data-testid="deployment-delegation-paused"
+            >
+              Delegation <strong>chat tools</strong> are paused (
+              <code className="text-xs">VIRGIL_DELEGATION_TOOLS_DISABLED</code>
+              ). The bridge is still probed below; queued work may still drain via
+              the poll worker.
+            </p>
+          ) : null}
           {data.delegation.configured ? (
             <div className="space-y-2">
               <h3 className="font-medium text-foreground text-sm">
                 Chat tools (bridge)
               </h3>
-              <p className="text-muted-foreground text-xs">
-                Registered on hosted chat when delegation is configured — not
-                listed in the in-process table above.
-              </p>
-              <ul
-                className="divide-y divide-border/60 rounded-lg border border-border/60"
-                data-testid="deployment-delegation-chat-tools"
-              >
-                <li className="flex flex-col gap-0.5 px-3 py-2.5 sm:flex-row sm:items-start sm:justify-between">
-                  <span className="font-mono text-xs text-foreground">
-                    delegateTask
-                  </span>
-                  <span className="text-muted-foreground sm:max-w-[min(100%,28rem)] sm:text-right">
-                    Queue work to the gateway (skill + description + params).
-                  </span>
-                </li>
-                <li className="flex flex-col gap-0.5 px-3 py-2.5 sm:flex-row sm:items-start sm:justify-between">
-                  <span className="font-mono text-xs text-foreground">
-                    approveDelegationIntent
-                  </span>
-                  <span className="text-muted-foreground sm:max-w-[min(100%,28rem)] sm:text-right">
-                    Approve a pending intent (
-                    <span className="font-mono text-[0.65rem]">
-                      approveOpenClawIntent
-                    </span>{" "}
-                    alias).
-                  </span>
-                </li>
-                <li className="flex flex-col gap-0.5 px-3 py-2.5 sm:flex-row sm:items-start sm:justify-between">
-                  <span className="font-mono text-xs text-foreground">
-                    embedViaDelegation
-                  </span>
-                  <span
-                    className={
-                      data.delegation.embedToolEnabled
-                        ? "text-muted-foreground sm:max-w-[min(100%,28rem)] sm:text-right"
-                        : "text-amber-600 sm:max-w-[min(100%,28rem)] sm:text-right dark:text-amber-500"
-                    }
+              {data.delegation.toolsPaused ? (
+                <p
+                  className="text-amber-800 text-sm dark:text-amber-200"
+                  data-testid="deployment-delegation-chat-tools-paused"
+                >
+                  Not registered in chat —{" "}
+                  <code className="text-xs">VIRGIL_DELEGATION_TOOLS_DISABLED</code>{" "}
+                  is set. The bridge below is still probed for operators.
+                </p>
+              ) : (
+                <>
+                  <p className="text-muted-foreground text-xs">
+                    Registered on hosted chat when delegation is configured — not
+                    listed in the in-process table above.
+                  </p>
+                  <ul
+                    className="divide-y divide-border/60 rounded-lg border border-border/60"
+                    data-testid="deployment-delegation-chat-tools"
                   >
-                    {data.delegation.embedToolEnabled
-                      ? "Embedding via gateway (e.g. wiki-embed on LAN)."
-                      : "Not registered — VIRGIL_DELEGATION_EMBED_ENABLED is 0/false/off."}
-                  </span>
-                </li>
-              </ul>
+                    <li className="flex flex-col gap-0.5 px-3 py-2.5 sm:flex-row sm:items-start sm:justify-between">
+                      <span className="font-mono text-xs text-foreground">
+                        delegateTask
+                      </span>
+                      <span className="text-muted-foreground sm:max-w-[min(100%,28rem)] sm:text-right">
+                        Queue work to the gateway (skill + description + params).
+                      </span>
+                    </li>
+                    <li className="flex flex-col gap-0.5 px-3 py-2.5 sm:flex-row sm:items-start sm:justify-between">
+                      <span className="font-mono text-xs text-foreground">
+                        approveDelegationIntent
+                      </span>
+                      <span className="text-muted-foreground sm:max-w-[min(100%,28rem)] sm:text-right">
+                        Approve a pending intent (
+                        <span className="font-mono text-[0.65rem]">
+                          approveOpenClawIntent
+                        </span>{" "}
+                        alias).
+                      </span>
+                    </li>
+                    <li className="flex flex-col gap-0.5 px-3 py-2.5 sm:flex-row sm:items-start sm:justify-between">
+                      <span className="font-mono text-xs text-foreground">
+                        embedViaDelegation
+                      </span>
+                      <span
+                        className={
+                          data.delegation.embedToolEnabled
+                            ? "text-muted-foreground sm:max-w-[min(100%,28rem)] sm:text-right"
+                            : "text-amber-600 sm:max-w-[min(100%,28rem)] sm:text-right dark:text-amber-500"
+                        }
+                      >
+                        {data.delegation.embedToolEnabled
+                          ? "Embedding via gateway (e.g. wiki-embed on LAN)."
+                          : "Not registered — VIRGIL_DELEGATION_EMBED_ENABLED is 0/false/off."}
+                      </span>
+                    </li>
+                  </ul>
+                </>
+              )}
             </div>
           ) : null}
           <p className="text-muted-foreground">
@@ -540,6 +577,47 @@ export function DeploymentCapabilitiesPanel({
             </code>
             .
           </p>
+          {data.pendingIntentStatusCounts &&
+          Object.keys(data.pendingIntentStatusCounts).length > 0 ? (
+            <p
+              className="font-mono text-muted-foreground text-xs"
+              data-testid="deployment-pending-intent-counts"
+            >
+              PendingIntent rows (all time, by status):{" "}
+              {Object.entries(data.pendingIntentStatusCounts)
+                .map(([k, v]) => `${k}=${v}`)
+                .join(", ")}
+            </p>
+          ) : null}
+          <details className="rounded-md border border-border/60 bg-muted/10 px-3 py-2 text-muted-foreground text-xs">
+            <summary className="cursor-pointer font-medium text-foreground">
+              Delegation env checklist (no secrets)
+            </summary>
+            <ul className="mt-2 list-inside list-disc space-y-1 pl-1">
+              <li>
+                <code className="text-[0.65rem]">OPENCLAW_HTTP_URL</code> or{" "}
+                <code className="text-[0.65rem]">HERMES_HTTP_URL</code> (remote
+                Hermes or in-app bridge)
+              </li>
+              <li>
+                <code className="text-[0.65rem]">VIRGIL_DELEGATION_BACKEND</code>{" "}
+                (optional),{" "}
+                <code className="text-[0.65rem]">VIRGIL_DELEGATION_FAILOVER</code>
+              </li>
+              <li>
+                <code className="text-[0.65rem]">
+                  VIRGIL_DELEGATION_POLL_PRIMARY
+                </code>{" "}
+                + worker secret for hosted poll mode
+              </li>
+              <li>
+                <code className="text-[0.65rem]">
+                  VIRGIL_DELEGATION_TOOLS_DISABLED
+                </code>{" "}
+                — pause chat tools without removing bridge env
+              </li>
+            </ul>
+          </details>
         </section>
       ) : null}
 

@@ -17,7 +17,9 @@ export default async function DeploymentPage() {
         <p className="text-muted-foreground text-sm">
           What this server supports: cloud vs local inference and companion
           tools. Details differ between your laptop and hosted Vercel — this
-          page reflects the instance you are using now.
+          page reflects the instance you are using now. You must be signed in;
+          delegation queue counts and refresh actions apply to this deployment
+          and session.
         </p>
       </header>
       <DeploymentCapabilitiesPanel />

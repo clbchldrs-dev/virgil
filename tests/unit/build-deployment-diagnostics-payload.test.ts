@@ -28,6 +28,7 @@ const minimalCapabilities = (): DeploymentCapabilities => ({
   },
   delegation: null,
   delegationPollQueue: null,
+  pendingIntentStatusCounts: null,
 });
 
 test("diagnostics slice omits undefined detail", () => {
@@ -36,6 +37,16 @@ test("diagnostics slice omits undefined detail", () => {
   );
   assert.equal(slice.agentTools[0]?.detail, undefined);
   assert.equal(slice.agentTools[1]?.detail, "local only");
+});
+
+test("diagnostics slice includes pendingIntentStatusCounts when set", () => {
+  const caps = minimalCapabilities();
+  caps.pendingIntentStatusCounts = { pending: 2, sent: 1 };
+  const slice = buildDeploymentCapabilitiesDiagnosticsSlice(caps);
+  assert.deepEqual(slice.pendingIntentStatusCounts, {
+    pending: 2,
+    sent: 1,
+  });
 });
 
 test("diagnostics payload includes schema, capabilities slice, and health", () => {

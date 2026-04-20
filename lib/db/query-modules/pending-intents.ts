@@ -368,6 +368,26 @@ export async function countStaleProcessingPollIntents(): Promise<number> {
   return Number(row?.n ?? 0);
 }
 
+/**
+ * Row counts grouped by `PendingIntent.status` (all time). No user ids — operator insight only.
+ */
+export async function countPendingIntentsByStatus(): Promise<
+  Record<string, number>
+> {
+  const rows = await db
+    .select({
+      status: pendingIntent.status,
+      n: count(),
+    })
+    .from(pendingIntent)
+    .groupBy(pendingIntent.status);
+  const out: Record<string, number> = {};
+  for (const r of rows) {
+    out[r.status] = Number(r.n);
+  }
+  return out;
+}
+
 // TODO: wire to retry cron — query for intents stuck in "sent" >5 min
 export function getRetryableOpenClawIntents() {
   return db

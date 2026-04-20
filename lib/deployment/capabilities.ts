@@ -57,6 +57,8 @@ export type DeploymentCapabilities = {
   delegationPollQueue?: {
     staleProcessingCount: number;
   } | null;
+  /** PendingIntent row counts by status (all time). Omitted when DB unavailable. */
+  pendingIntentStatusCounts?: Record<string, number> | null;
 };
 
 const TOOL_LABELS: Record<string, string> = {
@@ -226,9 +228,21 @@ export async function buildDeploymentCapabilities(options?: {
   } else {
     delegationPollQueue = null;
   }
+
+  let pendingIntentStatusCounts: DeploymentCapabilities["pendingIntentStatusCounts"];
+  try {
+    const { countPendingIntentsByStatus } = await import(
+      "@/lib/db/query-modules/pending-intents"
+    );
+    pendingIntentStatusCounts = await countPendingIntentsByStatus();
+  } catch {
+    pendingIntentStatusCounts = null;
+  }
+
   return {
     ...base,
     delegation,
     delegationPollQueue,
+    pendingIntentStatusCounts,
   };
 }

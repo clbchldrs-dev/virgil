@@ -1,5 +1,6 @@
 import { isDelegationEmbedToolEnabled } from "@/lib/integrations/delegation-embeddings";
 import { isDelegationPollPrimaryActive } from "@/lib/integrations/delegation-poll-config";
+import { isDelegationToolsPaused } from "@/lib/integrations/delegation-tools-policy";
 import { evaluateDelegationPreflight } from "@/lib/integrations/delegation-preflight";
 import {
   delegationContractDiagnostics,
@@ -28,6 +29,8 @@ export type DelegationSkillsStatus = "ok" | "cached" | "unavailable";
 
 export type DelegationDeploymentSnapshot = {
   configured: boolean;
+  /** Chat tools suppressed by `VIRGIL_DELEGATION_TOOLS_DISABLED` — bridge may still be probed. */
+  toolsPaused: boolean;
   primaryBackend: "hermes" | "openclaw";
   explicitBackendEnv: boolean;
   failoverEnabled: boolean;
@@ -73,6 +76,7 @@ function emptySnapshot(
   const now = new Date().toISOString();
   return {
     configured: false,
+    toolsPaused: isDelegationToolsPaused(),
     explicitBackendEnv: Boolean(process.env.VIRGIL_DELEGATION_BACKEND?.trim()),
     failoverEnabled: isDelegationFailoverEnabled(),
     hermesEnvPresent: isHermesConfigured(),
@@ -111,6 +115,7 @@ async function buildFreshSnapshot(): Promise<DelegationDeploymentSnapshot> {
   if (!isDelegationConfigured()) {
     return emptySnapshot({
       configured: false,
+      toolsPaused: isDelegationToolsPaused(),
       primaryBackend,
       explicitBackendEnv,
       failoverEnabled,
@@ -119,6 +124,8 @@ async function buildFreshSnapshot(): Promise<DelegationDeploymentSnapshot> {
       pollPrimaryActive,
     });
   }
+
+  const toolsPaused = isDelegationToolsPaused();
 
   let reachable: boolean | null = null;
   try {
@@ -166,6 +173,7 @@ async function buildFreshSnapshot(): Promise<DelegationDeploymentSnapshot> {
 
   return {
     configured: true,
+    toolsPaused,
     primaryBackend,
     explicitBackendEnv,
     failoverEnabled,
@@ -224,6 +232,13 @@ export function buildDelegationCapabilityAppendix(
 ): string {
   if (!snapshot.configured) {
     return "";
+  }
+  if (snapshot.toolsPaused) {
+    return (
+      "Delegation tools are **paused** in chat (`VIRGIL_DELEGATION_TOOLS_DISABLED`). " +
+      "Do not call **delegateTask**, **approveDelegationIntent**, or **embedViaDelegation** — they are not in your tool list. " +
+      "The operator can still inspect bridge status on the Deployment page."
+    );
   }
   const backendName =
     snapshot.primaryBackend === "hermes" ? "Hermes" : "OpenClaw";

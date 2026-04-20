@@ -121,6 +121,7 @@ import {
   getDelegationProvider,
   isDelegationConfigured,
 } from "@/lib/integrations/delegation-provider";
+import { isDelegationChatToolsEnabled } from "@/lib/integrations/delegation-tools-policy";
 import {
   logChatPathTelemetryEvent,
   normalizeChatTelemetryErrorCode,
@@ -413,15 +414,20 @@ export async function POST(request: Request) {
 
     const agentTaskEnabled = !isOllamaLocal;
     const jiraEnabled = isJiraConfigured();
+    const delegationConfigured = isDelegationConfigured();
+    const delegationChatEnabled = isDelegationChatToolsEnabled();
     const delegationHint = {
-      enabled: isDelegationConfigured(),
+      enabled: delegationChatEnabled,
       backend: getDelegationProvider().backend,
       embedToolEnabled:
-        isDelegationConfigured() && isDelegationEmbedToolEnabled(),
+        delegationChatEnabled && isDelegationEmbedToolEnabled(),
+      ...(delegationConfigured && !delegationChatEnabled
+        ? { toolsPaused: true as const }
+        : {}),
     };
 
     let delegationCapabilityAppendix = "";
-    if (delegationHint.enabled) {
+    if (delegationConfigured) {
       const delegationSnap = await getDelegationDeploymentSnapshot();
       delegationCapabilityAppendix =
         buildDelegationCapabilityAppendix(delegationSnap);
@@ -724,7 +730,7 @@ export async function POST(request: Request) {
           allowed: agentTaskEnabled,
         });
 
-        const openClawPersonalEnabled = isDelegationConfigured();
+        const openClawPersonalEnabled = isDelegationChatToolsEnabled();
         const embedViaDelegationEnabled =
           openClawPersonalEnabled && isDelegationEmbedToolEnabled();
 

@@ -17,6 +17,8 @@ export type VirgilLaneDelegationHint = {
   backend: DelegationBackend;
   /** When true, **embedViaDelegation** is registered (LAN embedding for wiki / hybrid search). */
   embedToolEnabled?: boolean;
+  /** Bridge env present but chat tools suppressed (`VIRGIL_DELEGATION_TOOLS_DISABLED`). */
+  toolsPaused?: boolean;
 };
 
 /**
@@ -26,9 +28,11 @@ export function buildVirgilLaneGuidanceBlock(
   delegation?: VirgilLaneDelegationHint
 ): string {
   const homeLine =
-    delegation?.enabled === true
-      ? `- **home** — Execution on the user's LAN or messaging/files/shell outside this app: prefer **delegateTask** (${delegationBackendShortPhrase(delegation.backend)}) when that tool is in your list; pair with calendar reads in-process if needed.`
-      : "- **home** — Execution outside this app: use **delegateTask** only when it appears in your tool list (operator configures OpenClaw or Hermes). If it is missing, give concrete steps the user can run themselves; do not pretend a bridge exists.";
+    delegation?.toolsPaused === true
+      ? "- **home** — Delegation tools are **paused** by the operator (`VIRGIL_DELEGATION_TOOLS_DISABLED`). **delegateTask** is not in your tool list — say that plainly if the user asks for LAN execution; do not claim the bridge is broken."
+      : delegation?.enabled === true
+        ? `- **home** — Execution on the user's LAN or messaging/files/shell outside this app: prefer **delegateTask** (${delegationBackendShortPhrase(delegation.backend)}) when that tool is in your list; pair with calendar reads in-process if needed.`
+        : "- **home** — Execution outside this app: use **delegateTask** only when it appears in your tool list (operator configures OpenClaw or Hermes). If it is missing, give concrete steps the user can run themselves; do not pretend a bridge exists.";
 
   return `Delegation lanes (pick one mental model per task; avoid mixing unrelated domains in one tool chain when avoidable):
 - **chat** — Answer, plan, and use in-process tools (memory, calendar, documents, weather, goals) yourself.

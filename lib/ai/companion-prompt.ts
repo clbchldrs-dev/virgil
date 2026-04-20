@@ -54,6 +54,14 @@ function buildMemoryVsDelegationGuidance(
     );
   }
 
+  if (delegation.toolsPaused === true) {
+    return (
+      core +
+      "- Delegation tools are **paused** by the operator (`VIRGIL_DELEGATION_TOOLS_DISABLED`). **delegateTask** and **approveDelegationIntent** are not in your tool list — say that plainly; the bridge may still be visible to operators on the Deployment page.\n" +
+      "- Still use **recallMemory** / **saveMemory** when they appear in your tool list."
+    );
+  }
+
   if (!delegation.enabled) {
     return (
       core +

@@ -18,6 +18,9 @@ export function buildDeploymentCapabilitiesDiagnosticsSlice(
       available: t.available,
       ...(t.detail ? { detail: t.detail } : {}),
     })),
+    ...(data.pendingIntentStatusCounts != null
+      ? { pendingIntentStatusCounts: data.pendingIntentStatusCounts }
+      : {}),
   };
 }
 

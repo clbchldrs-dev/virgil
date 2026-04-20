@@ -51,7 +51,7 @@ pnpm delegation:poll-worker
 | `VIRGIL_DELEGATION_WORKER_SECRET` | Same bearer as **`VIRGIL_DELEGATION_WORKER_SECRET`** (or **`HERMES_SHARED_SECRET`**) on Vercel. |
 | `HERMES_HTTP_URL` | Local Hermes, typically `http://127.0.0.1:8765`. |
 | `HERMES_SHARED_SECRET` | If your Hermes bridge requires auth for `POST …/execute`, set the same value Hermes expects (can match the worker→Vercel secret or be different — Hermes config is separate from Virgil’s worker routes). |
-| `HERMES_EXECUTE_PATH` | Optional; default `/api/execute` ([`lib/integrations/hermes-config.ts`](../lib/integrations/hermes-config.ts)). |
+| `HERMES_EXECUTE_PATH` | Optional; default **`/api/hermes-bridge/execute`** when using defaults ([`lib/integrations/hermes-config.ts`](../lib/integrations/hermes-config.ts)). Remote Hermes servers often use `/api/execute` — match the server. |
 | `VIRGIL_DELEGATION_POLL_INTERVAL_MS` | Optional idle delay after an empty claim (default `5000`). |
 | `VIRGIL_DELEGATION_WORKER_EXECUTE_TIMEOUT_MS` | Optional timeout for each Hermes execute (default `120000`). |
 
@@ -189,6 +189,15 @@ VIRGIL_DELEGATION_BACKEND=hermes
 
 - **Production (Vercel + tunnel):** follow **Step 5** above (`/api/delegation/health` requires a signed-in session).
 - **Local dev:** same route with `pnpm dev`; you may set both `HERMES_*` and `OPENCLAW_*` — confirm `probes.*.online`, `failoverEnabled` when both are configured, and `delegationOnline`. Exercise `delegateTask` / `embedViaDelegation` after skills exist on the bridge.
+
+## Troubleshooting
+
+| Symptom | Check |
+|--------|--------|
+| Deployment page shows **stale** or **unavailable** skill list | Gateway `GET …/skills` failing; fix health first, then **Refresh skills snapshot** or `GET /api/deployment/capabilities?refresh=1` (signed in). |
+| `delegationOnline: false` in `/api/delegation/health` | Secret mismatch, tunnel down, or primary gateway stopped; confirm `HERMES_SHARED_SECRET` matches and `cloudflared`/Hermes is running. |
+| Chat has no **delegateTask** but env looks set | **`VIRGIL_DELEGATION_TOOLS_DISABLED=1`** pauses chat tools; unset or set `0`/`false` and restart. Deployment still probes the bridge. |
+| Poll worker idle but queue grows | Worker env (`VIRGIL_DELEGATION_WORKER_BASE_URL`, secret) or Hermes local execute failing — see worker logs; check **stale processing** count on `/deployment`. |
 
 ## Related docs
 
