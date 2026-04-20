@@ -93,6 +93,7 @@ The earlier requirements (R1–R7) skew toward **visibility** (what is configure
 - **Split responsibility:** “More tools” = primarily **gateway catalog + operator setup**; Virgil improvements focus on **visibility, discoverability, and prompt alignment** (not re-implementing OpenClaw). **Operator runbooks are part of the deliverable**, not optional narrative.
 - **Trust over hype:** Surface reachability and backend choice **honestly** (failover, offline backlog) rather than hiding errors.
 - **Dual-backend clarity (R5):** **Failover only, no per-request pin** — documented 2026-04-20; UX and prompts must not imply backend targeting that does not exist (R12).
+- **Steering split (R9–R11):** **Virgil = passthrough + visibility + honest pause/degrade**; **budgets/concurrency on the gateway** — documented and linked, not duplicated as competing enforcement in Virgil unless the product explicitly revisits R11.
 
 ## Dependencies / Assumptions
 
@@ -103,11 +104,11 @@ The earlier requirements (R1–R7) skew toward **visibility** (what is configure
 
 ### Resolve Before Planning
 
-- **[R5][Product]** **Backend targeting:** **Resolved (2026-04-20):** **Primary + failover only** — no per-`delegateTask` pin. Runtime uses `VIRGIL_DELEGATION_BACKEND` (or auto) as primary and optional failover when both bridges are configured; see [AGENTS.md](../../AGENTS.md) (`virgil-manos` delegation bullet) and [`lib/integrations/delegation-provider.ts`](../../lib/integrations/delegation-provider.ts) (`delegationSendIntent`).
-
-- **[R9–R11][Product]** **How much steering in Virgil vs gateway-only?** Choose one coherent stance: (a) Virgil remains **passthrough + visibility + pause** only, with budgets/concurrency **documented** for the gateway host; or (b) Virgil **owns** one layer of limits/pause/RBAC. Mixing without an explicit split creates dual sources of truth.
+*None — R5 (failover-only) and R9–R11 steering stance (passthrough + gateway-side limits) are recorded under **Key Decisions**.*
 
 ### Deferred to Planning
+
+- **[R9][Product]** Spell out **delegation** in the deployment vs chat **role matrix** (owner-only capabilities panel vs who may invoke `delegateTask` in chat), consistent with passthrough stance — likely “same gating as other high-risk tools” unless product says otherwise.
 
 - **[R2][Needs research]** Cache skill list with TTL vs fetch on each delegation tool registration / periodic refresh — latency vs freshness tradeoff; **spike gates** the API shape for R2. **Must** address staleness UX (see R2 risk) in the same design pass.
 - **[R7][UX]** Single “Delegation” card vs full settings subpage — cap R7 to a short checklist + links unless design capacity is confirmed (avoid a second onboarding product).
@@ -116,7 +117,7 @@ The earlier requirements (R1–R7) skew toward **visibility** (what is configure
 
 ## Next Steps
 
--> `/ce:plan` for structured implementation planning. **Suggested order:** **R6 audit** (runbook completeness + links) in parallel with **resolving R9–R11 stance** → R1 → R2 (TTL/spike + staleness behavior) → R3 → R8/R10 as scoped by that stance → **R6** (verify links and troubleshooting from deployment UI). Defer R7 unless scoped.
+-> `/ce:plan` for structured implementation planning. **Suggested order:** **R6 audit** (runbook completeness + links) → R1 → R2 (TTL/spike + staleness behavior) → R3 → R8/R10 (insight + pause, per passthrough stance) → **R6** (verify links and troubleshooting from deployment UI). Defer R7 unless scoped. **R9** role matrix detail can ship as a planning subsection.
 
 **Sequencing note:** R6 is not “afterthought documentation”; treat **runbook verification** as a planning task with acceptance criteria, same tier as R1.
 
