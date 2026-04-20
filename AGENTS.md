@@ -33,7 +33,7 @@ Default mode:
 
 Optional:
 
-- **Gateway-only** AutoGen-style orchestration: set `VIRGIL_MULTI_AGENT_ENABLED=1` to run a short internal planner pass before the main `streamText` (extra latency/cost; off by default). See `lib/ai/orchestration/`.
+- **Gateway-only** AutoGen-style orchestration: set `VIRGIL_MULTI_AGENT_ENABLED=1` to run one or more internal planner passes before the main `streamText` (extra latency/cost; off by default). Optional `VIRGIL_MULTI_AGENT_PLANNER_CHAIN` sets **how many** planner models run (comma-separated) and `VIRGIL_MULTI_AGENT_PLANNER_STAGE_MAX_TOKENS` sets per-stage output **size** (comma list or one value for all stages). See `lib/ai/orchestration/`.
 - **Lane-based delegation:** prompt + tool metadata (`chat`, `home`, `code`, `research`) — see `lib/ai/lanes.ts` and [docs/DECISIONS.md](docs/DECISIONS.md) (Ghost of Virgil ADR).
 
 ## North Star
@@ -746,7 +746,10 @@ This runs all Drizzle migrations in `lib/db/migrations/`.
 | `SLACK_BOT_TOKEN` | No | No | Bot token (`xoxb-…`) for `chat.postMessage` when webhook URL is not used |
 | `VIRGIL_SLACK_CHECKIN_CHANNEL_ID` | With bot token | Same | Channel id (e.g. `C…`) for digest mirror; required with `SLACK_BOT_TOKEN` when webhook unset |
 | `VIRGIL_MULTI_AGENT_ENABLED` | No | No | Set to `1` / `true` for gateway-only planner+executor pass before `streamText` (extra cost/latency) |
-| `VIRGIL_MULTI_AGENT_PLANNER_MODEL` | No | No | Optional model id for the planner when different from the chat model |
+| `VIRGIL_MULTI_AGENT_PLANNER_MODEL` | No | No | Optional model id for the single planner when different from the chat model (ignored when `VIRGIL_MULTI_AGENT_PLANNER_CHAIN` is set) |
+| `VIRGIL_MULTI_AGENT_PLANNER_CHAIN` | No | No | Comma-separated planner model ids (2+ values = sequential refine passes). When unset, one planner stage uses `VIRGIL_MULTI_AGENT_PLANNER_MODEL` or the chat model |
+| `VIRGIL_MULTI_AGENT_PLANNER_STAGE_MAX_TOKENS` | No | No | Per-stage `maxOutputTokens` for planner passes: comma-separated integers matching chain length, or a single integer applied to every stage (default **384** per stage when unset) |
+| `VIRGIL_MULTI_AGENT_PLANNER_MAX_OUTPUT_TOKENS_DEFAULT` | No | No | Default per-stage token cap when `VIRGIL_MULTI_AGENT_PLANNER_STAGE_MAX_TOKENS` is unset (default **384**) |
 | `BOTID_ENFORCE` | No | No | Set to `1` / `true` to return 403 on `POST /api/chat` when BotID classifies an unverified bot; default is log-only in production (`lib/security/botid-chat.ts`) |
 
 ### Hobby-to-Pro threshold

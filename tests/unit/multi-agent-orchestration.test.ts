@@ -5,6 +5,7 @@ import {
   getPlannerModelId,
   isVirgilMultiAgentEnabled,
   mergePlannerOutlineIntoSystemPrompt,
+  resolvePlannerStages,
 } from "@/lib/ai/orchestration/multi-agent";
 import { VIRGIL_SYSTEM_PERSONA_DIVIDER } from "@/lib/ai/virgil-system-markers";
 
@@ -30,7 +31,9 @@ test("isVirgilMultiAgentEnabled respects env", () => {
 
 test("getPlannerModelId uses override when set", () => {
   const prev = process.env.VIRGIL_MULTI_AGENT_PLANNER_MODEL;
+  const prevChain = process.env.VIRGIL_MULTI_AGENT_PLANNER_CHAIN;
   try {
+    Reflect.deleteProperty(process.env, "VIRGIL_MULTI_AGENT_PLANNER_CHAIN");
     process.env.VIRGIL_MULTI_AGENT_PLANNER_MODEL = "openai/gpt-4o-mini";
     assert.equal(
       getPlannerModelId("anthropic/claude-3-5-sonnet"),
@@ -46,6 +49,77 @@ test("getPlannerModelId uses override when set", () => {
       Reflect.deleteProperty(process.env, "VIRGIL_MULTI_AGENT_PLANNER_MODEL");
     } else {
       process.env.VIRGIL_MULTI_AGENT_PLANNER_MODEL = prev;
+    }
+    if (prevChain === undefined) {
+      Reflect.deleteProperty(process.env, "VIRGIL_MULTI_AGENT_PLANNER_CHAIN");
+    } else {
+      process.env.VIRGIL_MULTI_AGENT_PLANNER_CHAIN = prevChain;
+    }
+  }
+});
+
+test("resolvePlannerStages uses planner chain when set", () => {
+  const prevChain = process.env.VIRGIL_MULTI_AGENT_PLANNER_CHAIN;
+  const prevStageTok = process.env.VIRGIL_MULTI_AGENT_PLANNER_STAGE_MAX_TOKENS;
+  const prevDefault = process.env.VIRGIL_MULTI_AGENT_PLANNER_MAX_OUTPUT_TOKENS_DEFAULT;
+  try {
+    process.env.VIRGIL_MULTI_AGENT_PLANNER_CHAIN =
+      "google/gemini-2.5-flash-lite, openai/gpt-4o-mini ";
+    process.env.VIRGIL_MULTI_AGENT_PLANNER_STAGE_MAX_TOKENS = "256, 512";
+    const stages = resolvePlannerStages("anthropic/claude-3-5-sonnet");
+    assert.equal(stages.length, 2);
+    assert.equal(stages[0]?.modelId, "google/gemini-2.5-flash-lite");
+    assert.equal(stages[0]?.maxOutputTokens, 256);
+    assert.equal(stages[1]?.modelId, "openai/gpt-4o-mini");
+    assert.equal(stages[1]?.maxOutputTokens, 512);
+  } finally {
+    if (prevChain === undefined) {
+      Reflect.deleteProperty(process.env, "VIRGIL_MULTI_AGENT_PLANNER_CHAIN");
+    } else {
+      process.env.VIRGIL_MULTI_AGENT_PLANNER_CHAIN = prevChain;
+    }
+    if (prevStageTok === undefined) {
+      Reflect.deleteProperty(
+        process.env,
+        "VIRGIL_MULTI_AGENT_PLANNER_STAGE_MAX_TOKENS"
+      );
+    } else {
+      process.env.VIRGIL_MULTI_AGENT_PLANNER_STAGE_MAX_TOKENS = prevStageTok;
+    }
+    if (prevDefault === undefined) {
+      Reflect.deleteProperty(
+        process.env,
+        "VIRGIL_MULTI_AGENT_PLANNER_MAX_OUTPUT_TOKENS_DEFAULT"
+      );
+    } else {
+      process.env.VIRGIL_MULTI_AGENT_PLANNER_MAX_OUTPUT_TOKENS_DEFAULT =
+        prevDefault;
+    }
+  }
+});
+
+test("resolvePlannerStages applies single token cap to every stage", () => {
+  const prevChain = process.env.VIRGIL_MULTI_AGENT_PLANNER_CHAIN;
+  const prevStageTok = process.env.VIRGIL_MULTI_AGENT_PLANNER_STAGE_MAX_TOKENS;
+  try {
+    process.env.VIRGIL_MULTI_AGENT_PLANNER_CHAIN = "a/x,b/y";
+    process.env.VIRGIL_MULTI_AGENT_PLANNER_STAGE_MAX_TOKENS = "400";
+    const stages = resolvePlannerStages("z/z");
+    assert.equal(stages[0]?.maxOutputTokens, 400);
+    assert.equal(stages[1]?.maxOutputTokens, 400);
+  } finally {
+    if (prevChain === undefined) {
+      Reflect.deleteProperty(process.env, "VIRGIL_MULTI_AGENT_PLANNER_CHAIN");
+    } else {
+      process.env.VIRGIL_MULTI_AGENT_PLANNER_CHAIN = prevChain;
+    }
+    if (prevStageTok === undefined) {
+      Reflect.deleteProperty(
+        process.env,
+        "VIRGIL_MULTI_AGENT_PLANNER_STAGE_MAX_TOKENS"
+      );
+    } else {
+      process.env.VIRGIL_MULTI_AGENT_PLANNER_STAGE_MAX_TOKENS = prevStageTok;
     }
   }
 });

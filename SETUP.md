@@ -48,6 +48,7 @@ Full production table and AI Gateway / Ollama notes: [AGENTS.md — Deployment (
 | Mem0 | [AGENTS.md](AGENTS.md) (`MEM0_*`) |
 | Same Postgres from CLI / multiple machines | [docs/memory-store-parity.md](docs/memory-store-parity.md) |
 | Digital Self (sibling package) | [docs/digital-self-bridge.md](docs/digital-self-bridge.md) |
+| Multi-agent planner (gateway) | [AGENTS.md](AGENTS.md) (`VIRGIL_MULTI_AGENT_*`, `lib/ai/orchestration/`) |
 
 Quotas and background jobs: [docs/free-tier-feature-map.md](docs/free-tier-feature-map.md).
 

@@ -10,7 +10,7 @@ The project is optimized for:
 - **free/hobby-tier** infra when deployed (see [docs/free-tier-feature-map.md](docs/free-tier-feature-map.md))
 - honest, proactive assistance without sycophancy
 - **local Ollama** with slim prompts when you pick it or when gateway fallback is enabled
-- optional gateway-only multi-agent planning (`VIRGIL_MULTI_AGENT_ENABLED`) when you want an extra orchestration pass
+- optional gateway-only multi-agent planning (`VIRGIL_MULTI_AGENT_ENABLED`, optional `VIRGIL_MULTI_AGENT_PLANNER_CHAIN` for multiple planner passes) when you want an extra orchestration pass
 
 ## What Virgil does
 

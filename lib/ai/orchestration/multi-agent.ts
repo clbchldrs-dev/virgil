@@ -7,8 +7,14 @@ import { VIRGIL_SYSTEM_PERSONA_DIVIDER } from "@/lib/ai/virgil-system-markers";
 import { isProductionEnvironment } from "@/lib/constants";
 import { buildPlannerSystemPrompt } from "./planner-prompt";
 
-const PLANNER_MAX_OUTPUT_TOKENS = 384;
+const DEFAULT_PLANNER_MAX_OUTPUT_TOKENS = 384;
 const USER_SNIPPET_MAX_CHARS = 12_000;
+
+/** One planner stage: model id and output budget (“size”). */
+export type VirgilPlannerStage = {
+  modelId: string;
+  maxOutputTokens: number;
+};
 
 export function isVirgilMultiAgentEnabled(): boolean {
   const v = process.env.VIRGIL_MULTI_AGENT_ENABLED?.trim().toLowerCase();
@@ -21,6 +27,79 @@ export function getPlannerModelId(chatModel: string): string {
     return override;
   }
   return chatModel;
+}
+
+function parseCommaSeparatedTokens(raw: string | undefined): string[] {
+  if (!raw?.trim()) {
+    return [];
+  }
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+function parseStageMaxOutputTokens(
+  raw: string | undefined,
+  stageCount: number,
+  fallbackPerStage: number
+): number[] {
+  if (stageCount <= 0) {
+    return [];
+  }
+  if (!raw?.trim()) {
+    return Array.from({ length: stageCount }, () => fallbackPerStage);
+  }
+  const parts = parseCommaSeparatedTokens(raw);
+  if (parts.length === 1) {
+    const n = Number.parseInt(parts[0]!, 10);
+    const v =
+      Number.isFinite(n) && n > 0 ? Math.min(n, 4096) : fallbackPerStage;
+    return Array.from({ length: stageCount }, () => v);
+  }
+  const nums = parts.map((p) => {
+    const n = Number.parseInt(p, 10);
+    return Number.isFinite(n) && n > 0 ? Math.min(n, 4096) : fallbackPerStage;
+  });
+  const out: number[] = [];
+  for (let i = 0; i < stageCount; i++) {
+    out.push(nums[i] ?? nums[nums.length - 1] ?? fallbackPerStage);
+  }
+  return out;
+}
+
+/**
+ * Resolves ordered planner stages from env: chain of models and per-stage token caps.
+ * When `VIRGIL_MULTI_AGENT_PLANNER_CHAIN` is unset, uses a single stage from
+ * `getPlannerModelId(chatModel)` (legacy behavior).
+ */
+export function resolvePlannerStages(chatModel: string): VirgilPlannerStage[] {
+  const chainModels = parseCommaSeparatedTokens(
+    process.env.VIRGIL_MULTI_AGENT_PLANNER_CHAIN?.trim()
+  );
+  const defaultCapRaw = process.env.VIRGIL_MULTI_AGENT_PLANNER_MAX_OUTPUT_TOKENS_DEFAULT?.trim();
+  const defaultCap = Number.parseInt(
+    defaultCapRaw ?? String(DEFAULT_PLANNER_MAX_OUTPUT_TOKENS),
+    10
+  );
+  const fallbackPerStage =
+    Number.isFinite(defaultCap) && defaultCap > 0
+      ? Math.min(defaultCap, 4096)
+      : DEFAULT_PLANNER_MAX_OUTPUT_TOKENS;
+
+  const modelIds =
+    chainModels.length > 0 ? chainModels : [getPlannerModelId(chatModel)];
+
+  const maxTokens = parseStageMaxOutputTokens(
+    process.env.VIRGIL_MULTI_AGENT_PLANNER_STAGE_MAX_TOKENS?.trim(),
+    modelIds.length,
+    fallbackPerStage
+  );
+
+  return modelIds.map((modelId, i) => ({
+    modelId,
+    maxOutputTokens: maxTokens[i]!,
+  }));
 }
 
 export function mergePlannerOutlineIntoSystemPrompt(
@@ -95,6 +174,78 @@ export function getLastUserTurnSnippet(messages: ModelMessage[]): string {
   return "";
 }
 
+export async function runPlannerChain({
+  stages,
+  userMessages,
+  ollamaLanguageOptions,
+  resolveOllamaLanguageOptionsForPlanner,
+  providerOptions,
+}: {
+  stages: VirgilPlannerStage[];
+  userMessages: ModelMessage[];
+  /** Used when {@link resolveOllamaLanguageOptionsForPlanner} is omitted (single-model callers). */
+  ollamaLanguageOptions?: OllamaLanguageModelOptions;
+  /** Per-stage Ollama options (required for mixed local + gateway planner chains). */
+  resolveOllamaLanguageOptionsForPlanner?: (
+    plannerModelId: string
+  ) => OllamaLanguageModelOptions | undefined;
+  /** Gateway / OpenAI-compatible options (JSON-serializable values per provider key). */
+  providerOptions?: Record<string, JSONObject>;
+}): Promise<string> {
+  const userSnippet = getLastUserTurnSnippet(userMessages);
+  if (!userSnippet || stages.length === 0) {
+    return "";
+  }
+
+  const total = stages.length;
+  let accumulated = "";
+
+  for (let i = 0; i < total; i++) {
+    const stage = stages[i]!;
+    const ollamaOpts =
+      resolveOllamaLanguageOptionsForPlanner?.(stage.modelId) ??
+      ollamaLanguageOptions;
+    const model = getLanguageModel(stage.modelId, ollamaOpts);
+
+    const userContent =
+      i === 0
+        ? userSnippet
+        : [
+            "Original user message:",
+            userSnippet,
+            "",
+            "Prior planner outline (refine; keep constraints aligned with the user message):",
+            accumulated,
+          ].join("\n");
+
+    const { text } = await generateText({
+      model,
+      system: buildPlannerSystemPrompt(i, total),
+      messages: [{ role: "user", content: userContent }],
+      maxOutputTokens: stage.maxOutputTokens,
+      experimental_telemetry: {
+        isEnabled: isProductionEnvironment,
+        functionId:
+          total > 1 ? `virgil-planner-stage-${i + 1}-of-${total}` : "virgil-planner",
+      },
+      ...(providerOptions && Object.keys(providerOptions).length > 0
+        ? { providerOptions }
+        : {}),
+    });
+
+    accumulated = text.trim();
+    if (!accumulated) {
+      return "";
+    }
+  }
+
+  return accumulated;
+}
+
+/**
+ * Single-stage planner outline (compat helper). Prefer {@link resolvePlannerStages} +
+ * {@link runPlannerChain} for multi-model / multi-pass orchestration.
+ */
 export async function runPlannerOutline({
   plannerModelId,
   userMessages,
@@ -104,31 +255,19 @@ export async function runPlannerOutline({
   plannerModelId: string;
   userMessages: ModelMessage[];
   ollamaLanguageOptions?: OllamaLanguageModelOptions;
-  /** Gateway / OpenAI-compatible options (JSON-serializable values per provider key). */
   providerOptions?: Record<string, JSONObject>;
 }): Promise<string> {
-  const userSnippet = getLastUserTurnSnippet(userMessages);
-  if (!userSnippet) {
-    return "";
-  }
-
-  const model = getLanguageModel(plannerModelId, ollamaLanguageOptions);
-
-  const { text } = await generateText({
-    model,
-    system: buildPlannerSystemPrompt(),
-    messages: [{ role: "user", content: userSnippet }],
-    maxOutputTokens: PLANNER_MAX_OUTPUT_TOKENS,
-    experimental_telemetry: {
-      isEnabled: isProductionEnvironment,
-      functionId: "virgil-planner",
-    },
-    ...(providerOptions && Object.keys(providerOptions).length > 0
-      ? { providerOptions }
-      : {}),
+  return runPlannerChain({
+    stages: [
+      {
+        modelId: plannerModelId,
+        maxOutputTokens: DEFAULT_PLANNER_MAX_OUTPUT_TOKENS,
+      },
+    ],
+    userMessages,
+    ollamaLanguageOptions,
+    providerOptions,
   });
-
-  return text.trim();
 }
 
 export function isPlannerModelLocal(plannerModelId: string): boolean {

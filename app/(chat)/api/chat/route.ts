@@ -41,11 +41,11 @@ import {
 } from "@/lib/ai/models";
 import { isAllowedChatModelId } from "@/lib/ai/ollama-discovery";
 import {
-  getPlannerModelId,
   isPlannerModelLocal,
   isVirgilMultiAgentEnabled,
   mergePlannerOutlineIntoSystemPrompt,
-  runPlannerOutline,
+  resolvePlannerStages,
+  runPlannerChain,
 } from "@/lib/ai/orchestration/multi-agent";
 import { formatActiveGoalsForPrompt } from "@/lib/ai/pivot-goal-context";
 import type { RequestHints } from "@/lib/ai/prompts";
@@ -576,16 +576,12 @@ export async function POST(request: Request) {
 
         let executorSystemPrompt = systemPromptText;
         if (gatewayMultiAgentEligible) {
-          const plannerId = getPlannerModelId(chatModel);
-          if (isPlannerModelLocal(plannerId)) {
+          const plannerStages = resolvePlannerStages(chatModel);
+          if (
+            plannerStages.some((stage) => isPlannerModelLocal(stage.modelId))
+          ) {
             await assertOllamaReachable();
           }
-          const plannerOllamaOptions = isPlannerModelLocal(plannerId)
-            ? {
-                ...modelConfig?.ollamaOptions,
-                ...(showThinking ? { think: true as const } : {}),
-              }
-            : undefined;
           const plannerProviderOptions = {
             ...(modelConfig?.gatewayOrder && {
               gateway: { order: modelConfig.gatewayOrder },
@@ -596,10 +592,16 @@ export async function POST(request: Request) {
           };
           try {
             markFirstModelCall();
-            const outline = await runPlannerOutline({
-              plannerModelId: plannerId,
+            const outline = await runPlannerChain({
+              stages: plannerStages,
               userMessages: modelMessages,
-              ollamaLanguageOptions: plannerOllamaOptions,
+              resolveOllamaLanguageOptionsForPlanner: (plannerModelId) =>
+                isPlannerModelLocal(plannerModelId)
+                  ? {
+                      ...modelConfig?.ollamaOptions,
+                      ...(showThinking ? { think: true as const } : {}),
+                    }
+                  : undefined,
               providerOptions:
                 Object.keys(plannerProviderOptions).length > 0
                   ? plannerProviderOptions
