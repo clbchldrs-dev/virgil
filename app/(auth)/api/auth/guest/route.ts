@@ -6,6 +6,7 @@ import {
   getAuthSecretResolved,
 } from "@/lib/auth-secret";
 import { shouldUseSecureAuthCookie } from "@/lib/constants";
+import { isGuestLoginEnabled } from "@/lib/guest-login";
 
 const GUEST_SIGNIN_DB_HINT =
   "Guest sign-in failed. Ensure PostgreSQL is running, POSTGRES_URL is set in .env.local, and migrations are applied (pnpm db:migrate). See AGENTS.md.";
@@ -27,6 +28,16 @@ export async function GET(request: Request) {
     rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
       ? rawRedirect
       : "/";
+
+  if (!isGuestLoginEnabled()) {
+    return new NextResponse(
+      "Guest sign-in is disabled. Set VIRGIL_GUEST_LOGIN_ENABLED=1 in .env.local to allow temporary sessions (see AGENTS.md).",
+      {
+        status: 403,
+        headers: { "content-type": "text/plain; charset=utf-8" },
+      }
+    );
+  }
 
   const token = await getToken({
     req: request,

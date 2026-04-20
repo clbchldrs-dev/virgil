@@ -19,6 +19,14 @@ function getActiveCompanionToolIds(): string[] {
   return [...universal, ...jira, ...localOnly];
 }
 
+/** Read-only env hints for operator surfaces (no secrets). */
+export type AgentTaskOrchestrationHints = {
+  triageEnabled: boolean;
+  multiAgentPlannerEnabled: boolean;
+  /** Number of planner models when `VIRGIL_MULTI_AGENT_PLANNER_CHAIN` is set; else 1 when multi-agent is on. */
+  plannerStageCount: number | null;
+};
+
 export type DeploymentCapabilities = {
   generatedAt: string;
   /** Where this server process is running. */
@@ -37,6 +45,8 @@ export type DeploymentCapabilities = {
     available: boolean;
     detail?: string;
   }>;
+  /** Agent tasks + gateway planner flags derived from env (user-safe). */
+  agentTaskOrchestration: AgentTaskOrchestrationHints;
   /** Hermes/OpenClaw delegation — present when using async builder. */
   delegation?: DelegationDeploymentSnapshot | null;
 };
@@ -58,6 +68,34 @@ function toolLabel(id: string): string {
 
 function isVercelRuntime(): boolean {
   return Boolean(process.env.VERCEL);
+}
+
+/**
+ * Env-only snapshot for `/agent-tasks` and deployment UI. No network I/O.
+ */
+export function getAgentTaskOrchestrationHints(): AgentTaskOrchestrationHints {
+  const triageRaw = process.env.AGENT_TASK_TRIAGE_ENABLED?.trim().toLowerCase();
+  const triageEnabled =
+    triageRaw === "1" || triageRaw === "true" || triageRaw === "yes";
+  const multiRaw = process.env.VIRGIL_MULTI_AGENT_ENABLED?.trim().toLowerCase();
+  const multiAgentPlannerEnabled =
+    multiRaw === "1" || multiRaw === "true" || multiRaw === "yes";
+  const chain = process.env.VIRGIL_MULTI_AGENT_PLANNER_CHAIN?.trim();
+  let plannerStageCount: number | null = null;
+  if (chain) {
+    const n = chain
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0).length;
+    plannerStageCount = n > 0 ? n : null;
+  } else if (multiAgentPlannerEnabled) {
+    plannerStageCount = 1;
+  }
+  return {
+    triageEnabled,
+    multiAgentPlannerEnabled,
+    plannerStageCount,
+  };
 }
 
 function hasHostedGateway(): boolean {
@@ -150,6 +188,7 @@ export function buildDeploymentCapabilitiesSync(): DeploymentCapabilities {
     localInference,
     hostedInference,
     agentTools,
+    agentTaskOrchestration: getAgentTaskOrchestrationHints(),
   };
 }
 

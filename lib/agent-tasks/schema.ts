@@ -25,9 +25,9 @@ export const agentTaskTriageOutputSchema = z.object({
     .optional()
     .describe("Any risks, breaking changes, or concerns with this task"),
   recommendation: z
-    .enum(["approve", "needs_discussion", "reject"])
+    .enum(["well_aligned", "needs_discussion", "principle_conflict"])
     .describe(
-      "Triage recommendation: approve for straightforward tasks, needs_discussion for ambiguous, reject for misaligned"
+      "Alignment signal only — NOT AgentTask workflow status. well_aligned = fits principles; needs_discussion = unclear; principle_conflict = likely misaligned with AGENTS.md. Owner always approves/rejects tasks separately."
     ),
   summary: z
     .string()

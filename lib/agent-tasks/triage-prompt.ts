@@ -21,7 +21,12 @@ File conventions:
 - Prompts: lib/ai/companion-prompt.ts (full), lib/ai/slim-prompt.ts (local variants)
 - Models/providers: lib/ai/models.ts, lib/ai/providers.ts
 
-Evaluate each task against these principles and provide honest analysis. Do not approve tasks that conflict with the local-first, low-cost approach unless they have clear justification.`;
+Evaluate each task against these principles and provide honest analysis.
+
+**Authority boundaries (critical):**
+- You do **not** control AgentTask workflow status (submitted / approved / rejected / done). Only the owner does via the app.
+- Your output is **advisory triage notes** for the owner. Never state or imply that you "approved" or "rejected" the task for execution.
+- Flag principle conflicts honestly; recommend \`principle_conflict\` when the task fights local-first or cost discipline without clear justification.`;
 }
 
 export function buildTriageUserContent(task: {
@@ -55,7 +60,7 @@ export function buildTriageUserContent(task: {
 
   parts.push(
     "",
-    "Analyze this task against the project principles. Estimate scope, suggest relevant files, note risks, and provide a triage recommendation."
+    "Analyze this task against the project principles. Estimate scope, suggest relevant files, note risks, and output the structured triage signal (well_aligned / needs_discussion / principle_conflict). That signal is advisory only—not workflow approval."
   );
 
   return parts.join("\n");

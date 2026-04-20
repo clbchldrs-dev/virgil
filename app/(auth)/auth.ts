@@ -6,6 +6,7 @@ import { getAuthSecretResolved } from "@/lib/auth-secret";
 import { DUMMY_PASSWORD, shouldUseSecureAuthCookie } from "@/lib/constants";
 import { createGuestUser, getUser } from "@/lib/db/queries";
 import { postVirgilDebugIngest } from "@/lib/debug-ingest";
+import { isGuestLoginEnabled } from "@/lib/guest-login";
 import {
   isEmailAllowedForPasswordlessLogin,
   isPasswordlessLoginConfigured,
@@ -118,18 +119,22 @@ export const {
             },
           }),
         ]),
-    Credentials({
-      id: "guest",
-      credentials: {},
-      async authorize() {
-        const [guestUser] = await createGuestUser();
-        return {
-          ...guestUser,
-          type: "guest",
-          role: "user" as const,
-        };
-      },
-    }),
+    ...(isGuestLoginEnabled()
+      ? [
+          Credentials({
+            id: "guest",
+            credentials: {},
+            async authorize() {
+              const [guestUser] = await createGuestUser();
+              return {
+                ...guestUser,
+                type: "guest",
+                role: "user" as const,
+              };
+            },
+          }),
+        ]
+      : []),
   ],
   callbacks: {
     jwt({ token, user }) {

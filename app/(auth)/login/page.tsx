@@ -1,9 +1,11 @@
 import { Suspense } from "react";
+import { isGuestLoginEnabled } from "@/lib/guest-login";
 import { isPasswordlessLoginConfigured } from "@/lib/passwordless-login";
 import { LoginContent } from "./login-content";
 
 export default function Page() {
   const passwordless = isPasswordlessLoginConfigured();
+  const guestLoginEnabled = isGuestLoginEnabled();
   return (
     <Suspense
       fallback={
@@ -15,7 +17,10 @@ export default function Page() {
         </>
       }
     >
-      <LoginContent passwordless={passwordless} />
+      <LoginContent
+        guestLoginEnabled={guestLoginEnabled}
+        passwordless={passwordless}
+      />
     </Suspense>
   );
 }

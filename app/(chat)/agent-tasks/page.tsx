@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/app/(auth)/auth";
 import { listAgentTasks } from "@/lib/db/queries";
+import { getAgentTaskOrchestrationHints } from "@/lib/deployment/capabilities";
+import { isAgentTaskGitHubConfigured } from "@/lib/github/agent-task-issue";
+import { isDelegationConfigured } from "@/lib/integrations/delegation-provider";
 import { AgentTasksClient } from "./agent-tasks-client";
 
 export default async function AgentTasksPage({
@@ -33,7 +36,13 @@ export default async function AgentTasksPage({
             list.
           </p>
         </div>
-        <AgentTasksClient initialStatus={statusQuery} initialTasks={tasks} />
+        <AgentTasksClient
+          delegationConfigured={isDelegationConfigured()}
+          githubAgentTasksConfigured={isAgentTaskGitHubConfigured()}
+          initialStatus={statusQuery}
+          initialTasks={tasks}
+          orchestrationHints={getAgentTaskOrchestrationHints()}
+        />
       </div>
     </div>
   );

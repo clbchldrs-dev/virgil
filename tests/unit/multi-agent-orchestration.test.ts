@@ -61,7 +61,8 @@ test("getPlannerModelId uses override when set", () => {
 test("resolvePlannerStages uses planner chain when set", () => {
   const prevChain = process.env.VIRGIL_MULTI_AGENT_PLANNER_CHAIN;
   const prevStageTok = process.env.VIRGIL_MULTI_AGENT_PLANNER_STAGE_MAX_TOKENS;
-  const prevDefault = process.env.VIRGIL_MULTI_AGENT_PLANNER_MAX_OUTPUT_TOKENS_DEFAULT;
+  const prevDefault =
+    process.env.VIRGIL_MULTI_AGENT_PLANNER_MAX_OUTPUT_TOKENS_DEFAULT;
   try {
     process.env.VIRGIL_MULTI_AGENT_PLANNER_CHAIN =
       "google/gemini-2.5-flash-lite, openai/gpt-4o-mini ";

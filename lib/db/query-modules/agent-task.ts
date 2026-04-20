@@ -115,13 +115,43 @@ export async function updateAgentTaskStatus({
   userId,
   status,
   agentNotes,
+  metadataMerge,
 }: {
   id: string;
   userId: string;
   status: "submitted" | "approved" | "in_progress" | "done" | "rejected";
   agentNotes?: string;
+  /** Shallow merge into existing JSON metadata (owner-scoped row). */
+  metadataMerge?: Record<string, unknown>;
 }) {
   try {
+    if (metadataMerge && Object.keys(metadataMerge).length > 0) {
+      const existing = await db
+        .select()
+        .from(agentTask)
+        .where(and(eq(agentTask.id, id), eq(agentTask.userId, userId)))
+        .limit(1);
+      const row0 = existing.at(0);
+      if (!row0) {
+        return null;
+      }
+      const metadata = {
+        ...row0.metadata,
+        ...metadataMerge,
+      };
+      const [row] = await db
+        .update(agentTask)
+        .set({
+          status,
+          metadata,
+          ...(agentNotes === undefined ? {} : { agentNotes }),
+          updatedAt: new Date(),
+        })
+        .where(and(eq(agentTask.id, id), eq(agentTask.userId, userId)))
+        .returning();
+      return row ?? null;
+    }
+
     const [row] = await db
       .update(agentTask)
       .set({

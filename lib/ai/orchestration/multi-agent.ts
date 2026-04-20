@@ -52,7 +52,7 @@ function parseStageMaxOutputTokens(
   }
   const parts = parseCommaSeparatedTokens(raw);
   if (parts.length === 1) {
-    const n = Number.parseInt(parts[0]!, 10);
+    const n = Number.parseInt(parts[0] ?? "", 10);
     const v =
       Number.isFinite(n) && n > 0 ? Math.min(n, 4096) : fallbackPerStage;
     return Array.from({ length: stageCount }, () => v);
@@ -63,7 +63,7 @@ function parseStageMaxOutputTokens(
   });
   const out: number[] = [];
   for (let i = 0; i < stageCount; i++) {
-    out.push(nums[i] ?? nums[nums.length - 1] ?? fallbackPerStage);
+    out.push(nums[i] ?? nums.at(-1) ?? fallbackPerStage);
   }
   return out;
 }
@@ -77,7 +77,8 @@ export function resolvePlannerStages(chatModel: string): VirgilPlannerStage[] {
   const chainModels = parseCommaSeparatedTokens(
     process.env.VIRGIL_MULTI_AGENT_PLANNER_CHAIN?.trim()
   );
-  const defaultCapRaw = process.env.VIRGIL_MULTI_AGENT_PLANNER_MAX_OUTPUT_TOKENS_DEFAULT?.trim();
+  const defaultCapRaw =
+    process.env.VIRGIL_MULTI_AGENT_PLANNER_MAX_OUTPUT_TOKENS_DEFAULT?.trim();
   const defaultCap = Number.parseInt(
     defaultCapRaw ?? String(DEFAULT_PLANNER_MAX_OUTPUT_TOKENS),
     10
@@ -98,7 +99,7 @@ export function resolvePlannerStages(chatModel: string): VirgilPlannerStage[] {
 
   return modelIds.map((modelId, i) => ({
     modelId,
-    maxOutputTokens: maxTokens[i]!,
+    maxOutputTokens: maxTokens[i] ?? fallbackPerStage,
   }));
 }
 
@@ -201,7 +202,10 @@ export async function runPlannerChain({
   let accumulated = "";
 
   for (let i = 0; i < total; i++) {
-    const stage = stages[i]!;
+    const stage = stages[i];
+    if (stage === undefined) {
+      break;
+    }
     const ollamaOpts =
       resolveOllamaLanguageOptionsForPlanner?.(stage.modelId) ??
       ollamaLanguageOptions;
@@ -226,7 +230,9 @@ export async function runPlannerChain({
       experimental_telemetry: {
         isEnabled: isProductionEnvironment,
         functionId:
-          total > 1 ? `virgil-planner-stage-${i + 1}-of-${total}` : "virgil-planner",
+          total > 1
+            ? `virgil-planner-stage-${i + 1}-of-${total}`
+            : "virgil-planner",
       },
       ...(providerOptions && Object.keys(providerOptions).length > 0
         ? { providerOptions }
@@ -246,7 +252,7 @@ export async function runPlannerChain({
  * Single-stage planner outline (compat helper). Prefer {@link resolvePlannerStages} +
  * {@link runPlannerChain} for multi-model / multi-pass orchestration.
  */
-export async function runPlannerOutline({
+export function runPlannerOutline({
   plannerModelId,
   userMessages,
   ollamaLanguageOptions,

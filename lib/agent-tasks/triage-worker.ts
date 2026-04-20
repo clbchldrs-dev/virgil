@@ -61,9 +61,14 @@ export async function runAgentTaskTriage(): Promise<TriageResult> {
         maxOutputTokens: 1024,
       });
 
+      const signalLabel: Record<string, string> = {
+        well_aligned: "Well aligned (advisory)",
+        needs_discussion: "Needs discussion (advisory)",
+        principle_conflict: "Principle conflict (advisory)",
+      };
       const notes = [
         "## Triage Analysis",
-        `**Recommendation:** ${object.recommendation}`,
+        `**Triage signal:** ${signalLabel[object.recommendation] ?? object.recommendation}`,
         `**Aligns with principles:** ${object.alignsWithPrinciples ? "Yes" : "No"}`,
         `**Scope:** ${object.estimatedScope}`,
         "",

@@ -13,8 +13,10 @@ import { type RegisterActionState, register } from "../actions";
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 export function RegisterContent({
+  guestLoginEnabled = false,
   passwordless = false,
 }: {
+  guestLoginEnabled?: boolean;
   passwordless?: boolean;
 }) {
   const router = useRouter();
@@ -91,17 +93,19 @@ export function RegisterContent({
           </Link>
         </p>
       </AuthForm>
-      <p className="mt-8 text-center text-[11px] leading-relaxed text-muted-foreground/55">
-        <Link
-          className="underline-offset-2 hover:text-muted-foreground hover:underline"
-          href={guestHref}
-        >
-          Temporary session (no account)
-        </Link>
-        <span className="mt-1 block text-[10px] text-muted-foreground/45">
-          For development or quick tries only — not a supported product path.
-        </span>
-      </p>
+      {guestLoginEnabled ? (
+        <p className="mt-8 text-center text-[11px] leading-relaxed text-muted-foreground/55">
+          <Link
+            className="underline-offset-2 hover:text-muted-foreground hover:underline"
+            href={guestHref}
+          >
+            Temporary session (no account)
+          </Link>
+          <span className="mt-1 block text-[10px] text-muted-foreground/45">
+            For development or quick tries only — not a supported product path.
+          </span>
+        </p>
+      ) : null}
     </>
   );
 }
