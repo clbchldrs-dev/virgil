@@ -148,6 +148,7 @@ export function buildCompanionSystemPrompt({
   delegationHint,
   localModelClass,
   goalContextAppendix = "",
+  delegationCapabilityAppendix = "",
 }: {
   ownerName: string | null;
   memories: Memory[];
@@ -170,6 +171,8 @@ export function buildCompanionSystemPrompt({
   localModelClass?: LocalModelClass;
   /** Active goals block (from pivot-goal-context) when non-empty */
   goalContextAppendix?: string;
+  /** Optional gateway skill snapshot from `lib/deployment/delegation-snapshot` (hosted path). */
+  delegationCapabilityAppendix?: string;
 }): string {
   const parts: string[] = [];
 
@@ -227,6 +230,9 @@ export function buildCompanionSystemPrompt({
   if (supportsTools) {
     parts.push(buildVirgilLaneGuidanceBlock(delegationHint));
     parts.push(buildCompanionToolGuidance(jiraEnabled, delegationHint));
+    if (delegationCapabilityAppendix.trim().length > 0) {
+      parts.push(delegationCapabilityAppendix.trim());
+    }
     parts.push(buildArtifactsPrompt({ jiraEnabled }));
     parts.push(buildGoalGuidancePromptAppendix());
   }

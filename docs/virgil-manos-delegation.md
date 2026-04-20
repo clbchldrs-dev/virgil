@@ -7,6 +7,11 @@
 1. **Primary backend** — `VIRGIL_DELEGATION_BACKEND` if set to `hermes` or `openclaw`. If **unset**, Virgil prefers **Hermes** when `HERMES_HTTP_URL` is set; otherwise **OpenClaw** when `OPENCLAW_*` is set.
 2. **Failover** — When **both** Hermes and OpenClaw URLs are present in env, **`VIRGIL_DELEGATION_FAILOVER` defaults to on** (set to `0` / `false` / `off` to disable). If the primary does not respond to health `ping`, Virgil routes **send** operations to the secondary (Hermes ↔ OpenClaw). Skill lists for `delegateTask` / `embedViaDelegation` validation are the **union** of both catalogs when failover is enabled.
 3. **Reachability** — `GET /api/delegation/health` reports per-bridge probes plus `delegationOnline` (true if **either** bridge answers when failover is on). Implement the same **`wiki-embed`** (or `VIRGIL_DELEGATION_EMBED_SKILL`) skill on whichever gateway you treat as primary for embeddings, or on **both** if you rely on failover.
+4. **No per-intent backend switch** — Chat does not let users or the model pick “Hermes vs OpenClaw” per `delegateTask` call. Routing is **primary when up**, **secondary only when failover is enabled** and the primary fails health checks (see [`lib/integrations/delegation-provider.ts`](../lib/integrations/delegation-provider.ts)). The signed-in **Deployment** page (`/deployment`) summarizes this for operators.
+
+### Operator visibility (app UI)
+
+After sign-in, open **`/deployment`** to see delegation configuration, gateway reachability, failover on/off, poll-primary mode (if active), and a **skill id list** with a freshness indicator. Under the hood this matches **`GET /api/deployment/capabilities`** (`lib/deployment/capabilities.ts` + `lib/deployment/delegation-snapshot.ts`). Use it to confirm Virgil sees the same skill catalog you expect from Hermes/OpenClaw before debugging chat behavior.
 
 ## Vercel production (recommended): database poll worker (no tunnel)
 

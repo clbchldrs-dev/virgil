@@ -10,6 +10,8 @@ Use this when the goal is **reliable daily use**: predictable builds, safe deplo
 
 **Where to invest:** Let **real use** show you—spend patterns, missed context about a specific person, workflows you thought you would delegate but want to keep. The roadmap does not replace observation.
 
+**Milestone sequencing (2026):** ~mid-June Mac mini (lab/always-on host) and ~mid-August tiiny.ai (heavy tier) are spelled out in [V1_1_TO_V2_EXECUTION_TIMELINE.md](V1_1_TO_V2_EXECUTION_TIMELINE.md). Through June, prioritize **reliable behavior and honest capability surfacing** (including delegation reachability) ahead of exhaustive bridge narrative in prompts.
+
 **Foundation:** **Embeddings + retrieval** are the lever that makes cross-session memory matter more than prompt tuning or ad hoc skills. In code: Ollama embeddings (`lib/ai/embeddings.ts`, `EMBEDDING_MODEL` / `OLLAMA_BASE_URL` in [AGENTS.md](../AGENTS.md)), Postgres `vector` search and FTS fallback (`lib/db/query-modules/memory.ts`), and the **`recallMemory`** tool (`lib/ai/tools/recall-memory.ts`)—vector first, then FTS, then optional Mem0 when configured. Backfill rows missing vectors when needed: `pnpm db:backfill-embeddings`.
 
 **Cadence:** Run the app **daily**; **weekly**, review evidence in `workspace/v2-eval/` (see flags below and [workspace/v2-eval/README.md](../workspace/v2-eval/README.md)). That loop is the core product discipline until the v1.0 stabilization bar in this doc and [docs/DECISIONS.md](DECISIONS.md).

@@ -1,4 +1,6 @@
 import { isJiraConfigured } from "@/lib/ai/tools/jira";
+import type { DelegationDeploymentSnapshot } from "@/lib/deployment/delegation-snapshot";
+import { getDelegationDeploymentSnapshot } from "@/lib/deployment/delegation-snapshot";
 
 /**
  * Tool ids active for this process — must stay aligned with
@@ -35,6 +37,8 @@ export type DeploymentCapabilities = {
     available: boolean;
     detail?: string;
   }>;
+  /** Hermes/OpenClaw delegation — present when using async builder. */
+  delegation?: DelegationDeploymentSnapshot | null;
 };
 
 const TOOL_LABELS: Record<string, string> = {
@@ -84,10 +88,10 @@ const CANONICAL_COMPANION_TOOL_IDS = [
 ] as const;
 
 /**
- * User-safe snapshot of what this deployment supports: models routing context,
- * agent tools, and major inference modes. No secrets or raw env values.
+ * User-safe snapshot (sync portion only — no delegation probe). Prefer
+ * {@link buildDeploymentCapabilities} for the full JSON including delegation.
  */
-export function buildDeploymentCapabilities(): DeploymentCapabilities {
+export function buildDeploymentCapabilitiesSync(): DeploymentCapabilities {
   const generatedAt = new Date().toISOString();
   const onVercel = isVercelRuntime();
   const environment: DeploymentCapabilities["environment"] = onVercel
@@ -146,5 +150,19 @@ export function buildDeploymentCapabilities(): DeploymentCapabilities {
     localInference,
     hostedInference,
     agentTools,
+  };
+}
+
+/**
+ * User-safe snapshot of what this deployment supports: models routing context,
+ * agent tools, major inference modes, and delegation reachability + skill ids.
+ * No secrets or raw env values.
+ */
+export async function buildDeploymentCapabilities(): Promise<DeploymentCapabilities> {
+  const base = buildDeploymentCapabilitiesSync();
+  const delegation = await getDelegationDeploymentSnapshot();
+  return {
+    ...base,
+    delegation,
   };
 }

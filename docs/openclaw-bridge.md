@@ -12,6 +12,35 @@ When Virgil is deployed on **Vercel**, leave **`OPENCLAW_*` unset** in project e
 
 This doc is **execution delegation** (optional LAN gateway). It is separate from **E6** in [ENHANCEMENTS.md](ENHANCEMENTS.md): E6 uses OpenClaw (and similar) **communities as a source of product ideas** for Virgil scope via `submitProductOpportunity` — not runtime execution through this bridge.
 
+## Path A — In-app Hermes bridge + OpenClaw (local)
+
+Use this when **`HERMES_HTTP_URL` is unset**: Virgil’s **in-app** bridge ([`lib/integrations/hermes-bridge.ts`](../lib/integrations/hermes-bridge.ts)) serves `app/api/hermes-bridge/{health,skills,execute,pending}` and **forwards** `delegateTask` intents to **OpenClaw**. There is no separate Hermes binary to configure for listing skills — the **advertised skill ids** come from OpenClaw (plus the sentinel **`generic-task`**).
+
+**1. Point Virgil at the gateway**
+
+| Goal | Env |
+|------|-----|
+| HTTP origin | `OPENCLAW_HTTP_URL` (e.g. `http://127.0.0.1:13100` or your SSH tunnel port) |
+| Bearer auth | `OPENCLAW_GATEWAY_TOKEN` or `OPENCLAW_GATEWAY_PASSWORD` if the gateway requires it |
+| `POST /tools/invoke` gateway | `OPENCLAW_EXECUTE_PATH=/tools/invoke` and optionally `OPENCLAW_GATEWAY_TOOLS_INVOKE=1` (also inferred when the path contains `tools/invoke`) |
+
+**2. Grow the skill catalog**
+
+- **Preferred:** Implement tools on the OpenClaw Gateway and expose them via **`GET`** `OPENCLAW_SKILLS_PATH` (default `/api/skills`) as JSON Virgil can parse ([`listOpenClawSkillsViaGateway()`](../lib/integrations/hermes-bridge.ts)).
+- **If `/api/skills` is empty, HTML, or missing:** set **`OPENCLAW_SKILLS_STATIC`** to a comma-separated list of **tool names that actually exist** on the gateway (e.g. `web,shell,wiki-embed`). Those ids are merged into the advertised list ([`getOpenClawStaticSkillNames()`](../lib/integrations/openclaw-config.ts)).
+
+**3. How Virgil `skill` maps to OpenClaw**
+
+With gateway invoke ([`openclaw-gateway.ts`](../lib/integrations/openclaw-gateway.ts)): **`delegateTask({ skill })`** becomes **`tool: <skill>`** in `POST /tools/invoke`, unless **`generic-task`** is used (then **`OPENCLAW_GENERIC_TASK_TOOL`**, default **`web`**), or **`OPENCLAW_SINGLE_TOOL_MODE=1`** (one tool for everything; original skill passed in args). Register matching tool names on OpenClaw for every id you expect the model to pick.
+
+**4. Verify**
+
+- **`GET /api/delegation/health`** — delegation online, skills listed.
+- **`GET /api/hermes-bridge/skills`** with `Authorization: Bearer $HERMES_SHARED_SECRET` when that secret is set (same as other bridge routes).
+- **`/deployment`** — Deployment page shows the same skill ids (cached snapshot).
+
+Commented starter lines for copy-paste live in [`.env.example`](../.env.example) (search `OPENCLAW_`).
+
 ## Hermes as main driver (human steps)
 
 Use this when you want Hermes to be the default delegation backend and keep OpenClaw as compatibility fallback.
@@ -24,6 +53,7 @@ Use this when you want Hermes to be the default delegation backend and keep Open
 2. Restart the app (`pnpm virgil:start` or `pnpm dev`) so the server reads updated env vars.
 3. Keep `OPENCLAW_*` vars for OpenClaw compatibility; when **both** Hermes and OpenClaw are configured, Virgil **failovers** from Hermes to OpenClaw if Hermes is unreachable unless `VIRGIL_DELEGATION_FAILOVER=0`. See [virgil-manos-delegation.md](virgil-manos-delegation.md).
 4. Sign in, then verify end-to-end:
+   - **`/deployment`** (Deployment page) shows **reachability**, **primary vs failover** intent, and a **live or cached skill id list** — same data as **`GET /api/deployment/capabilities`** (user-safe JSON; no secrets). If the skill list shows a stale/unavailable warning, fix gateway health first, then refresh after a minute (short server-side cache).
    - `GET /api/delegation/health` confirms selected backend, online state, discovered skills, and queue depth.
    - `GET /api/openclaw/pending` confirms pending approvals and backlog behavior in the existing queue UI.
 5. Run one safe delegated task first (for example a read-only status query) before enabling higher-risk skills.
@@ -166,6 +196,7 @@ Success outcomes:
 
 ## Related
 
+- **Path A (in-app bridge + OpenClaw):** section above; code [`lib/integrations/hermes-bridge.ts`](../lib/integrations/hermes-bridge.ts).
 - ADR: [docs/DECISIONS.md](DECISIONS.md) (OpenClaw execution layer).
 - Vercel + `virgil-manos`: [docs/virgil-manos-delegation.md](virgil-manos-delegation.md) (Cloudflare Tunnel to Hermes only).
 - Event mapping: [lib/integrations/openclaw-actions.ts](../lib/integrations/openclaw-actions.ts).

@@ -110,6 +110,10 @@ import {
   summarizeModelMessageRoles,
   summarizeUiMessagesToolState,
 } from "@/lib/debug/agent-ingest-log";
+import {
+  buildDelegationCapabilityAppendix,
+  getDelegationDeploymentSnapshot,
+} from "@/lib/deployment/delegation-snapshot";
 import { VirgilError } from "@/lib/errors";
 import { isProductOpportunityConfigured } from "@/lib/github/product-opportunity-issue";
 import { isDelegationEmbedToolEnabled } from "@/lib/integrations/delegation-embeddings";
@@ -416,6 +420,13 @@ export async function POST(request: Request) {
         isDelegationConfigured() && isDelegationEmbedToolEnabled(),
     };
 
+    let delegationCapabilityAppendix = "";
+    if (delegationHint.enabled) {
+      const delegationSnap = await getDelegationDeploymentSnapshot();
+      delegationCapabilityAppendix =
+        buildDelegationCapabilityAppendix(delegationSnap);
+    }
+
     const systemPromptText =
       isOllamaLocal && promptVariant === "compact"
         ? buildCompactCompanionPrompt({
@@ -441,6 +452,7 @@ export async function POST(request: Request) {
               agentTaskEnabled,
               jiraEnabled,
               delegationHint,
+              delegationCapabilityAppendix,
               goalContextAppendix,
               ...(isOllamaLocal ? { localModelClass } : {}),
             });
@@ -807,6 +819,7 @@ export async function POST(request: Request) {
             agentTaskEnabled: true,
             jiraEnabled: isJiraConfigured(),
             delegationHint,
+            delegationCapabilityAppendix,
             goalContextAppendix,
           });
 

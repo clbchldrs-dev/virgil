@@ -1,10 +1,12 @@
-# Virgil execution timeline: today -> June -> August
+# Virgil execution timeline: today → mid-June → mid-August (2026)
 
 This runbook turns the current direction into a concrete sequence:
 
 - **Now:** Virgil 1.1 bridge in current shell (Hermes harness + LLM Wiki memory)
-- **June:** Mac mini arrives (primary always-on host for v2 backend)
-- **August:** tiiny.ai arrives (heavy reasoning tier)
+- **~Mid-June 2026:** Mac mini (primary always-on host for bridge / v2-prep)
+- **~Mid-August 2026:** tiiny.ai (heavy reasoning tier)
+
+**Sequencing Hermes / OpenClaw work:** For the Mac mini bar, prioritize **honest capability signals** (Deployment page, env detection, gateway reachability, safe degradation) and **stable `delegateTask` / poll-worker paths**. Exhaustive in-prompt “bridge narration” and product-level delegation UX can trail June if behavior is correct; fuller story fits the **mid-August** product milestone as well as ongoing stabilization ([docs/STABILITY_TRACK.md](STABILITY_TRACK.md)).
 
 This document is operational planning only. It does not declare v2 implementation active in this repo.
 
@@ -65,9 +67,9 @@ Execution reference:
 - Wiki artifact grows with clean provenance and useful retrieval.
 - Delegation degradation is safe: backend offline keeps intents queued (no unsafe bypass), and retry is possible after recovery.
 
-## Phase B: June cutover prep (Mac mini arrives)
+## Phase B: Mid-June cutover prep (Mac mini arrives)
 
-Goal: move primary orchestration and memory maintenance to the always-on host.
+Goal: move primary orchestration and memory maintenance to the always-on host. Treat **~mid-June** as the demo/lab milestone: reliable stack beats perfect Hermes/OpenClaw copy in prompts.
 
 ### Host responsibilities
 
@@ -97,9 +99,9 @@ Goal: move primary orchestration and memory maintenance to the always-on host.
    - daily run: `GET /api/wiki/daily` (gated)
 5. If host migration is needed, copy/sync `workspace/wiki-starter` before re-enabling daily runs.
 
-## Phase C: August scale-up (tiiny.ai arrives)
+## Phase C: Mid-August scale-up (tiiny.ai arrives)
 
-Goal: separate heavy reasoning from orchestration while keeping model-agnostic routing.
+Goal: separate heavy reasoning from orchestration while keeping model-agnostic routing. **~Mid-August** is the natural window for heavier product/narrative work around tiers and delegation, once the Mac mini baseline is stable.
 
 ### Role split
 
