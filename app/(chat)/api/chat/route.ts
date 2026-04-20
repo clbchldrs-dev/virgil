@@ -419,8 +419,7 @@ export async function POST(request: Request) {
     const delegationHint = {
       enabled: delegationChatEnabled,
       backend: getDelegationProvider().backend,
-      embedToolEnabled:
-        delegationChatEnabled && isDelegationEmbedToolEnabled(),
+      embedToolEnabled: delegationChatEnabled && isDelegationEmbedToolEnabled(),
       ...(delegationConfigured && !delegationChatEnabled
         ? { toolsPaused: true as const }
         : {}),

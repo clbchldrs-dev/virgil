@@ -64,3 +64,18 @@ test("diagnostics payload includes schema, capabilities slice, and health", () =
     delegationOnline: false,
   });
 });
+
+test("diagnostics payload redacts secret-shaped strings in delegationHealth", () => {
+  const payload = buildDeploymentDiagnosticsPayload({
+    capabilities: minimalCapabilities(),
+    delegationHealth: {
+      note: "Bearer upstream_leaked_token_12345678",
+      conn: "postgres://user:pass@localhost:5432/db",
+    },
+  });
+  const serialized = JSON.stringify(payload);
+  assert.equal(serialized.includes("upstream_leaked_token"), false);
+  assert.equal(serialized.includes("user:pass@"), false);
+  assert.equal(serialized.includes("Bearer [redacted]"), true);
+  assert.equal(serialized.includes("postgres://[redacted]@"), true);
+});

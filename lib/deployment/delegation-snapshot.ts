@@ -1,6 +1,5 @@
 import { isDelegationEmbedToolEnabled } from "@/lib/integrations/delegation-embeddings";
 import { isDelegationPollPrimaryActive } from "@/lib/integrations/delegation-poll-config";
-import { isDelegationToolsPaused } from "@/lib/integrations/delegation-tools-policy";
 import { evaluateDelegationPreflight } from "@/lib/integrations/delegation-preflight";
 import {
   delegationContractDiagnostics,
@@ -13,6 +12,7 @@ import {
 import { evaluateDelegationReadiness } from "@/lib/integrations/delegation-readiness";
 import type { DelegationRoutingTrace } from "@/lib/integrations/delegation-routing";
 import { resolveDelegationSkill } from "@/lib/integrations/delegation-routing";
+import { isDelegationToolsPaused } from "@/lib/integrations/delegation-tools-policy";
 import { isHermesConfigured } from "@/lib/integrations/hermes-config";
 import { isOpenClawConfigured } from "@/lib/integrations/openclaw-config";
 import type {

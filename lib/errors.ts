@@ -20,6 +20,8 @@ export type Surface =
   | "activate_gateway"
   | "memory";
 
+import { redactSecretLikeSubstrings } from "@/lib/security/redact-secret-like-substrings";
+
 export type ErrorCode = `${ErrorType}:${Surface}`;
 
 export type ErrorVisibility = "response" | "log" | "none";
@@ -68,10 +70,12 @@ export class VirgilError extends Error {
     const { message, cause, statusCode } = this;
 
     if (visibility === "log") {
+      const safeCause =
+        typeof cause === "string" ? redactSecretLikeSubstrings(cause) : cause;
       console.error({
         code,
         message,
-        cause,
+        cause: safeCause,
       });
 
       return Response.json({ code: "", message }, { status: statusCode });

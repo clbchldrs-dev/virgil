@@ -13,12 +13,13 @@ import {
   openClawGatewayAuthHeaders,
 } from "@/lib/integrations/openclaw-gateway";
 import type { ClawIntent, ClawResult } from "@/lib/integrations/openclaw-types";
+import { redactSecretLikeSubstrings } from "@/lib/security/redact-secret-like-substrings";
 
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_ERROR_LENGTH = 500;
 
 function truncateError(msg: string): string {
-  const stripped = msg.replace(/<[^>]*>/g, "");
+  const stripped = redactSecretLikeSubstrings(msg).replace(/<[^>]*>/g, "");
   return stripped.length > MAX_ERROR_LENGTH
     ? `${stripped.slice(0, MAX_ERROR_LENGTH)}…`
     : stripped;

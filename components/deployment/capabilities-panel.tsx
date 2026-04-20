@@ -275,15 +275,17 @@ export function DeploymentCapabilitiesPanel({
             </div>
           </div>
           <p className="text-muted-foreground text-xs">
-            This page is for the signed-in account. Delegation chat tools use the
-            same session and owner scoping as the rest of chat.
+            This page is for the signed-in account. Delegation chat tools use
+            the same session and owner scoping as the rest of chat.
           </p>
           <p className="text-muted-foreground text-xs">
-            <strong>Policy and limits:</strong> rate limits, tool allow/deny, and
-            OpenClaw-side enforcement run on your{" "}
+            <strong>Policy and limits:</strong> rate limits, tool allow/deny,
+            and OpenClaw-side enforcement run on your{" "}
             <strong>gateway host</strong>, not inside Virgil. Optional in-app
             skill filtering:{" "}
-            <code className="text-[0.65rem]">VIRGIL_DELEGATION_STRICT_SKILLS</code>
+            <code className="text-[0.65rem]">
+              VIRGIL_DELEGATION_STRICT_SKILLS
+            </code>
             . See{" "}
             <code className="text-[0.65rem]">docs/openclaw-bridge.md</code>.
           </p>
@@ -294,8 +296,8 @@ export function DeploymentCapabilitiesPanel({
             >
               Delegation <strong>chat tools</strong> are paused (
               <code className="text-xs">VIRGIL_DELEGATION_TOOLS_DISABLED</code>
-              ). The bridge is still probed below; queued work may still drain via
-              the poll worker.
+              ). The bridge is still probed below; queued work may still drain
+              via the poll worker.
             </p>
           ) : null}
           {data.delegation.configured ? (
@@ -309,14 +311,16 @@ export function DeploymentCapabilitiesPanel({
                   data-testid="deployment-delegation-chat-tools-paused"
                 >
                   Not registered in chat —{" "}
-                  <code className="text-xs">VIRGIL_DELEGATION_TOOLS_DISABLED</code>{" "}
+                  <code className="text-xs">
+                    VIRGIL_DELEGATION_TOOLS_DISABLED
+                  </code>{" "}
                   is set. The bridge below is still probed for operators.
                 </p>
               ) : (
                 <>
                   <p className="text-muted-foreground text-xs">
-                    Registered on hosted chat when delegation is configured — not
-                    listed in the in-process table above.
+                    Registered on hosted chat when delegation is configured —
+                    not listed in the in-process table above.
                   </p>
                   <ul
                     className="divide-y divide-border/60 rounded-lg border border-border/60"
@@ -327,7 +331,8 @@ export function DeploymentCapabilitiesPanel({
                         delegateTask
                       </span>
                       <span className="text-muted-foreground sm:max-w-[min(100%,28rem)] sm:text-right">
-                        Queue work to the gateway (skill + description + params).
+                        Queue work to the gateway (skill + description +
+                        params).
                       </span>
                     </li>
                     <li className="flex flex-col gap-0.5 px-3 py-2.5 sm:flex-row sm:items-start sm:justify-between">
@@ -600,9 +605,13 @@ export function DeploymentCapabilitiesPanel({
                 Hermes or in-app bridge)
               </li>
               <li>
-                <code className="text-[0.65rem]">VIRGIL_DELEGATION_BACKEND</code>{" "}
+                <code className="text-[0.65rem]">
+                  VIRGIL_DELEGATION_BACKEND
+                </code>{" "}
                 (optional),{" "}
-                <code className="text-[0.65rem]">VIRGIL_DELEGATION_FAILOVER</code>
+                <code className="text-[0.65rem]">
+                  VIRGIL_DELEGATION_FAILOVER
+                </code>
               </li>
               <li>
                 <code className="text-[0.65rem]">

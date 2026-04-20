@@ -7,7 +7,8 @@ import { isDelegationConfigured } from "@/lib/integrations/delegation-provider";
  * operators; the poll worker may continue draining rows already queued.
  */
 export function isDelegationToolsPaused(): boolean {
-  const raw = process.env.VIRGIL_DELEGATION_TOOLS_DISABLED?.trim().toLowerCase();
+  const raw =
+    process.env.VIRGIL_DELEGATION_TOOLS_DISABLED?.trim().toLowerCase();
   return raw === "1" || raw === "true" || raw === "yes";
 }
 
